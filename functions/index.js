@@ -14,6 +14,8 @@ let db = admin.firestore();
 // Required for timestamps settings
 let FieldValue = require('firebase-admin').firestore.FieldValue; // Timestamp Here
 const settings = { timestampsInSnapshots: true};
+// Timestamp conversions
+let moment = require('moment-timezone');
 db.settings(settings);
 // Google Sheets instance
 const { google } = require("googleapis");
@@ -114,23 +116,26 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
     snapshot.docs.map(doc => {
       // doc.data() is object -> { name: 'jax', email: 'jax@jax.com' }
       const { name, email } = doc.data().template.data; 
-      // const { created } = doc.data().created; 
-      // Sheets expects array of arrays, push as array to valueArray
-      return valueArray.push([name, email]); 
+      // date and time
+      let createdDateTime = doc.data().createdDateTime.toDate(); // toDate() is firebase method
+      let createdDate = moment(createdDateTime).tz("America/New_York").format('L'); // Format date with moment.js
+      let createdTime = moment(createdDateTime).tz("America/New_York").format('h:mm A');
+
+      return valueArray.push([createdDate, createdTime, name, email]); 
     });
 
     let maxRange = valueArray.length + 1;
 
     // Do authorization
     await jwtClient.authorize();
-    
+    console.log("valueArray #### ", valueArray); 
     // Create Google Sheets request
     // FIXME make dynamic 'spreadsheetId' - pull from app
     // FIXME update 'range' to a generic spreadsheet tab name use for all apps
     let request = {
       auth: jwtClient,
       spreadsheetId: "1nOzYKj0Gr1zJPsZv-GhF00hUAJ2sTsCosMk4edJJ9nU",
-      range: "Firestore!A2:B" + maxRange,
+      range: "Firestore!A2:E" + maxRange,
       valueInputOption: "RAW",
       requestBody: {
         values: valueArray
