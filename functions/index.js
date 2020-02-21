@@ -35,6 +35,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
   //
   // Get webform submitted data
   //
+  // FIXME update so template data fields are dynamic based on template used
   let { app: appKey, template = 'contactDefault', webformId, name, phone, email, message } 
     = req.body; // template default 'contactForm' if not added in webform
   //
@@ -110,9 +111,8 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
 
     let valueArray = [];
     // FIXME update query to get only specific app's data
-    let snapshot = await db.collection('formSubmission').get();
+    let snapshot = await db.collection('formSubmission').orderBy('createdDateTime', 'desc').get();
 
-    // FIXME get date form submitted & sort it
     snapshot.docs.map(doc => {
       // doc.data() is object -> { name: 'jax', email: 'jax@jax.com' }
       // FIXME update so template data fields are dynamic based on template used
