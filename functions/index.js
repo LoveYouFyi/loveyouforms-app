@@ -114,9 +114,9 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
     snapshot.docs.map(doc => {
       // doc.data() is object -> { name: 'jax', email: 'jax@jax.com' }
       const { name, email } = doc.data().template.data; 
-      const { created } = doc.data().created; 
+      // const { created } = doc.data().created; 
       // Sheets expects array of arrays, push as array to valueArray
-      return valueArray.push([created, name, email]); 
+      return valueArray.push([name, email]); 
     });
 
     let maxRange = valueArray.length + 1;
