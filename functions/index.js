@@ -115,13 +115,15 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
     // FIXME get date form submitted & sort it
     snapshot.docs.map(doc => {
       // doc.data() is object -> { name: 'jax', email: 'jax@jax.com' }
-      const { name, email } = doc.data().template.data; 
+      // FIXME update so template data fields are dynamic based on template used
+      const { name, email, phone, message } = doc.data().template.data; 
       // date and time
+      // FIXME get timezone from 'app' config so will post to excel
       let createdDateTime = doc.data().createdDateTime.toDate(); // toDate() is firebase method
       let createdDate = moment(createdDateTime).tz("America/New_York").format('L'); // Format date with moment.js
-      let createdTime = moment(createdDateTime).tz("America/New_York").format('h:mm A');
+      let createdTime = moment(createdDateTime).tz("America/New_York").format('h:mm A z');
 
-      return valueArray.push([createdDate, createdTime, name, email]); 
+      return valueArray.push([createdDate, createdTime, name, email, phone, message]); 
     });
 
     let maxRange = valueArray.length + 1;
@@ -135,7 +137,7 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
     let request = {
       auth: jwtClient,
       spreadsheetId: "1nOzYKj0Gr1zJPsZv-GhF00hUAJ2sTsCosMk4edJJ9nU",
-      range: "Firestore!A2:E" + maxRange,
+      range: "Firestore!A2:F" + maxRange,
       valueInputOption: "RAW",
       requestBody: {
         values: valueArray
