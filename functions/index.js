@@ -75,8 +75,9 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
   let data = {
     // spread operator conditionally adds, otherwise function errors if not exist
     // 'from' email if not assigned comes from firebase extension field: DEFAULT_FROM
-    ...appInfoFrom && { from: appInfoFrom }, // from: app.(appKey).appInfo.from
+    appKey,
     createdDateTime: FieldValue.serverTimestamp(),
+    ...appInfoFrom && { from: appInfoFrom }, // from: app.(appKey).appInfo.from
     toUids: [ appKey ], // to: app.(appKey).email
     replyTo: email, // webform
     ...webformId && { webformId }, // webform
