@@ -51,6 +51,18 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
   let templateFields = await db.collection('emailTemplate').doc(template).get();
   console.log("doc data $$$$ ", templateFields.data().templateData);
   let [ ...all ] = templateFields.data().templateData;
+
+  let temp = {
+    ...name && { name }, // webform
+    ...phone && { phone }, // webform
+    ...email &&  { email }, // webform
+    ...message && { message } // webform
+  }
+  let me = {
+
+  }
+  templateFields.data().templateData.map(f => me[f] = f);
+  console.log("me me me %%%%% ", me);
   // let templateData = templateFields.templateData; ---> UNDEFINED
 //  let [ ...all ] = templateFields.doc.data().templateData;
   //  let templateData = templateFields;
