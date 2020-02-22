@@ -32,12 +32,39 @@ const jwtClient = new google.auth.JWT({
 
 // ANCHOR Form Handler
 exports.formHandler = functions.https.onRequest(async (req, res) => {
+
+  let formFields = await db.collection('formFields').get();
+  formFields.docs.map(doc => {
+    console.log("formFields doc #### ", doc);
+    console.log("formFields doc.data() #### ", doc.data());
+  });
+
+
   //
   // Get webform submitted data
   //
   // FIXME update so template data fields are dynamic based on template used
   let { app: appKey, template = 'contactDefault', webformId, name, phone, email, message } 
     = req.body; // template default 'contactForm' if not added in webform
+
+  let activeFields = [];
+  let templateFields = await db.collection('emailTemplate').doc(template).get();
+  console.log("doc data $$$$ ", templateFields.data().templateData);
+  let [ ...all ] = templateFields.data().templateData;
+  // let templateData = templateFields.templateData; ---> UNDEFINED
+//  let [ ...all ] = templateFields.doc.data().templateData;
+  //  let templateData = templateFields;
+//  templateData.forEach(field => activeFields.push(field));
+  console.log("active field #### ", ...all); 
+
+/*
+  formFields.docs.map(doc => {
+    console.log("formFields doc #### ", doc);
+    console.log("formFields doc.data() #### ", doc.data());
+  });
+*/
+
+
   //
   // Sanitize webform data: trim whitespace and limit character count
   let limit = (string, charCount) => string.trim().substr(0, charCount)
