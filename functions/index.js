@@ -144,13 +144,37 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
         values: valueArray
       }
     };
-  
+
+    // Clear Data before Adding/Updating
+    /*
+    let reqClear = {
+      auth: jwtClient,
+      spreadsheetId: "1nOzYKj0Gr1zJPsZv-GhF00hUAJ2sTsCosMk4edJJ9nU",
+      range: "Firestore!A2:F10000"
+    };
+
+    await sheets.spreadsheets.values.clear(reqClear);
+    */
+    let exists = {
+      auth: jwtClient,
+      spreadsheetId: "1nOzYKj0Gr1zJPsZv-GhF00hUAJ2sTsCosMk4edJJ9nU",
+      range: "default!A1:Z1"
+    };
+    let sheetExists = (await sheets.spreadsheets.values.get(exists)).data;
+    console.log("Sheet Exists ##### ", sheetExists);
+
     // Update Google Sheets Data
     await sheets.spreadsheets.values.update(request, {});
 
   }
   catch(err) {
-    console.log(err);
+    // errors in 'errors' object, then map through errors array check for .message prop
+    let errorMessage = err.errors.map(e => e.message);
+    console.log("result ############# ", errorMessage);
+    if (errorMessage[0].includes("Unable to parse range:")) {
+      console.log("Got it ##############")
+    }
+
   }
 
 });
