@@ -39,33 +39,25 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     console.log("formFields doc.data() #### ", doc.data());
   });
 
-
-  //
-  // Get webform submitted data
-  //
+  // Form submitted data
   // FIXME update so template data fields are dynamic based on template used
   let { app: appKey, template = 'contactDefault', webformId, ...rest } 
     = req.body; // template default 'contactForm' if not added in webform
     console.log("these $$$$$$$$$$$$$$ ", rest);
 
-
-  //
-  // Sanitize webform data: trim whitespace and limit character count
+  // Form Fields Sanitize
+  // trim whitespace and limit character count
   let limit = (string, charCount) => string.trim().substr(0, charCount)
-  //
   appKey = limit(appKey, 256);
   template = limit(template, 64);
   webformId = limit(webformId, 64);
-  name = limit(name, 64);
-  phone = limit(phone, 64);
-  email = limit(email, 96);
-  message = limit(message, 1280);
+  let name = rest.name ? limit(rest.name, 64) : undefined;
+  let phone = rest.phone ? limit(rest.phone, 64) : undefined;
+  let email = rest.email ? limit(rest.email, 96) : undefined;
+  let message = rest.message ? limit(rest.message, 1280) : undefined;
 
-  //
-  // Declare vars for data to be retrieved from db
+  // App identifying info
   let appInfoName, appInfoUrl, appInfoFrom;
-  //
-  // Retrieve data from db and assign to above vars
   const appInfoRef = db.collection('app').doc(appKey);
   await appInfoRef.get()
     .then(doc => {
@@ -90,7 +82,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     createdDateTime: FieldValue.serverTimestamp(),
     ...appInfoFrom && { from: appInfoFrom }, // from: app.(appKey).appInfo.from
     toUids: [ appKey ], // to: app.(appKey).email
-    replyTo: email, // webform
+    ...email && {replyTo: email}, // webform
     ...webformId && { webformId }, // webform
     template: {
       name: template,
