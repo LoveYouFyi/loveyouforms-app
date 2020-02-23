@@ -33,37 +33,25 @@ const jwtClient = new google.auth.JWT({
 // ANCHOR Form Handler
 exports.formHandler = functions.https.onRequest(async (req, res) => {
 
-  let maxLength = {
-
-  }
-  let formFields = await db.collection('formFields').get();
-  for (const doc of formFields.docs) {
-    const hey = await doc.id;
-    maxLength[hey] = doc.data().maxLength;
-    console.log("Hey $$$$$$$$$$$$$$$$$$$$$$ ", hey);
-  }
-  console.log("maxLength ###### ", maxLength);
-//  formFields.docs.map(doc => {
-    //console.log("formFields doc #### ", doc);
-    //console.log("formFields doc.data() #### ", doc.data());
-  //});
-
   // Form submitted data
-  // FIXME update so template data fields are dynamic based on template used
   let { app: appKey, template = 'contactDefault', webformId, ...rest } 
     = req.body; // template default 'contactForm' if not added in webform
-//    console.log("these $$$$$$$$$$$$$$ ", rest);
 
   // Form Fields Sanitize
+  let maxLength = {}
+  let formFields = await db.collection('formFields').get();
+  for (const doc of formFields.docs) {
+    maxLength[doc.id] = await doc.data().maxLength;
+  }
   // trim whitespace and limit character count
   let limit = (string, charCount) => string.trim().substr(0, charCount)
-  appKey = limit(appKey, 256);
-  template = limit(template, 64);
-  webformId = limit(webformId, 64);
-  let name = rest.name ? limit(rest.name, 64) : undefined;
-  let phone = rest.phone ? limit(rest.phone, 64) : undefined;
-  let email = rest.email ? limit(rest.email, 96) : undefined;
-  let message = rest.message ? limit(rest.message, 1280) : undefined;
+  appKey = limit(appKey, maxLength.appKey);
+  template = limit(template, maxLength.template);
+  webformId = limit(webformId, maxLength.webformId);
+  let name = rest.name ? limit(rest.name, maxLength.name) : undefined;
+  let phone = rest.phone ? limit(rest.phone, maxLength.phone) : undefined;
+  let email = rest.email ? limit(rest.email, maxLength.email) : undefined;
+  let message = rest.message ? limit(rest.message, maxLength.message) : undefined;
 
   // App identifying info
   let appInfoName, appInfoUrl, appInfoFrom;
