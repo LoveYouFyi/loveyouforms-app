@@ -32,29 +32,29 @@ const jwtClient = new google.auth.JWT({
 
 // ANCHOR Form Handler
 exports.formHandler = functions.https.onRequest(async (req, res) => {
-  //
-  // Get webform submitted data
-  //
-  // FIXME update so template data fields are dynamic based on template used
-  let { app: appKey, template = 'contactDefault', webformId, name, phone, email, message } 
-    = req.body; // template default 'contactForm' if not added in webform
-  //
-  // Sanitize webform data: trim whitespace and limit character count
-  let limit = (string, charCount) => string.trim().substr(0, charCount)
-  //
-  appKey = limit(appKey, 256);
-  template = limit(template, 64);
-  webformId = limit(webformId, 64);
-  name = limit(name, 64);
-  phone = limit(phone, 64);
-  email = limit(email, 96);
-  message = limit(message, 1280);
 
-  //
-  // Declare vars for data to be retrieved from db
+  // Form submitted data
+  let { app: appKey, template = 'contactDefault', webformId, ...rest } 
+    = req.body; // template default 'contactForm' if not added in webform
+
+  // Form Fields Sanitize
+  let maxLength = {}
+  let formFields = await db.collection('formFields').get();
+  for (const doc of formFields.docs) {
+    maxLength[doc.id] = await doc.data().maxLength;
+  }
+  // trim whitespace and limit character count
+  let limit = (string, charCount) => string.trim().substr(0, charCount)
+  appKey = limit(appKey, maxLength.appKey);
+  template = limit(template, maxLength.template);
+  webformId = limit(webformId, maxLength.webformId);
+  let name = rest.name ? limit(rest.name, maxLength.name) : undefined;
+  let phone = rest.phone ? limit(rest.phone, maxLength.phone) : undefined;
+  let email = rest.email ? limit(rest.email, maxLength.email) : undefined;
+  let message = rest.message ? limit(rest.message, maxLength.message) : undefined;
+
+  // App identifying info
   let appInfoName, appInfoUrl, appInfoFrom;
-  //
-  // Retrieve data from db and assign to above vars
   const appInfoRef = db.collection('app').doc(appKey);
   await appInfoRef.get()
     .then(doc => {
@@ -79,7 +79,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     createdDateTime: FieldValue.serverTimestamp(),
     ...appInfoFrom && { from: appInfoFrom }, // from: app.(appKey).appInfo.from
     toUids: [ appKey ], // to: app.(appKey).email
-    replyTo: email, // webform
+    ...email && {replyTo: email}, // webform
     ...webformId && { webformId }, // webform
     template: {
       name: template,
