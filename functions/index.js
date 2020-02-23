@@ -116,7 +116,7 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
 
     snapshot.docs.map(doc => {
       // doc.data() is object -> { name: 'jax', email: 'jax@jax.com' }
-      // FIXME update so template data fields are dynamic based on template used
+      // FIXME add default values so can use a single spreadsheet for all form results
       const { name, email, phone, message } = doc.data().template.data; 
       // date and time
       // FIXME get timezone from 'app' config so will post to excel
@@ -124,6 +124,7 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
       let createdDate = moment(createdDateTime).tz("America/New_York").format('L'); // Format date with moment.js
       let createdTime = moment(createdDateTime).tz("America/New_York").format('h:mm A z');
 
+      // FIXME add default values so can use a single spreadsheet for all form results
       return valueArray.push([createdDate, createdTime, name, email, phone, message]); 
     });
 
