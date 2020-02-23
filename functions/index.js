@@ -44,37 +44,9 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
   // Get webform submitted data
   //
   // FIXME update so template data fields are dynamic based on template used
-  let { app: appKey, template = 'contactDefault', webformId, name, phone, email, message } 
+  let { app: appKey, template = 'contactDefault', webformId, ...rest } 
     = req.body; // template default 'contactForm' if not added in webform
-
-  let activeFields = [];
-  let templateFields = await db.collection('emailTemplate').doc(template).get();
-  console.log("doc data $$$$ ", templateFields.data().templateData);
-  let [ ...all ] = templateFields.data().templateData;
-
-  let temp = {
-    ...name && { name }, // webform
-    ...phone && { phone }, // webform
-    ...email &&  { email }, // webform
-    ...message && { message } // webform
-  }
-  let me = {
-
-  }
-  templateFields.data().templateData.map(f => me[f] = f);
-  console.log("me me me %%%%% ", me);
-  // let templateData = templateFields.templateData; ---> UNDEFINED
-//  let [ ...all ] = templateFields.doc.data().templateData;
-  //  let templateData = templateFields;
-//  templateData.forEach(field => activeFields.push(field));
-  console.log("active field #### ", ...all); 
-
-/*
-  formFields.docs.map(doc => {
-    console.log("formFields doc #### ", doc);
-    console.log("formFields doc.data() #### ", doc.data());
-  });
-*/
+    console.log("these $$$$$$$$$$$$$$ ", rest);
 
 
   //
