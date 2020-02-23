@@ -33,17 +33,26 @@ const jwtClient = new google.auth.JWT({
 // ANCHOR Form Handler
 exports.formHandler = functions.https.onRequest(async (req, res) => {
 
+  let maxLength = {
+
+  }
   let formFields = await db.collection('formFields').get();
-  formFields.docs.map(doc => {
-    console.log("formFields doc #### ", doc);
-    console.log("formFields doc.data() #### ", doc.data());
-  });
+  for (const doc of formFields.docs) {
+    const hey = await doc.id;
+    maxLength[hey] = doc.data().maxLength;
+    console.log("Hey $$$$$$$$$$$$$$$$$$$$$$ ", hey);
+  }
+  console.log("maxLength ###### ", maxLength);
+//  formFields.docs.map(doc => {
+    //console.log("formFields doc #### ", doc);
+    //console.log("formFields doc.data() #### ", doc.data());
+  //});
 
   // Form submitted data
   // FIXME update so template data fields are dynamic based on template used
   let { app: appKey, template = 'contactDefault', webformId, ...rest } 
     = req.body; // template default 'contactForm' if not added in webform
-    console.log("these $$$$$$$$$$$$$$ ", rest);
+//    console.log("these $$$$$$$$$$$$$$ ", rest);
 
   // Form Fields Sanitize
   // trim whitespace and limit character count
