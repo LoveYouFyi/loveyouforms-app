@@ -131,7 +131,8 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
     });
 
 //    let maxRange = valueArray.length + 1;
-
+    let cells = valueArray.toString();
+    console.log("valueArray.toString() ###### ", valueArray.toString());
     // Do authorization
     await jwtClient.authorize();
     console.log("valueArray #### ", valueArray); 
@@ -163,24 +164,24 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
               },
               "inheritFromBefore": false
             }
-          },
-  //         {
-            //"pasteData": {
-            //"data": valueArray,
-            //"type": "PASTE_NORMAL",
-            //"delimiter": ",",
-            //"coordinate": {
-              //"sheetId": 1411125624,
-              //"rowIndex": 0,
-            //}
-            //}
-          //}
+          }
         ]
+      }
+    };
+    let insert = {
+      auth: jwtClient,
+      spreadsheetId: "1nOzYKj0Gr1zJPsZv-GhF00hUAJ2sTsCosMk4edJJ9nU",
+      range: "Firestore!A2:F2",
+      valueInputOption: "RAW",
+      insertDataOption: "INSERT_ROWS",
+      requestBody: {
+        values: valueArray
       }
     };
 
     // Update Google Sheets Data
     await sheets.spreadsheets.batchUpdate(request);
+    await sheets.spreadsheets.values.update(insert);
 
   }
   catch(err) {
