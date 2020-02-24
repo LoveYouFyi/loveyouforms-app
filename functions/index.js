@@ -146,24 +146,6 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
       }
     };
 
-    // Clear Data before Adding/Updating
-    /*
-    let reqClear = {
-      auth: jwtClient,
-      spreadsheetId: "1nOzYKj0Gr1zJPsZv-GhF00hUAJ2sTsCosMk4edJJ9nU",
-      range: "Firestore!A2:F10000"
-    };
-
-    await sheets.spreadsheets.values.clear(reqClear);
-    */
-    let exists = {
-      auth: jwtClient,
-      spreadsheetId: "1nOzYKj0Gr1zJPsZv-GhF00hUAJ2sTsCosMk4edJJ9nU",
-      range: "default!A1:Z1"
-    };
-    let sheetExists = (await sheets.spreadsheets.values.get(exists)).data;
-    console.log("Sheet Exists ##### ", sheetExists);
-
     // Update Google Sheets Data
     await sheets.spreadsheets.values.update(request, {});
 
