@@ -107,12 +107,14 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 
 
 // ANCHOR - Firestore To Sheets [Nested email template data]
-exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}').onWrite(async () => {
+exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}').onCreate(async () => {
   try {
 
     let valueArray = [];
     // FIXME update query to get only specific app's data
-    let snapshot = await db.collection('formSubmission').orderBy('createdDateTime', 'desc').get();
+//    let snapshot = await db.collection('formSubmission').orderBy('createdDateTime', 'desc').get();
+    let snapshot = await db.collection('formSubmission')
+      .orderBy('createdDateTime', 'desc').limit(1).get();
 
     snapshot.docs.map(doc => {
       // doc.data() is object -> { name: 'jax', email: 'jax@jax.com' }
@@ -128,7 +130,7 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
       return valueArray.push([createdDate, createdTime, name, email, phone, message]); 
     });
 
-    let maxRange = valueArray.length + 1;
+//    let maxRange = valueArray.length + 1;
 
     // Do authorization
     await jwtClient.authorize();
@@ -139,15 +141,16 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
     let request = {
       auth: jwtClient,
       spreadsheetId: "1nOzYKj0Gr1zJPsZv-GhF00hUAJ2sTsCosMk4edJJ9nU",
-      range: "Firestore!A2:F" + maxRange,
+      range: "Firestore!A2:F",
       valueInputOption: "RAW",
+      insertDataOption: "INSERT_ROWS",
       requestBody: {
         values: valueArray
       }
     };
 
     // Update Google Sheets Data
-    await sheets.spreadsheets.values.update(request, {});
+    await sheets.spreadsheets.values.append(request).data;
 
   }
   catch(err) {
