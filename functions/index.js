@@ -170,7 +170,16 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
         values: valueArray
       }
     };
-
+/*
+    // Check for Sheet name
+    let exists = {
+      auth: jwtClient,
+      spreadsheetId: "1nOzYKj0Gr1zJPsZv-GhF00hUAJ2sTsCosMk4edJJ9nU",
+      range: "default!A1:Z1"
+    };
+    let sheetExists = (await sheets.spreadsheets.values.get(exists)).data;
+    console.log("Sheet Exists ##### ", sheetExists);
+*/
     // Update Google Sheets Data
     await sheets.spreadsheets.batchUpdate(insertBlankRowAfterHeader);
     await sheets.spreadsheets.values.update(addRowDataAfterHeader);
@@ -180,6 +189,36 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
     // errors in 'errors' object, then map through errors array check for .message prop
     const errorMessage = err.errors.map(e => e.message);
     console.log("Error Message: ############# ", errorMessage);
+    // If true --> create sheet 
+    if (errorMessage[0].includes("Unable to parse range:")) {
+
+      const addSheet = {
+      auth: jwtClient,
+      spreadsheetId: "1nOzYKj0Gr1zJPsZv-GhF00hUAJ2sTsCosMk4edJJ9nU",
+      resource: {
+        requests: [
+          // following requires "..." otherwise function error
+          {
+            "addSheet": {
+              "properties": {
+                "title": "Default",
+                "gridProperties": {
+                  "rowCount": 1000,
+                  "columnCount": 26
+                },
+              }
+            } 
+          }
+        ]
+      }
+    };
+
+    await sheets.spreadsheets.batchUpdate(addSheet);
+    
+    
+      console.log("Got it ##############")
+    }
+
   }
 
 });
