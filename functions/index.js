@@ -110,10 +110,10 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}').onCreate(async () => {
   try {
 
-    let valueArray = [];
+    const valueArray = [];
     // FIXME update query to get only specific app's data
-//    let snapshot = await db.collection('formSubmission').orderBy('createdDateTime', 'desc').get();
-    let snapshot = await db.collection('formSubmission')
+    // get the last created form submission 
+    const snapshot = await db.collection('formSubmission')
       .orderBy('createdDateTime', 'desc').limit(1).get();
 
     snapshot.docs.map(doc => {
@@ -122,38 +122,29 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
       const { name, email, phone, message } = doc.data().template.data; 
       // date and time
       // FIXME get timezone from 'app' config so will post to excel
-      let createdDateTime = doc.data().createdDateTime.toDate(); // toDate() is firebase method
-      let createdDate = moment(createdDateTime).tz("America/New_York").format('L'); // Format date with moment.js
-      let createdTime = moment(createdDateTime).tz("America/New_York").format('h:mm A z');
+      const createdDateTime = doc.data().createdDateTime.toDate(); // toDate() is firebase method
+      const createdDate = moment(createdDateTime).tz("America/New_York").format('L'); // Format date with moment.js
+      const createdTime = moment(createdDateTime).tz("America/New_York").format('h:mm A z');
 
       // FIXME add default values so can use a single spreadsheet for all form results
       return valueArray.push([createdDate, createdTime, name, email, phone, message]); 
     });
 
-//    let maxRange = valueArray.length + 1;
-    let cells = valueArray.toString();
-    console.log("valueArray.toString() ###### ", valueArray.toString());
     // Do authorization
     await jwtClient.authorize();
     console.log("valueArray #### ", valueArray); 
     // Create Google Sheets request
-    // FIXME make dynamic 'spreadsheetId' - pull from app
+    // FIXME make dynamic 'spreadsheetId' - pull from app data
+    // FIXME make dynamic 'sheetId' - pull from app data
     // FIXME update 'range' to a generic spreadsheet tab name use for all apps
-    let request = {
+
+    // Insert Row
+    const insertBlankRowAfterHeader = {
       auth: jwtClient,
       spreadsheetId: "1nOzYKj0Gr1zJPsZv-GhF00hUAJ2sTsCosMk4edJJ9nU",
       resource: {
         requests: [
-  //        {
-
-  //          range: "Firestore!A2:F",
-  //          valueInputOption: "RAW",
-  //          insertDataOption: "INSERT_ROWS",
-  //         requestBody: {
-              //values: valueArray
-            //}
-  //        },
-          // New Thing
+          // following requires "..." otherwise function error
           {
             "insertDimension": {
               "range": {
@@ -168,25 +159,26 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
         ]
       }
     };
-    let insert = {
+
+    // Add row data
+    const addRowDataAfterHeader = {
       auth: jwtClient,
       spreadsheetId: "1nOzYKj0Gr1zJPsZv-GhF00hUAJ2sTsCosMk4edJJ9nU",
-      range: "Firestore!A2:F2",
+      range: "Firestore!A2",
       valueInputOption: "RAW",
-      insertDataOption: "INSERT_ROWS",
       requestBody: {
         values: valueArray
       }
     };
 
     // Update Google Sheets Data
-    await sheets.spreadsheets.batchUpdate(request);
-    await sheets.spreadsheets.values.update(insert);
+    await sheets.spreadsheets.batchUpdate(insertBlankRowAfterHeader);
+    await sheets.spreadsheets.values.update(addRowDataAfterHeader);
 
   }
   catch(err) {
     // errors in 'errors' object, then map through errors array check for .message prop
-    let errorMessage = err.errors.map(e => e.message);
+    const errorMessage = err.errors.map(e => e.message);
     console.log("Error Message: ############# ", errorMessage);
   }
 
