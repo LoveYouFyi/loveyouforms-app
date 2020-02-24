@@ -141,16 +141,46 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
     let request = {
       auth: jwtClient,
       spreadsheetId: "1nOzYKj0Gr1zJPsZv-GhF00hUAJ2sTsCosMk4edJJ9nU",
-      range: "Firestore!A2:F",
-      valueInputOption: "RAW",
-      insertDataOption: "INSERT_ROWS",
-      requestBody: {
-        values: valueArray
+      resource: {
+        requests: [
+  //        {
+
+  //          range: "Firestore!A2:F",
+  //          valueInputOption: "RAW",
+  //          insertDataOption: "INSERT_ROWS",
+  //         requestBody: {
+              //values: valueArray
+            //}
+  //        },
+          // New Thing
+          {
+            "insertDimension": {
+              "range": {
+                "sheetId": 1411125624,
+                "dimension": "ROWS",
+                "startIndex": 1,
+                "endIndex": 2
+              },
+              "inheritFromBefore": false
+            }
+          },
+  //         {
+            //"pasteData": {
+            //"data": valueArray,
+            //"type": "PASTE_NORMAL",
+            //"delimiter": ",",
+            //"coordinate": {
+              //"sheetId": 1411125624,
+              //"rowIndex": 0,
+            //}
+            //}
+          //}
+        ]
       }
     };
 
     // Update Google Sheets Data
-    await sheets.spreadsheets.values.append(request).data;
+    await sheets.spreadsheets.batchUpdate(request);
 
   }
   catch(err) {
