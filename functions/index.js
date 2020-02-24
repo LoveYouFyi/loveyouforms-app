@@ -171,11 +171,7 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
   catch(err) {
     // errors in 'errors' object, then map through errors array check for .message prop
     let errorMessage = err.errors.map(e => e.message);
-    console.log("result ############# ", errorMessage);
-    if (errorMessage[0].includes("Unable to parse range:")) {
-      console.log("Got it ##############")
-    }
-
+    console.log("Error Message: ############# ", errorMessage);
   }
 
 });
