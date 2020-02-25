@@ -70,13 +70,14 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
         // and assign to previously declared vars
         ( { name: appInfoName, url: appInfoUrl, from: appInfoFrom } 
            = doc.data().appInfo );
+        sanitizedData[appInfoName] = appInfoName;
+        sanitizedData[appInfoUrl] = appInfoUrl;
       }
     })
     .catch(err => {
       console.log('Error getting document', err);
     });
-  sanitizedData[appInfoName];
-  sanitizedData[appInfoUrl];
+
   // Build object to be saved to db
   let data = {
     // spread operator conditionally adds, otherwise function errors if not exist
