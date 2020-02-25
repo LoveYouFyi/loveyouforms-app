@@ -161,11 +161,14 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
       const created = createdDateTime.toDate(); // toDate() is firebase method
       const createdDate = moment(created).tz("America/New_York").format('L'); // Format date with moment.js
       const createdTime = moment(created).tz("America/New_York").format('h:mm A z');
-      templateData[createdDate];
-      templateData[createdTime];
+      templateData.createdDate = createdDate;
+      templateData.createdTime = createdTime;
       return;
 
     });
+    console.log("emailTemplateName 1) ################ ", emailTemplateName);
+    console.log("emailTemplateData 1) ################ ", emailTemplateData);
+    console.log("templateData 1) ################ ", templateData);
     //
     //
     //
