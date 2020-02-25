@@ -44,7 +44,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     maxLength[doc.id] = await doc.data().maxLength;
   }
   // trim whitespace and limit character count
-  let limit = (string, charCount) => string.trim().substr(0, charCount)
+  function limit(string, charCount) { return string.trim().substr(0, charCount) };
   appKey = limit(appKey, maxLength.appKey);
   template = limit(template, maxLength.template);
   webformId = limit(webformId, maxLength.webformId);
