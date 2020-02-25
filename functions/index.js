@@ -37,27 +37,6 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
   let { app: appKey, template = 'contactDefault', webformId, ...rest } 
     = req.body; // template default 'contactForm' if not added in webform
 
-  let templateData = {};
-
-  let emailTemplate = db.collection('emailTemplate').doc(template);
-  let emailFields = await emailTemplate.get()
-    .then(doc => {
-      if (!doc.exists) {
-        console.log('No such document!');
-      } else {
-        doc.data().templateData.map(f => {
-          return templateData[f] = f;
-        });
-        return doc.data().templateData;
-      }
-    })
-    .catch(err => {
-      console.log('Error getting document', err);
-    });
-
-  console.log("templateData ", templateData);
-  console.log("email fields $$$$$$$$$$$$$$$ ", emailFields);
-
   // Form Fields Sanitize
   let maxLength = {}
   let formFields = await db.collection('formFields').get();
@@ -92,15 +71,6 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       console.log('Error getting document', err);
     });
   
-  templateData.appInfoName = appInfoName;
-  templateData.appInfoUrl = appInfoUrl;
-  templateData.appInfoFrom = appInfoFrom;
-  templateData.name = name;
-  templateData.phone = phone;
-  templateData.email = email;
-  templateData.message = message;
-  console.log("templateData with real data $$$$$$$$$$$$$$$$$$ ", templateData);
-
   // Build object to be saved to db
   let data = {
     // spread operator conditionally adds, otherwise function errors if not exist
