@@ -140,6 +140,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}').onCreate(async () => {
   try {
 
+    let templateData = {};
 
     const valueArray = [];
     // FIXME update query to get only specific app's data
@@ -147,29 +148,27 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
     const formSubmission = await db.collection('formSubmission')
       .orderBy('createdDateTime', 'desc').limit(1).get();
     let emailTemplateName;
+    let emailTemplateData;
+    
     formSubmission.docs.map(doc => {
       // doc.data() is object -> { name: 'jax', email: 'jax@jax.com' }
       // FIXME add default values so can use a single spreadsheet for all form results
       let { createdDateTime, template: { data: { ...rest }, name: templateName  } } = doc.data(); 
       emailTemplateName = templateName;
+      emailTemplateData = rest;
       // date and time
       // FIXME get timezone from 'app' config so will post to excel
       const created = createdDateTime.toDate(); // toDate() is firebase method
       const createdDate = moment(created).tz("America/New_York").format('L'); // Format date with moment.js
       const createdTime = moment(created).tz("America/New_York").format('h:mm A z');
-      rest.createdDate = createdDate;
-      rest.createdTime = createdTime;
-      rest = Object.values(rest);
-//      const myObject = { createdDate, createdTime, rest };
-      console.log("Rest $$$$$$$$$$$$$$$$ ", rest);
+      templateData[createdDate];
+      templateData[createdTime];
+      return;
 
-      // FIXME add default values so can use a single spreadsheet for all form results
-      return valueArray.push( rest ); 
     });
     //
     //
     //
-    let templateData = {};
 
     let emailTemplate = db.collection('emailTemplate').doc(emailTemplateName);
     let emailFields = await emailTemplate.get()
@@ -180,6 +179,7 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
           doc.data().templateData.map(f => {
             return templateData[f] = f;
           });
+
           return doc.data().templateData;
         }
       })
@@ -189,6 +189,15 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
 
     console.log("templateData ", templateData);
     console.log("email fields $$$$$$$$$$$$$$$ ", emailFields);
+
+    templateData[emailTemplateData];
+    console.log("templateData ALL ******************* ", templateData);
+    
+    // Object to valueArray
+    templateData = Object.values(templateData);
+    console.log("Rest $$$$$$$$$$$$$$$$ ", templateData);
+    valueArray.push( templateData ); 
+
     //
     //
     //
