@@ -37,24 +37,26 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
   let { app: appKey, template = 'contactDefault', webformId, ...rest } 
     = req.body; // template default 'contactForm' if not added in webform
 
-  let fieldsMax = {};
-  function limit(string, charCount) { return string.trim().substr(0, charCount) };
+  // Sanitize data
+  let sanitizedData = {};
+  function sanitize(string, charCount) { return string.trim().substr(0, charCount) };
 
   let formFields = await db.collection('formFields').get();
   for (const doc of formFields.docs) {
     let maxLength = await doc.data().maxLength;
+    // first check if field exists in req.body ...rest
     if (rest[doc.id]) {
-      let string = limit(rest[doc.id], maxLength);
-      fieldsMax[doc.id] = string;
+      let string = sanitize(rest[doc.id], maxLength);
+      sanitizedData[doc.id] = string;
     } else if (doc.id == 'appKey') {
-      appKey = limit(appKey, maxLength);
+      appKey = sanitize(appKey, maxLength);
     } else if (doc.id == 'template') {
-      template = limit(template, maxLength);
+      template = sanitize(template, maxLength);
     } else if (doc.id == 'webformId') {
-      webformId = limit(webformId, maxLength);
+      webformId = sanitize(webformId, maxLength);
     }
   }
-  console.log("fieldsMax $$$$$$$$$$$$$$$$$$ ", fieldsMax);
+  console.log("sanitizedData $$$$$$$$$$$$$$$$$$ ", sanitizedData);
 
   // App identifying info
   let appInfoName, appInfoUrl, appInfoFrom;
@@ -73,8 +75,8 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     .catch(err => {
       console.log('Error getting document', err);
     });
-  fieldsMax[appInfoName];
-  fieldsMax[appInfoUrl];
+  sanitizedData[appInfoName];
+  sanitizedData[appInfoUrl];
   // Build object to be saved to db
   let data = {
     // spread operator conditionally adds, otherwise function errors if not exist
@@ -83,11 +85,11 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     createdDateTime: FieldValue.serverTimestamp(),
     ...appInfoFrom && { from: appInfoFrom }, // from: app.(appKey).appInfo.from
     toUids: [ appKey ], // to: app.(appKey).email
-    ...fieldsMax.email && {replyTo: fieldsMax.email}, // webform
+    ...sanitizedData.email && {replyTo: sanitizedData.email}, // webform
     ...webformId && { webformId }, // webform
     template: {
       name: template,
-      data: fieldsMax,
+      data: sanitizedData,
 
       //{
 //        ...appInfoName && { appInfoName }, // app.(appKey).appInfo.name
