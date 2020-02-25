@@ -139,20 +139,17 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 // ANCHOR - Firestore To Sheets [Nested email template data]
 exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}').onCreate(async () => {
   try {
-
+    // Build templateData object with properties sort-ordered for sheets template
     let templateData = {};
+    let emailTemplateName;
+    let emailTemplateData;
 
-    const valueArray = [];
     // FIXME update query to get only specific app's data
     // get the last created form submission 
     const formSubmission = await db.collection('formSubmission')
       .orderBy('createdDateTime', 'desc').limit(1).get();
-    let emailTemplateName;
-    let emailTemplateData;
-    
     formSubmission.docs.map(doc => {
       // doc.data() is object -> { name: 'jax', email: 'jax@jax.com' }
-      // FIXME add default values so can use a single spreadsheet for all form results
       let { createdDateTime, template: { data: { ...rest }, name: templateName  } } = doc.data(); 
       emailTemplateName = templateName;
       emailTemplateData = rest;
@@ -166,46 +163,32 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
       return;
 
     });
-    console.log("emailTemplateName 1) ################ ", emailTemplateName);
-    console.log("emailTemplateData 1) ################ ", emailTemplateData);
-    console.log("templateData 1) ################ ", templateData);
-    //
-    //
-    //
 
-    let emailTemplate = db.collection('emailTemplate').doc(emailTemplateName);
-    let emailFields = await emailTemplate.get()
+    // Sort-ordered emailTemplate fields add to templateData{}
+    await db.collection('emailTemplate').doc(emailTemplateName).get()
       .then(doc => {
         if (!doc.exists) {
-          console.log('No such document!');
+          console.log('No such email template name!');
         } else {
           doc.data().templateData.map(f => {
             return templateData[f] = f;
           });
-
-          return doc.data().templateData;
         }
       })
       .catch(err => {
-        console.log('Error getting document', err);
+        console.log('Error getting email template name!', err);
       });
-
-    console.log("templateData ", templateData);
-    console.log("email fields $$$$$$$$$$$$$$$ ", emailFields);
-
-    templateData[emailTemplateData];
-    console.log("templateData ALL ******************* ", templateData);
-    
-    // Object to valueArray
+      
+    // Update templateData{} sort-ordered emailTemplate props with data values
+    Object.assign(templateData, emailTemplateData);
+    // Object to array because valueArray needs to contain another array
     templateData = Object.values(templateData);
-    console.log("Rest $$$$$$$$$$$$$$$$ ", templateData);
-    valueArray.push( templateData ); 
+    // Sheets Row Data to add ... valueArray: [[ date, time, ... ]]
+    const valueArray = [( templateData )];
+    //
+    ////////////////////////////////////////////////////////////////////////////
 
-    //
-    //
-    //
-
-    // Do authorization
+    // Authorization
     await jwtClient.authorize();
     console.log("valueArray #### ", valueArray); 
     // Create Google Sheets request
