@@ -170,7 +170,7 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
         values: valueArray
       }
     };
-/*
+
     // Check for Sheet name
     let exists = {
       auth: jwtClient,
@@ -179,7 +179,7 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
     };
     let sheetExists = (await sheets.spreadsheets.values.get(exists)).data;
     console.log("Sheet Exists ##### ", sheetExists);
-*/
+
     // Update Google Sheets Data
     await sheets.spreadsheets.batchUpdate(insertBlankRowAfterHeader);
     await sheets.spreadsheets.values.update(addRowDataAfterHeader);
@@ -213,10 +213,10 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
       }
     };
 
-    await sheets.spreadsheets.batchUpdate(addSheet);
+    let gotIt = await sheets.spreadsheets.batchUpdate(addSheet);
     
     
-      console.log("Got it ##############")
+      console.log("Got it ##############", gotIt);
     }
 
   }
