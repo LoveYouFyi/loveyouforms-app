@@ -91,6 +91,15 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     .catch(err => {
       console.log('Error getting document', err);
     });
+  
+  templateData.appInfoName = appInfoName;
+  templateData.appInfoUrl = appInfoUrl;
+  templateData.appInfoFrom = appInfoFrom;
+  templateData.name = name;
+  templateData.phone = phone;
+  templateData.email = email;
+  templateData.message = message;
+  console.log("templateData with real data $$$$$$$$$$$$$$$$$$ ", templateData);
 
   // Build object to be saved to db
   let data = {
@@ -131,16 +140,18 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}').onCreate(async () => {
   try {
 
+
     const valueArray = [];
     // FIXME update query to get only specific app's data
     // get the last created form submission 
-    const snapshot = await db.collection('formSubmission')
+    const formSubmission = await db.collection('formSubmission')
       .orderBy('createdDateTime', 'desc').limit(1).get();
-
-    snapshot.docs.map(doc => {
+    let emailTemplateName;
+    formSubmission.docs.map(doc => {
       // doc.data() is object -> { name: 'jax', email: 'jax@jax.com' }
       // FIXME add default values so can use a single spreadsheet for all form results
-      let { createdDateTime, template: { data: { ...rest } } } = doc.data(); 
+      let { createdDateTime, template: { data: { ...rest }, name: templateName  } } = doc.data(); 
+      emailTemplateName = templateName;
       // date and time
       // FIXME get timezone from 'app' config so will post to excel
       const created = createdDateTime.toDate(); // toDate() is firebase method
@@ -155,6 +166,32 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
       // FIXME add default values so can use a single spreadsheet for all form results
       return valueArray.push( rest ); 
     });
+    //
+    //
+    //
+    let templateData = {};
+
+    let emailTemplate = db.collection('emailTemplate').doc(emailTemplateName);
+    let emailFields = await emailTemplate.get()
+      .then(doc => {
+        if (!doc.exists) {
+          console.log('No such document!');
+        } else {
+          doc.data().templateData.map(f => {
+            return templateData[f] = f;
+          });
+          return doc.data().templateData;
+        }
+      })
+      .catch(err => {
+        console.log('Error getting document', err);
+      });
+
+    console.log("templateData ", templateData);
+    console.log("email fields $$$$$$$$$$$$$$$ ", emailFields);
+    //
+    //
+    //
 
     // Do authorization
     await jwtClient.authorize();
@@ -213,6 +250,7 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
   }
   catch(err) {
     // errors in 'errors' object, then map through errors array check for .message prop
+    console.log("err $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", err);
     const errorMessage = err.errors.map(e => e.message);
     console.log("Error Message: ############# ", errorMessage);
     // If true --> create sheet 
