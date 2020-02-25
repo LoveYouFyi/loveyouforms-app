@@ -193,45 +193,37 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
     if (errorMessage[0].includes("Unable to parse range:")) {
 
       const addSheet = {
-      auth: jwtClient,
-      spreadsheetId: "1nOzYKj0Gr1zJPsZv-GhF00hUAJ2sTsCosMk4edJJ9nU",
-      resource: {
-        requests: [
-          // following requires "..." otherwise function error
-          {
-            "addSheet": {
-              "properties": {
-                "title": "Default",
-                "gridProperties": {
-                  "rowCount": 1000,
-                  "columnCount": 26
-                },
-              }
-            } 
-          }
-        ]
-      }
-    };
+        auth: jwtClient,
+        spreadsheetId: "1nOzYKj0Gr1zJPsZv-GhF00hUAJ2sTsCosMk4edJJ9nU",
+        resource: {
+          requests: [
+            // following requires "..." otherwise function error
+            {
+              "addSheet": {
+                "properties": {
+                  "title": "Default",
+                  "gridProperties": {
+                    "rowCount": 1000,
+                    "columnCount": 26
+                  },
+                }
+              } 
+            }
+          ]
+        }
+      };
 
-    let gotIt = await sheets.spreadsheets.batchUpdate(addSheet);
-    
-    
-      console.log("Got it ##############", gotIt);
-      console.log("Got it KEYS ##############", Object.keys(gotIt));
-
-      console.log("Got it DATA ##############", gotIt.data);
-      console.log("Got it DATA  SHEET ID ##############", gotIt.data.replies[0].addSheet.properties.sheetId);
-      let getData = gotIt.data.replies.map(d => {
-        console.log("Hello Data ????????????????? ", d.addSheet.properties.sheetId);
-        return d.addSheet.properties.sheetId;
-      });
-      console.log("getData $$$$$$$$$$$$$$$$$$ ", getData);
-
-      console.log("Got it DATA ##############", JSON.stringify(gotIt.data, null, 3));
-
-      console.log("Got it DATA KEYS ##############", Object.keys(gotIt.data));
-
-
+      // newSheet returns 'data' object with properties:
+      // spreadsheetId
+      // replies[0].addSheet.properties (sheetId, title, index, sheetType, gridProperties { rowCount, columnCount }
+      let newSheet = await sheets.spreadsheets.batchUpdate(addSheet);
+      // add newSheet data to object
+      let newSheetProps = {};
+      newSheetProps.spreadsheetId = newSheet.data.spreadsheetId;
+      newSheet.data.replies.map(reply => newSheetProps.addSheet = reply.addSheet); 
+      console.log("newSheetProps $$$$$$$$$ ", newSheetProps);
+      let newSheetId = newSheetProps.addSheet.properties.sheetId;
+      console.log("newSheetId $$$$$$$$$$$$ ", newSheetId);
     }
 
   }
