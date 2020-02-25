@@ -217,6 +217,16 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
     
     
       console.log("Got it ##############", gotIt);
+      console.log("Got it KEYS ##############", Object.keys(gotIt));
+
+      console.log("Got it DATA ##############", gotIt.data);
+      console.log("Got it DATA  SHEET ID ##############", gotIt.data.replies[0].addSheet.properties.sheetId);
+      console.log("Got it DATA ##############", JSON.stringify(gotIt.data, null, 3));
+
+      console.log("Got it CONFIG KEYS ##############", Object.keys(gotIt.config));
+      console.log("Got it DATA KEYS ##############", Object.keys(gotIt.data));
+
+
     }
 
   }
