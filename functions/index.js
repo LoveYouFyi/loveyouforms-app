@@ -37,6 +37,8 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
   let { app: appKey, template = 'contactDefault', webformId, ...rest } 
     = req.body; // template default 'contactForm' if not added in webform
 
+  let templateData = {};
+
   let emailTemplate = db.collection('emailTemplate').doc(template);
   let emailFields = await emailTemplate.get()
     .then(doc => {
@@ -50,6 +52,13 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     .catch(err => {
       console.log('Error getting document', err);
     });
+  
+  let these = emailFields.map(f => {
+    return templateData[f] = f;
+  });
+
+  console.log("templateData ", templateData);
+  console.log("these ", these);
 
   console.log("email template $$$$$$$$$$$$$$$ ", emailTemplate);
   console.log("email fields $$$$$$$$$$$$$$$ ", emailFields);
