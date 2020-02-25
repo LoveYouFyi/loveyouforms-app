@@ -54,9 +54,6 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       let string = limit(rest[doc.id], maxLength);
       fieldsMax[doc.id] = string;
     }
-//    fieldsMax[doc.id] = rest[doc.id] ?  : undefined;
-//    fieldsMax[doc.id] = limit(rest[doc.id], maxLength);
- 
   }
   console.log("fieldsMax $$$$$$$$$$$$$$$$$$ ", fieldsMax);
 
@@ -87,7 +84,8 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     .catch(err => {
       console.log('Error getting document', err);
     });
-  
+  fieldsMax[appInfoName];
+  fieldsMax[appInfoUrl];
   // Build object to be saved to db
   let data = {
     // spread operator conditionally adds, otherwise function errors if not exist
@@ -96,18 +94,21 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     createdDateTime: FieldValue.serverTimestamp(),
     ...appInfoFrom && { from: appInfoFrom }, // from: app.(appKey).appInfo.from
     toUids: [ appKey ], // to: app.(appKey).email
-    ...email && {replyTo: email}, // webform
+    ...fieldsMax.email && {replyTo: fieldsMax.email}, // webform
     ...webformId && { webformId }, // webform
     template: {
       name: template,
-      data: {
-        ...appInfoName && { appInfoName }, // app.(appKey).appInfo.name
-        ...appInfoUrl && { appInfoUrl }, // app.(appKey).appinfo.url
-        ...name && { name }, // webform
-        ...phone && { phone }, // webform
-        ...email &&  { email }, // webform
-        ...message && { message } // webform
-      }
+      data: fieldsMax,
+
+      //{
+//        ...appInfoName && { appInfoName }, // app.(appKey).appInfo.name
+        //...appInfoUrl && { appInfoUrl }, // app.(appKey).appinfo.url
+        //...name && { name }, // webform
+        //...phone && { phone }, // webform
+        //...email &&  { email }, // webform
+        //...message && { message } // webform
+
+ //     }
     }
   };
 
