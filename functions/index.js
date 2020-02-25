@@ -90,17 +90,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     ...webformId && { webformId }, // webform
     template: {
       name: template,
-      data: sanitizedData,
-
-      //{
-//        ...appInfoName && { appInfoName }, // app.(appKey).appInfo.name
-        //...appInfoUrl && { appInfoUrl }, // app.(appKey).appinfo.url
-        //...name && { name }, // webform
-        //...phone && { phone }, // webform
-        //...email &&  { email }, // webform
-        //...message && { message } // webform
-
- //     }
+      data: sanitizedData
     }
   };
 
