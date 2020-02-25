@@ -45,26 +45,18 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       if (!doc.exists) {
         console.log('No such document!');
       } else {
-        console.log('Document data:', doc.data().templateData);
+        doc.data().templateData.map(f => {
+          return templateData[f] = f;
+        });
         return doc.data().templateData;
       }
     })
     .catch(err => {
       console.log('Error getting document', err);
     });
-  
-  let these = emailFields.map(f => {
-    return templateData[f] = f;
-  });
 
   console.log("templateData ", templateData);
-  console.log("these ", these);
-
-  console.log("email template $$$$$$$$$$$$$$$ ", emailTemplate);
   console.log("email fields $$$$$$$$$$$$$$$ ", emailFields);
-
-  //let templateFields = emailTemplate.templateData.map(e => console.log("Array Item $$$$$$ ", e));
-  //console.log("templateFields $$$$$$$$$$$$$$$ ", templateFields);
 
   // Form Fields Sanitize
   let maxLength = {}
