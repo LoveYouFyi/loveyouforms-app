@@ -37,35 +37,24 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
   let { app: appKey, template = 'contactDefault', webformId, ...rest } 
     = req.body; // template default 'contactForm' if not added in webform
 
-  let formFields = await db.collection('formFields').get();
-  // Form Fields Sanitize
-  let maxLength = {}
-  for (const doc of formFields.docs) {
-    maxLength[doc.id] = await doc.data().maxLength;
-  }
-  ////////////////////////////////////
-  console.log("maxLength object $$$$$$$$$$$$$$$ ", maxLength);
+  let fieldsMax = {};
   function limit(string, charCount) { return string.trim().substr(0, charCount) };
 
-  let fieldsMax = {};
+  let formFields = await db.collection('formFields').get();
   for (const doc of formFields.docs) {
     let maxLength = await doc.data().maxLength;
     if (rest[doc.id]) {
       let string = limit(rest[doc.id], maxLength);
       fieldsMax[doc.id] = string;
+    } else if (doc.id == 'appKey') {
+      appKey = limit(appKey, maxLength);
+    } else if (doc.id == 'template') {
+      template = limit(template, maxLength);
+    } else if (doc.id == 'webformId') {
+      webformId = limit(webformId, maxLength);
     }
   }
   console.log("fieldsMax $$$$$$$$$$$$$$$$$$ ", fieldsMax);
-
-  // trim whitespace and limit character count
-  function limit(string, charCount) { return string.trim().substr(0, charCount) };
-  appKey = limit(appKey, maxLength.appKey);
-  template = limit(template, maxLength.template);
-  webformId = limit(webformId, maxLength.webformId);
-  let name = rest.name ? limit(rest.name, maxLength.name) : undefined;
-  let phone = rest.phone ? limit(rest.phone, maxLength.phone) : undefined;
-  let email = rest.email ? limit(rest.email, maxLength.email) : undefined;
-  let message = rest.message ? limit(rest.message, maxLength.message) : undefined;
 
   // App identifying info
   let appInfoName, appInfoUrl, appInfoFrom;
