@@ -37,12 +37,29 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
   let { app: appKey, template = 'contactDefault', webformId, ...rest } 
     = req.body; // template default 'contactForm' if not added in webform
 
+  let formFields = await db.collection('formFields').get();
   // Form Fields Sanitize
   let maxLength = {}
-  let formFields = await db.collection('formFields').get();
   for (const doc of formFields.docs) {
     maxLength[doc.id] = await doc.data().maxLength;
   }
+  ////////////////////////////////////
+  console.log("maxLength object $$$$$$$$$$$$$$$ ", maxLength);
+  function limit(string, charCount) { return string.trim().substr(0, charCount) };
+
+  let fieldsMax = {};
+  for (const doc of formFields.docs) {
+    let maxLength = await doc.data().maxLength;
+    if (rest[doc.id]) {
+      let string = limit(rest[doc.id], maxLength);
+      fieldsMax[doc.id] = string;
+    }
+//    fieldsMax[doc.id] = rest[doc.id] ?  : undefined;
+//    fieldsMax[doc.id] = limit(rest[doc.id], maxLength);
+ 
+  }
+  console.log("fieldsMax $$$$$$$$$$$$$$$$$$ ", fieldsMax);
+
   // trim whitespace and limit character count
   function limit(string, charCount) { return string.trim().substr(0, charCount) };
   appKey = limit(appKey, maxLength.appKey);
