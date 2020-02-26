@@ -118,21 +118,21 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
     // get the last created form submission 
     const formSubmission = await db.collection('formSubmission')
       .orderBy('createdDateTime', 'desc').limit(1).get();
-    formSubmission.docs.map(doc => {
-      // doc.data() is object -> { name: 'jax', email: 'jax@jax.com' }
-      let { createdDateTime, template: { data: { ...rest }, name: templateName  } } = doc.data(); 
-      emailTemplateName = templateName;
-      emailTemplateData = rest;
-      // date and time
-      // FIXME get timezone from 'app' config so will post to excel
-      const created = createdDateTime.toDate(); // toDate() is firebase method
-      const createdDate = moment(created).tz("America/New_York").format('L'); // Format date with moment.js
-      const createdTime = moment(created).tz("America/New_York").format('h:mm A z');
-      templateData.createdDate = createdDate;
-      templateData.createdTime = createdTime;
-      return;
+      formSubmission.docs.map(doc => {
+        // doc.data() is object -> { name: 'jax', email: 'jax@jax.com' }
+        let { createdDateTime, template: { data: { ...rest }, name: templateName  } } = doc.data(); 
+        emailTemplateName = templateName;
+        emailTemplateData = rest;
+        // date and time
+        // FIXME get timezone from 'app' config so will post to excel
+        const created = createdDateTime.toDate(); // toDate() is firebase method
+        const createdDate = moment(created).tz("America/New_York").format('L'); // Format date with moment.js
+        const createdTime = moment(created).tz("America/New_York").format('h:mm A z');
+        templateData.createdDate = createdDate;
+        templateData.createdTime = createdTime;
+        return;
 
-    });
+      });
 
     // Sort-ordered emailTemplate fields add to templateData{}
     await db.collection('emailTemplate').doc(emailTemplateName).get()
@@ -141,7 +141,7 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
           console.log('No such email template name!');
         } else {
           doc.data().templateData.map(f => {
-            return templateData[f] = f;
+            return templateData[f] = ""; // add prop name + empty string value
           });
         }
       })
