@@ -108,22 +108,30 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 
 // ANCHOR - Firestore To Sheets [Nested email template data]
 exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}').onCreate(async () => {
-  try {
-    // Build templateData object with properties sort-ordered for sheets template
-    let templateData = {};
-    let emailTemplateName;
-    let emailTemplateData;
+  
+  let templateData = {}; // will contain data row to be submitted to sheet
+  let emailTemplateName;
+  let emailTemplateData;
+  let appKeySubmitted; // use in submit data
+  let spreadsheetId; // use in both try and catch so declare here
+  let sheetId;
 
-    // FIXME update query to get only specific app's data
-    // get the last created form submission 
+  try {
+    /**
+    * Prepare Data Row 
+    */
+
+    // Get last form submission 
     const formSubmission = await db.collection('formSubmission')
       .orderBy('createdDateTime', 'desc').limit(1).get();
       formSubmission.docs.map(doc => {
         // doc.data() is object -> { name: 'jax', email: 'jax@jax.com' }
-        let { createdDateTime, template: { data: { ...rest }, name: templateName  }, webformId } = doc.data(); 
+        let { appKey, createdDateTime, template: { data: { ...rest }, name: templateName  }, webformId } = doc.data(); 
         // For building sort-ordered object that is turned into sheet data-row
         emailTemplateName = templateName;
         emailTemplateData = rest;
+        // appkey to query 'spreadsheet' object info
+        appKeySubmitted = appKey;
         // date and time
         // FIXME get timezone from 'app' config so will post to excel
         const created = createdDateTime.toDate(); // toDate() is firebase method
@@ -137,7 +145,7 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
         return;
       });
 
-    // Sort-ordered emailTemplate fields add to templateData{}
+    // Get emailTemplate fields by sort-order
     await db.collection('emailTemplate').doc(emailTemplateName).get()
       .then(doc => {
         if (!doc.exists) {
@@ -158,8 +166,29 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
     templateData = Object.values(templateData);
     // Sheets Row Data to add ... valueArray: [[ date, time, ... ]]
     const valueArray = [( templateData )];
-    //
-    ////////////////////////////////////////////////////////////////////////////
+
+    /**
+    * Submit Data Row 
+    */
+    // FIXME update query to get only specific app's data
+
+    await db.collection('app').doc(appKeySubmitted).get()
+      .then(doc => {
+        if (!doc.exists) {
+          console.log('No such email template name!');
+        } else {
+          spreadsheetId = doc.data().spreadsheet.id;
+          console.log("spreadsheetId $$$$$$$$$$$$ ", spreadsheetId);
+          sheetId = doc.data().spreadsheet.sheetId[emailTemplateName];
+          console.log("sheetId $$$$$$$$$$$$ ", sheetId);
+
+        }
+      })
+      .catch(err => {
+        console.log('Error getting email template name!', err);
+      });
+    console.log("emailTemplateName, spreadsheetId & sheetId $$$$$$$$$$$$ ", emailTemplateName, spreadsheetId, sheetId);
+
 
     // Authorization
     await jwtClient.authorize();
@@ -172,14 +201,14 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
     // Insert Row
     const insertBlankRowAfterHeader = {
       auth: jwtClient,
-      spreadsheetId: "1nOzYKj0Gr1zJPsZv-GhF00hUAJ2sTsCosMk4edJJ9nU",
+      spreadsheetId: spreadsheetId,
       resource: {
         requests: [
           // following requires "..." otherwise function error
           {
             "insertDimension": {
               "range": {
-                "sheetId": 1411125624,
+                "sheetId": sheetId,
                 "dimension": "ROWS",
                 "startIndex": 1,
                 "endIndex": 2
@@ -194,8 +223,9 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
     // Add row data
     const addRowDataAfterHeader = {
       auth: jwtClient,
-      spreadsheetId: "1nOzYKj0Gr1zJPsZv-GhF00hUAJ2sTsCosMk4edJJ9nU",
-      range: "Firestore!A2",
+      spreadsheetId: spreadsheetId,
+      range: `${emailTemplateName}!A2`,
+//      range: "Firestore!A2",
       valueInputOption: "RAW",
       requestBody: {
         values: valueArray
@@ -205,7 +235,7 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
     // Check for Sheet name
     let exists = {
       auth: jwtClient,
-      spreadsheetId: "1nOzYKj0Gr1zJPsZv-GhF00hUAJ2sTsCosMk4edJJ9nU",
+      spreadsheetId: spreadsheetId,
       range: "default!A1:Z1"
     };
     let sheetExists = (await sheets.spreadsheets.values.get(exists)).data;
@@ -226,7 +256,7 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
 
       const addSheet = {
         auth: jwtClient,
-        spreadsheetId: "1nOzYKj0Gr1zJPsZv-GhF00hUAJ2sTsCosMk4edJJ9nU",
+        spreadsheetId: spreadsheetId,
         resource: {
           requests: [
             // following requires "..." otherwise function error
