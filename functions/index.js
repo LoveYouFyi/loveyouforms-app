@@ -116,6 +116,7 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
   let spreadsheetId; // use in both try and catch so declare here
   let sheetId;
   let sheetHeader;
+  let rowDataInsert;
 
   try {
     /**
@@ -192,38 +193,7 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
     // Authorize with google sheets
     await jwtClient.authorize();
  
-    // Check for Sheet name
-    let exists = {
-      auth: jwtClient,
-      spreadsheetId: spreadsheetId,
-      range: `${emailTemplateName}!A2`, // e.g. "contactDefault!A2"
-    };
-    let sheetExists = (await sheets.spreadsheets.values.get(exists)).data;
-    console.log("Sheet Exists ##### ", sheetExists);
-   
-    // Insert blank row
-    const insertBlankRowAfterHeader = {
-      auth: jwtClient,
-      spreadsheetId: spreadsheetId,
-      resource: {
-        requests: [
-          // following requires "..." otherwise function error
-          {
-            "insertDimension": {
-              "range": {
-                "sheetId": sheetId,
-                "dimension": "ROWS",
-                "startIndex": 1,
-                "endIndex": 2
-              },
-              "inheritFromBefore": false
-            }
-          }
-        ]
-      }
-    };
-
-    // Add row data
+    // Add row data request defined
     const addRowDataAfterHeader = {
       auth: jwtClient,
       spreadsheetId: spreadsheetId,
@@ -234,9 +204,122 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
       }
     };
 
-    // Update Google Sheets Data
-    await sheets.spreadsheets.batchUpdate(insertBlankRowAfterHeader);
-    await sheets.spreadsheets.values.update(addRowDataAfterHeader);
+    // Check for Sheet name
+    const exists = {
+      auth: jwtClient,
+      spreadsheetId: spreadsheetId,
+      range: `${emailTemplateName}!A2`, // e.g. "contactDefault!A2"
+    };
+ 
+    // Insert blank row
+    const insertBlankRowAfterHeader = sheetIdMe => ({
+      auth: jwtClient,
+      spreadsheetId: spreadsheetId,
+      resource: {
+        requests: [
+          // following requires "..." otherwise function error
+          {
+            "insertDimension": {
+              "range": {
+                "sheetId": sheetIdMe,
+                "dimension": "ROWS",
+                "startIndex": 1,
+                "endIndex": 2
+              },
+              "inheritFromBefore": false
+            }
+          }
+        ]
+      }
+    });
+
+    const sheetName = {
+      auth: jwtClient,
+      spreadsheetId: spreadsheetId,
+      includeGridData: false
+    };
+
+    var sheet = await sheets.spreadsheets.get(sheetName);
+    console.log("Sheet Data ??????????????????????????????? ", sheet.data);
+    console.log("Sheet Data Sheets ??????????????????????????????? ", sheet.data.sheets);
+
+    let sheetNameExists = sheet.data.sheets.find(e => {
+      return e.properties.title === emailTemplateName;
+    });
+    console.log("sheetNames $$$$$$$$$$$$$$$$$$$$$$$$$$$ ", sheetNameExists);
+
+//    let sheetExists = (await sheets.spreadsheets.values.get(exists)).data;
+    //console.log("Sheet Exists $$$$$$$$$$$$$$$$$$$$$$$$$$$ ", sheetExists);
+
+    if (sheetNameExists) {
+      // Update Google Sheets Data
+      await sheets.spreadsheets.batchUpdate(insertBlankRowAfterHeader(sheetId));
+      await sheets.spreadsheets.values.update(addRowDataAfterHeader);
+    } else {
+      /**
+       * Create new sheet if does not exist and add header row
+       */
+      
+  //    if (errorMessage[0].includes("Unable to parse range:")) {
+
+        // Add sheet
+        const addSheet = {
+          auth: jwtClient,
+          spreadsheetId: spreadsheetId,
+          resource: {
+            requests: [
+              // following requires "..." otherwise function error
+              {
+                "addSheet": {
+                  "properties": {
+                    "title": emailTemplateName,
+                    "gridProperties": {
+                      "rowCount": 1000,
+                      "columnCount": 26
+                    },
+                  }
+                } 
+              }
+            ]
+          }
+        };
+
+        let newSheet = await sheets.spreadsheets.batchUpdate(addSheet);
+
+        // Get new sheetId and add to app spreadsheet info
+        // newSheet returns 'data' object with properties:
+        // prop: spreadsheetId
+        // prop: replies[0].addSheet.properties (sheetId, title, index, sheetType, gridProperties { rowCount, columnCount }
+        // Map replies array array to get sheetId
+        let newSheetProps = {};
+        newSheet.data.replies.map(reply => newSheetProps.addSheet = reply.addSheet); 
+        let newSheetId = newSheetProps.addSheet.properties.sheetId;
+
+        // Add new sheetId to app spreadsheet info
+        db.collection('app').doc(appKeySubmitted).update({
+            ['spreadsheet.sheetId.' + emailTemplateName]: newSheetId
+        });
+
+        // Add header row
+        const addHeaderRow = {
+          auth: jwtClient,
+          spreadsheetId: spreadsheetId,
+          range: `${emailTemplateName}!A1`, // e.g. "contactDefault!A2"
+          valueInputOption: "RAW",
+          requestBody: {
+            values: sheetHeader
+          }
+        };
+        console.log("rowDataInsert 2 $$$$$$$$$$$$$$$$$$ ", rowDataInsert);
+        // Add Header row
+        await sheets.spreadsheets.values.update(addHeaderRow);
+        // Add blank row new sheetId
+        console.log("New Sheet Id 888888888888888888888888888888888 ", newSheetId);
+        await sheets.spreadsheets.batchUpdate(insertBlankRowAfterHeader(newSheetId));
+        // Add data row initially attempted prior to new sheet being added
+        await sheets.spreadsheets.values.update(addRowDataAfterHeader);
+
+    } // end 'else' add new sheet
 
   }
   catch(err) {
@@ -245,64 +328,6 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
     const errorMessage = err.errors.map(e => e.message);
     console.log("Error Message: ############# ", errorMessage);
 
-   /**
-   * Create new sheet if does not exist and add header row
-   */
-    
-    if (errorMessage[0].includes("Unable to parse range:")) {
-
-      // Add sheet
-      const addSheet = {
-        auth: jwtClient,
-        spreadsheetId: spreadsheetId,
-        resource: {
-          requests: [
-            // following requires "..." otherwise function error
-            {
-              "addSheet": {
-                "properties": {
-                  "title": emailTemplateName,
-                  "gridProperties": {
-                    "rowCount": 1000,
-                    "columnCount": 26
-                  },
-                }
-              } 
-            }
-          ]
-        }
-      };
-
-      let newSheet = await sheets.spreadsheets.batchUpdate(addSheet);
-
-      // Get new sheetId and add to app spreadsheet info
-      // newSheet returns 'data' object with properties:
-      // prop: spreadsheetId
-      // prop: replies[0].addSheet.properties (sheetId, title, index, sheetType, gridProperties { rowCount, columnCount }
-      // Map replies array array to get sheetId
-      let newSheetProps = {};
-      newSheet.data.replies.map(reply => newSheetProps.addSheet = reply.addSheet); 
-      let newSheetId = newSheetProps.addSheet.properties.sheetId;
-
-      // Add new sheetId to app spreadsheet info
-      db.collection('app').doc(appKeySubmitted).update({
-          ['spreadsheet.sheetId.' + emailTemplateName]: newSheetId
-      });
-
-      // Add header row
-      const addHeaderRow = {
-        auth: jwtClient,
-        spreadsheetId: spreadsheetId,
-        range: `${emailTemplateName}!A1`, // e.g. "contactDefault!A2"
-        valueInputOption: "RAW",
-        requestBody: {
-          values: sheetHeader
-        }
-      };
-
-      await sheets.spreadsheets.values.update(addHeaderRow);
-
-    }
 
   }
 
