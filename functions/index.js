@@ -44,7 +44,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
   let formFields = await db.collection('formFields').get();
   for (const doc of formFields.docs) {
     let maxLength = await doc.data().maxLength;
-    // first check if field exists in req.body ...rest
+    // ...rest -> first check if field exists in req.body ...rest
     if (rest[doc.id]) {
       let string = sanitize(rest[doc.id], maxLength);
       sanitizedData[doc.id] = string;
@@ -70,8 +70,8 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
         // and assign to previously declared vars
         ( { name: appInfoName, url: appInfoUrl, from: appInfoFrom } 
            = doc.data().appInfo );
-        sanitizedData[appInfoName] = appInfoName;
-        sanitizedData[appInfoUrl] = appInfoUrl;
+        sanitizedData.appInfoName = appInfoName;
+        sanitizedData.appInfoUrl = appInfoUrl;
       }
     })
     .catch(err => {
