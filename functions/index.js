@@ -187,7 +187,16 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
 
     // Authorize with google sheets
     await jwtClient.authorize();
-    
+ 
+    // Check for Sheet name
+    let exists = {
+      auth: jwtClient,
+      spreadsheetId: spreadsheetId,
+      range: `${emailTemplateName}!A2`, // e.g. "contactDefault!A2"
+    };
+    let sheetExists = (await sheets.spreadsheets.values.get(exists)).data;
+    console.log("Sheet Exists ##### ", sheetExists);
+   
     // Insert blank row
     const insertBlankRowAfterHeader = {
       auth: jwtClient,
@@ -221,15 +230,6 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
       }
     };
 
-    // Check for Sheet name
-    let exists = {
-      auth: jwtClient,
-      spreadsheetId: spreadsheetId,
-      range: "default!A1:Z1"
-    };
-    let sheetExists = (await sheets.spreadsheets.values.get(exists)).data;
-    console.log("Sheet Exists ##### ", sheetExists);
-
     // Update Google Sheets Data
     await sheets.spreadsheets.batchUpdate(insertBlankRowAfterHeader);
     await sheets.spreadsheets.values.update(addRowDataAfterHeader);
@@ -252,7 +252,7 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
             {
               "addSheet": {
                 "properties": {
-                  "title": "Default",
+                  "title": emailTemplateName,
                   "gridProperties": {
                     "rowCount": 1000,
                     "columnCount": 26
