@@ -109,7 +109,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 // ANCHOR - Firestore To Sheets [Nested email template data]
 exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}').onCreate(async () => {
   
-  let templateData = {}; // will contain data row to be submitted to sheet
+  let rowData = {}; // will contain data row to be submitted to sheet
   let emailTemplateName;
   let emailTemplateData;
   let appKeySubmitted; // use in submit data
@@ -138,10 +138,10 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
         const createdDate = moment(created).tz("America/New_York").format('L'); // Format date with moment.js
         const createdTime = moment(created).tz("America/New_York").format('h:mm A z');
         // Add date-time to start of data object
-        templateData.createdDate = createdDate;
-        templateData.createdTime = createdTime;
+        rowData.createdDate = createdDate;
+        rowData.createdTime = createdTime;
         // Add webformId to data object
-        templateData.webformId = webformId;
+        rowData.webformId = webformId;
         return;
       });
 
@@ -152,7 +152,7 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
           console.log('No such email template name!');
         } else {
           doc.data().templateData.map(f => {
-            return templateData[f] = ""; // add prop name + empty string value
+            return rowData[f] = ""; // add prop name + empty string value
           });
         }
       })
@@ -161,11 +161,11 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
       });
       
     // Update templateData{} sort-ordered emailTemplate props with data values
-    Object.assign(templateData, emailTemplateData);
+    Object.assign(rowData, emailTemplateData);
     // Object to array because valueArray needs to contain another array
-    templateData = Object.values(templateData);
+    rowData = Object.values(rowData);
     // Sheets Row Data to add ... valueArray: [[ date, time, ... ]]
-    const valueArray = [( templateData )];
+    const valueArray = [( rowData )];
 
     /**
     * Submit Data Row to app-specific spreadsheet
@@ -275,6 +275,27 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
       console.log("newSheetProps $$$$$$$$$ ", newSheetProps);
       let newSheetId = newSheetProps.addSheet.properties.sheetId;
       console.log("newSheetId $$$$$$$$$$$$ ", newSheetId);
+
+      // Add new emailTemplate name and sheetId to app spreadsheet info
+      db.collection('app').doc(appKeySubmitted).update({
+          ['spreadsheet.sheetId.' + emailTemplateName]: newSheetId
+      });
+
+/*
+      // Add row data
+      const addHeaderRow = {
+        auth: jwtClient,
+        spreadsheetId: spreadsheetId,
+        range: `${emailTemplateName}!A2`, // e.g. "contactDefault!A2"
+        valueInputOption: "RAW",
+        requestBody: {
+          // FIXME must add array values
+          values: valueArray
+        }
+      };
+      await sheets.spreadsheets.values.update(addHeaderRow);
+*/
+
     }
 
   }
