@@ -120,7 +120,8 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
       .orderBy('createdDateTime', 'desc').limit(1).get();
       formSubmission.docs.map(doc => {
         // doc.data() is object -> { name: 'jax', email: 'jax@jax.com' }
-        let { createdDateTime, template: { data: { ...rest }, name: templateName  } } = doc.data(); 
+        let { createdDateTime, template: { data: { ...rest }, name: templateName  }, webformId } = doc.data(); 
+        // For building sort-ordered object that is turned into sheet data-row
         emailTemplateName = templateName;
         emailTemplateData = rest;
         // date and time
@@ -128,10 +129,12 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
         const created = createdDateTime.toDate(); // toDate() is firebase method
         const createdDate = moment(created).tz("America/New_York").format('L'); // Format date with moment.js
         const createdTime = moment(created).tz("America/New_York").format('h:mm A z');
+        // Add date-time to start of data object
         templateData.createdDate = createdDate;
         templateData.createdTime = createdTime;
+        // Add webformId to data object
+        templateData.webformId = webformId;
         return;
-
       });
 
     // Sort-ordered emailTemplate fields add to templateData{}
