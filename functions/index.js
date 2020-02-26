@@ -192,28 +192,8 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
 
     // Authorize with google sheets
     await jwtClient.authorize();
- 
-    // Data-row: define insert Request
-    const dataRowInsertAfterHeader = {
-      auth: jwtClient,
-      spreadsheetId: spreadsheetId,
-      range: `${emailTemplateName}!A2`, // e.g. "contactDefault!A2"
-      valueInputOption: "RAW",
-      requestBody: {
-        values: dataRowForSheet
-      }
-    };
-    
-    // Add header row
-    const addHeaderRow = {
-      auth: jwtClient,
-      spreadsheetId: spreadsheetId,
-      range: `${emailTemplateName}!A1`, // e.g. "contactDefault!A2"
-      valueInputOption: "RAW",
-      requestBody: {
-        values: sheetHeader
-      }
-    };
+
+    // Add Rows to sheet (header or data)
     const rangeHeader =  `${emailTemplateName}!A1`; // e.g. "contactDefault!A2"
     const rangeData =  `${emailTemplateName}!A2`; // e.g. "contactDefault!A2"
 
