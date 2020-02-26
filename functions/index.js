@@ -168,37 +168,27 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
     const valueArray = [( templateData )];
 
     /**
-    * Submit Data Row 
+    * Submit Data Row to app-specific spreadsheet
     */
-    // FIXME update query to get only specific app's data
 
+    // Get app spreadsheetId and formSubmission's emailTemplate sheetId
     await db.collection('app').doc(appKeySubmitted).get()
       .then(doc => {
         if (!doc.exists) {
           console.log('No such email template name!');
         } else {
           spreadsheetId = doc.data().spreadsheet.id;
-          console.log("spreadsheetId $$$$$$$$$$$$ ", spreadsheetId);
           sheetId = doc.data().spreadsheet.sheetId[emailTemplateName];
-          console.log("sheetId $$$$$$$$$$$$ ", sheetId);
-
         }
       })
       .catch(err => {
         console.log('Error getting email template name!', err);
       });
-    console.log("emailTemplateName, spreadsheetId & sheetId $$$$$$$$$$$$ ", emailTemplateName, spreadsheetId, sheetId);
 
-
-    // Authorization
+    // Authorize with google sheets
     await jwtClient.authorize();
-    console.log("valueArray #### ", valueArray); 
-    // Create Google Sheets request
-    // FIXME make dynamic 'spreadsheetId' - pull from app data
-    // FIXME make dynamic 'sheetId' - pull from app data
-    // FIXME update 'range' to a generic spreadsheet tab name use for all apps
-
-    // Insert Row
+    
+    // Insert blank row
     const insertBlankRowAfterHeader = {
       auth: jwtClient,
       spreadsheetId: spreadsheetId,
@@ -224,8 +214,7 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
     const addRowDataAfterHeader = {
       auth: jwtClient,
       spreadsheetId: spreadsheetId,
-      range: `${emailTemplateName}!A2`,
-//      range: "Firestore!A2",
+      range: `${emailTemplateName}!A2`, // e.g. "contactDefault!A2"
       valueInputOption: "RAW",
       requestBody: {
         values: valueArray
