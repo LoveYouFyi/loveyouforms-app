@@ -115,6 +115,7 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
   let appKeySubmitted; // use in submit data
   let spreadsheetId; // use in both try and catch so declare here
   let sheetId;
+  let sheetHeader;
 
   try {
     /**
@@ -145,22 +146,25 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
         return;
       });
 
-    // Get emailTemplate fields by sort-order
+    // Email Template data
     await db.collection('emailTemplate').doc(emailTemplateName).get()
       .then(doc => {
         if (!doc.exists) {
           console.log('No such email template name!');
         } else {
+          // Get emailTemplate templateData fields by sort-order, add empty to rowData{}
           doc.data().templateData.map(f => {
             return rowData[f] = ""; // add prop name + empty string value
           });
+          // sheets requires array within an array
+          sheetHeader = [( doc.data().sheetHeader )];
         }
       })
       .catch(err => {
         console.log('Error getting email template name!', err);
       });
-      
-    // Update templateData{} sort-ordered emailTemplate props with data values
+
+    // Update rowData{} sort-ordered emailTemplate props with data values
     Object.assign(rowData, emailTemplateData);
     // Object to array because valueArray needs to contain another array
     rowData = Object.values(rowData);
@@ -240,9 +244,14 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
     console.log("err $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", err);
     const errorMessage = err.errors.map(e => e.message);
     console.log("Error Message: ############# ", errorMessage);
-    // If true --> create sheet 
+
+   /**
+   * Create new sheet if does not exist and add header row
+   */
+    
     if (errorMessage[0].includes("Unable to parse range:")) {
 
+      // Add sheet
       const addSheet = {
         auth: jwtClient,
         spreadsheetId: spreadsheetId,
@@ -264,37 +273,34 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
         }
       };
 
-      // newSheet returns 'data' object with properties:
-      // spreadsheetId
-      // replies[0].addSheet.properties (sheetId, title, index, sheetType, gridProperties { rowCount, columnCount }
       let newSheet = await sheets.spreadsheets.batchUpdate(addSheet);
-      // add newSheet data to object
-      let newSheetProps = {};
-      newSheetProps.spreadsheetId = newSheet.data.spreadsheetId;
-      newSheet.data.replies.map(reply => newSheetProps.addSheet = reply.addSheet); 
-      console.log("newSheetProps $$$$$$$$$ ", newSheetProps);
-      let newSheetId = newSheetProps.addSheet.properties.sheetId;
-      console.log("newSheetId $$$$$$$$$$$$ ", newSheetId);
 
-      // Add new emailTemplate name and sheetId to app spreadsheet info
+      // Get new sheetId and add to app spreadsheet info
+      // newSheet returns 'data' object with properties:
+      // prop: spreadsheetId
+      // prop: replies[0].addSheet.properties (sheetId, title, index, sheetType, gridProperties { rowCount, columnCount }
+      // Map replies array array to get sheetId
+      let newSheetProps = {};
+      newSheet.data.replies.map(reply => newSheetProps.addSheet = reply.addSheet); 
+      let newSheetId = newSheetProps.addSheet.properties.sheetId;
+
+      // Add new sheetId to app spreadsheet info
       db.collection('app').doc(appKeySubmitted).update({
           ['spreadsheet.sheetId.' + emailTemplateName]: newSheetId
       });
 
-/*
-      // Add row data
+      // Add header row
       const addHeaderRow = {
         auth: jwtClient,
         spreadsheetId: spreadsheetId,
-        range: `${emailTemplateName}!A2`, // e.g. "contactDefault!A2"
+        range: `${emailTemplateName}!A1`, // e.g. "contactDefault!A2"
         valueInputOption: "RAW",
         requestBody: {
-          // FIXME must add array values
-          values: valueArray
+          values: sheetHeader
         }
       };
+
       await sheets.spreadsheets.values.update(addHeaderRow);
-*/
 
     }
 
