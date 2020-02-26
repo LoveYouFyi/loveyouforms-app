@@ -41,7 +41,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
   let sanitizedData = {};
   function sanitize(string, charCount) { return string.trim().substr(0, charCount) };
 
-  let formFields = await db.collection('formFields').get();
+  let formFields = await db.collection('formField').get();
   for (const doc of formFields.docs) {
     let maxLength = await doc.data().maxLength;
     // ...rest -> first check if field exists in req.body ...rest
