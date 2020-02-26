@@ -193,7 +193,7 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
     await jwtClient.authorize();
  
     // Data-row: define insert Request
-    const addDataRowAfterHeader = {
+    const dataRowInsertAfterHeader = {
       auth: jwtClient,
       spreadsheetId: spreadsheetId,
       range: `${emailTemplateName}!A2`, // e.g. "contactDefault!A2"
@@ -203,13 +203,12 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
       }
     };
 
-    // Insert blank row (sheetId argument: existing vs new sheet)
-    const insertBlankRowAfterHeader = sheetId => ({
+    // Blank row insert (sheetId argument: existing vs new sheet)
+    const blankRowInsertAfterHeader = sheetId => ({
       auth: jwtClient,
       spreadsheetId: spreadsheetId,
       resource: {
         requests: [
-          // following requires "..." otherwise function error
           {
             "insertDimension": {
               "range": {
@@ -242,8 +241,8 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
 
     if (sheetNameExists) {
       // Update Google Sheets Data
-      await sheets.spreadsheets.batchUpdate(insertBlankRowAfterHeader(sheetId));
-      await sheets.spreadsheets.values.update(addDataRowAfterHeader);
+      await sheets.spreadsheets.batchUpdate(blankRowInsertAfterHeader(sheetId));
+      await sheets.spreadsheets.values.update(dataRowInsertAfterHeader);
     } else {
       /**
        * Create new sheet if does not exist, add header, and add the dataRow
@@ -300,7 +299,7 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
 
       // New Sheet Actions
       await sheets.spreadsheets.values.update(addHeaderRow);
-      await sheets.spreadsheets.values.update(addDataRowAfterHeader);
+      await sheets.spreadsheets.values.update(dataRowInsertAfterHeader);
 
     } // end 'else' add new sheet
 
