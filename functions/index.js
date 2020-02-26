@@ -235,18 +235,14 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
     };
 
     var sheet = await sheets.spreadsheets.get(sheetName);
-    console.log("Sheet Data ??????????????????????????????? ", sheet.data);
-    console.log("Sheet Data Sheets ??????????????????????????????? ", sheet.data.sheets);
 
     let sheetNameExists = sheet.data.sheets.find(e => {
       return e.properties.title === emailTemplateName;
     });
-    console.log("sheetNames $$$$$$$$$$$$$$$$$$$$$$$$$$$ ", sheetNameExists);
 
     if (sheetNameExists) {
       // Update Google Sheets Data
       await sheets.spreadsheets.batchUpdate(blankRowInsertAfterHeader(sheetId));
-      //await sheets.spreadsheets.values.update(dataRowInsertAfterHeader);
       await sheets.spreadsheets.values.update(addRow(rangeData)(dataRowForSheet));
     } else {
       /**
@@ -293,9 +289,7 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
 
 
       // New Sheet Actions
-//      await sheets.spreadsheets.values.update(addHeaderRow);
       await sheets.spreadsheets.values.update(addRow(rangeHeader)(sheetHeader));
-//      await sheets.spreadsheets.values.update(dataRowInsertAfterHeader);
       await sheets.spreadsheets.values.update(addRow(rangeData)(dataRowForSheet));
 
     } // end 'else' add new sheet
