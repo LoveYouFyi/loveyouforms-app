@@ -148,22 +148,18 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
     dataRow.webformId = webformId;
 
     // Prepare data object with empty sort ordered fields.  Get corresponding header fields.
-    await db.collection('emailTemplate').doc(emailTemplateName).get()
-      .then(doc => {
-        if (!doc.exists) {
-          console.log('No such email template name!');
-        } else {
+    let emailTemplate = await db.collection('emailTemplate').doc(emailTemplateName).get();
+    console.log("emailTemplate $$$$$$$$$$$$$$$$$$$$$$ ", emailTemplate);
+    console.log("emailTemplate Keys $$$$$$$$$$$$$$$$$$$$$$ ", Object.keys(emailTemplate));
+    console.log("emailTemplate ID $$$$$$$$$$$$$$$$$$$$$$ ", emailTemplate.id);
+    console.log("emailTemplate.data() $$$$$$$$$$$$$$$$$$$$$$ ", emailTemplate.data());
+
           // Get empty fields and add them to object to hold sort order
-          doc.data().templateData.map(f => {
+          emailTemplate.data().templateData.map(f => {
             return dataRow[f] = ""; // add prop name + empty string value
           });
           // sheets requires array within an array
-          sheetHeader = [( doc.data().sheetHeader )];
-        }
-      })
-      .catch(err => {
-        console.log('Error getting email template name!', err);
-      });
+          sheetHeader = [( emailTemplate.sheetHeader )];
 
     // Update sort-ordered props with data values
     Object.assign(dataRow, emailTemplateData);
@@ -302,7 +298,7 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
   catch(error) {
     // errors in 'errors' object, then map through errors array check for .message prop
     console.log("Error $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", error);
-    const errorMessage = error.errors.map(e => e.message);
+    const errorMessage = error.errors.map(e => e.message) ? error.errors.map(e => e.message) : "";
     console.log("Error Message $$$$$$$$$$$$$$$$$$$$$$ ", errorMessage);
     // Previously used message based on if sheet(range) did not exist
     // if (errorMessage[0].includes("Unable to parse range:")) {
