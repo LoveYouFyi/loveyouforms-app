@@ -114,7 +114,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 
 
 // ANCHOR - Firestore To Sheets [Nested email template data]
-exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}').onCreate(async () => {
+exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}').onCreate(async (snapshot, context) => {
   
   let dataRow = {}; // sorted data to be converted to array for submit to sheet
   let dataRowForSheet; // data row as array to submit to sheet
@@ -130,26 +130,21 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
     * Prepare Data Row 
     */
 
-    // Get last form submission 
-    const formSubmission = await db.collection('formSubmission')
-      .orderBy('createdDateTime', 'desc').limit(1).get();
-      formSubmission.docs.find(doc => {
-        // doc.data() is object -> { name: 'jax', email: 'jax@jax.com' }
-        let { appKey, createdDateTime, template: { data: { ...rest }, name: templateName  }, webformId } = doc.data(); 
-        // For building sort-ordered object that is turned into sheet data-row
-        emailTemplateName = templateName;
-        emailTemplateData = rest;
-        // appkey to query 'spreadsheet' object info
-        appKeySubmitted = appKey;
-        // date/time: timezone string defined by momentjs.com/timezone: https://github.com/moment/moment-timezone/blob/develop/data/packed/latest.json
-        const dateTime = createdDateTime.toDate(); // toDate() is firebase method
-        // Add date-time to start of data object, format date with moment.js
-        dataRow.createdDate = moment(dateTime).tz(rest.appInfoTimeZone).format('L');
-        dataRow.createdTime = moment(dateTime).tz(rest.appInfoTimeZone).format('h:mm A z');
-        // Add webformId to data object
-        dataRow.webformId = webformId;
-        return;
-      });
+    // Destructure Snapshot.data() which contains this form submission data
+    let { appKey, createdDateTime, template: { data: { ...rest }, 
+      name: templateName  }, webformId } = snapshot.data(); 
+    // For building sort-ordered object that is turned into sheet data-row
+    emailTemplateName = templateName;
+    emailTemplateData = rest;
+    // appkey to query 'spreadsheet' object info
+    appKeySubmitted = appKey;
+    // date/time: timezone string defined by momentjs.com/timezone: https://github.com/moment/moment-timezone/blob/develop/data/packed/latest.json
+    const dateTime = createdDateTime.toDate(); // toDate() is firebase method
+    // Add date-time to start of data object, format date with moment.js
+    dataRow.createdDate = moment(dateTime).tz(rest.appInfoTimeZone).format('L');
+    dataRow.createdTime = moment(dateTime).tz(rest.appInfoTimeZone).format('h:mm A z');
+    // Add webformId to data object
+    dataRow.webformId = webformId;
 
     // Prepare data object with empty sort ordered fields.  Get corresponding header fields.
     await db.collection('emailTemplate').doc(emailTemplateName).get()
