@@ -33,76 +33,81 @@ const jwtClient = new google.auth.JWT({
 // ANCHOR Form Handler
 exports.formHandler = functions.https.onRequest(async (req, res) => {
 
-  // Form submitted data
-  let { app: appKey, template = 'contactDefault', webformId, ...rest } 
-    = req.body; // template default 'contactForm' if not added in webform
+  try {
+    // Form submitted data
+    let { app: appKey, template = 'contactDefault', webformId, ...rest } 
+      = req.body; // template default 'contactForm' if not added in webform
 
-  // Sanitize data
-  let sanitizedData = {};
-  function sanitize(string, charCount) { return string.trim().substr(0, charCount) };
+    // Sanitize data
+    let sanitizedData = {};
+    function sanitize(string, charCount) { return string.trim().substr(0, charCount) };
 
-  let formFields = await db.collection('formField').get();
-  for (const doc of formFields.docs) {
-    let maxLength = await doc.data().maxLength;
-    // ...rest -> first check if field exists in req.body ...rest
-    if (rest[doc.id]) {
-      let string = sanitize(rest[doc.id], maxLength);
-      sanitizedData[doc.id] = string;
-    } else if (doc.id == 'appKey') {
-      appKey = sanitize(appKey, maxLength);
-    } else if (doc.id == 'template') {
-      template = sanitize(template, maxLength);
-    } else if (doc.id == 'webformId') {
-      webformId = sanitize(webformId, maxLength);
-    }
-  }
-  console.log("sanitizedData $$$$$$$$$$$$$$$$$$ ", sanitizedData);
-
-  // App identifying info
-  let appInfoName, appInfoUrl, appInfoFrom;
-  const appInfoRef = db.collection('app').doc(appKey);
-  await appInfoRef.get()
-    .then(doc => {
-      if (!doc.exists) {
-        res.end();
-      } else {
-        // destructure from doc.data().appInfo --> name, url, from 
-        // and assign to previously declared vars
-        ( { name: appInfoName, url: appInfoUrl, from: appInfoFrom } 
-           = doc.data().appInfo );
-        sanitizedData.appInfoName = appInfoName;
-        sanitizedData.appInfoUrl = appInfoUrl;
+    let formFields = await db.collection('formField').get();
+    for (const doc of formFields.docs) {
+      let maxLength = await doc.data().maxLength;
+      // ...rest -> first check if field exists in req.body ...rest
+      if (rest[doc.id]) {
+        let string = sanitize(rest[doc.id], maxLength);
+        sanitizedData[doc.id] = string;
+      } else if (doc.id == 'appKey') {
+        appKey = sanitize(appKey, maxLength);
+      } else if (doc.id == 'template') {
+        template = sanitize(template, maxLength);
+      } else if (doc.id == 'webformId') {
+        webformId = sanitize(webformId, maxLength);
       }
-    })
-    .catch(err => {
-      console.log('Error getting document', err);
+    }
+
+    // App identifying info
+    let appInfoName, appInfoUrl, appInfoFrom;
+    const appInfoRef = db.collection('app').doc(appKey);
+    await appInfoRef.get()
+      .then(doc => {
+        if (!doc.exists) {
+          res.end();
+        } else {
+          // destructure from doc.data().appInfo --> name, url, from 
+          // and assign to previously declared vars
+          ( { name: appInfoName, url: appInfoUrl, from: appInfoFrom } 
+            = doc.data().appInfo );
+          sanitizedData.appInfoName = appInfoName;
+          sanitizedData.appInfoUrl = appInfoUrl;
+        }
+      })
+      .catch(err => {
+        console.log('Error getting document', err);
+      });
+
+    // Build object to be saved to db
+    let data = {
+      // spread operator conditionally adds, otherwise function errors if not exist
+      // 'from' email if not assigned comes from firebase extension field: DEFAULT_FROM
+      appKey,
+      createdDateTime: FieldValue.serverTimestamp(),
+      ...appInfoFrom && { from: appInfoFrom }, // from: app.(appKey).appInfo.from
+      toUids: [ appKey ], // to: app.(appKey).email
+      ...sanitizedData.email && {replyTo: sanitizedData.email}, // webform
+      ...webformId && { webformId }, // webform
+      template: {
+        name: template,
+        data: sanitizedData
+      }
+    };
+
+    // So serverTimestamp works must first create new doc key then post data
+    let newKey = db.collection("formSubmission").doc();
+    // update the new-key-record using 'set' which works for existing doc
+    newKey.set(data);
+
+    return res.send({
+      // return empty success response, so client can finish AJAX success
     });
 
-  // Build object to be saved to db
-  let data = {
-    // spread operator conditionally adds, otherwise function errors if not exist
-    // 'from' email if not assigned comes from firebase extension field: DEFAULT_FROM
-    appKey,
-    createdDateTime: FieldValue.serverTimestamp(),
-    ...appInfoFrom && { from: appInfoFrom }, // from: app.(appKey).appInfo.from
-    toUids: [ appKey ], // to: app.(appKey).email
-    ...sanitizedData.email && {replyTo: sanitizedData.email}, // webform
-    ...webformId && { webformId }, // webform
-    template: {
-      name: template,
-      data: sanitizedData
-    }
-  };
+  } catch(error) {
+    console.log("Error $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", error);
+    res.end();
 
-  // So serverTimestamp works must first create new doc key then post data
-  let newKey = db.collection("formSubmission").doc();
-  // update the new-key-record using 'set' which works for existing doc
-  newKey.set(data);
-
-  return res.send({
-    // return empty success response, so client can finish AJAX success
-  });
-
+  }
 });
 
 
