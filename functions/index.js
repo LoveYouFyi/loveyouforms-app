@@ -7,7 +7,7 @@ var admin = require("firebase-admin");
 var serviceAccount = require("./service-account.json");
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
-  databaseURL: "https://sheet-sync-fd542.firebaseio.com"
+  databaseURL: "https://loveyou-forms.firebaseio.com" // FireBase db (not fireStore)
 });
 // Firestore db reference
 let db = admin.firestore();
