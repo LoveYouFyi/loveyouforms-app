@@ -268,6 +268,7 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
               "addSheet": {
                 "properties": {
                   "title": emailTemplateName,
+                  "index": 0,
                   "gridProperties": {
                     "rowCount": 1000,
                     "columnCount": 26
