@@ -61,24 +61,14 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 
     // App identifying info
     let appInfoName, appInfoUrl, appInfoFrom;
-    const appKeyRef = db.collection('app').doc(appKey);
-    await appKeyRef.get()
-      .then(doc => {
-        if (!doc.exists) {
-          res.end();
-        } else {
-          // destructure from doc.data().appInfo --> name, url, from 
-          // and assign to previously declared vars
-          ( { name: appInfoName, url: appInfoUrl, from: appInfoFrom, timeZone: appInfoTimeZone } 
-            = doc.data().appInfo );
-          sanitizedData.appInfoName = appInfoName;
-          sanitizedData.appInfoUrl = appInfoUrl;
-          sanitizedData.appInfoTimeZone = appInfoTimeZone;
-        }
-      })
-      .catch(err => {
-        console.log('Error getting document', err);
-      });
+    const appDoc = await db.collection('app').doc(appKey).get();
+    // destructure and assign:
+    ( { name: appInfoName, url: appInfoUrl, from: appInfoFrom, timeZone: appInfoTimeZone } 
+      = appDoc.data().appInfo );
+    // assign to previously declared vars
+    sanitizedData.appInfoName = appInfoName;
+    sanitizedData.appInfoUrl = appInfoUrl;
+    sanitizedData.appInfoTimeZone = appInfoTimeZone;
 
     // Build object to be saved to db
     let data = {
@@ -162,22 +152,13 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
     dataRowForSheet = [( dataRow )];
 
     /**
-    * Prepare to insert dataRowForSheet in app-specific spreadsheet
+    * Prepare to insert data-row in app-specific spreadsheet
     */
 
     // Get app spreadsheetId and sheetId based on formSubmission emailTemplate
-    await db.collection('app').doc(appKeySubmitted).get()
-      .then(doc => {
-        if (!doc.exists) {
-          console.log('No such email template name!');
-        } else {
-          spreadsheetId = doc.data().spreadsheet.id;
-          sheetId = doc.data().spreadsheet.sheetId[emailTemplateName];
-        }
-      })
-      .catch(err => {
-        console.log('Error getting email template name!', err);
-      });
+    let appDoc = await db.collection('app').doc(appKeySubmitted).get();
+    spreadsheetId = appDoc.data().spreadsheet.id;
+    sheetId = appDoc.data().spreadsheet.sheetId[emailTemplateName];
 
     // Authorize with google sheets
     await jwtClient.authorize();
@@ -289,12 +270,7 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
 
   }
   catch(error) {
-    // errors in 'errors' object, then map through errors array check for .message prop
     console.log("Error $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", error);
-    const errorMessage = error.errors.map(e => e.message) ? error.errors.map(e => e.message) : "";
-    console.log("Error Message $$$$$$$$$$$$$$$$$$$$$$ ", errorMessage);
-    // Previously used message based on if sheet(range) did not exist
-    // if (errorMessage[0].includes("Unable to parse range:")) {
     res.end();
 
   }
