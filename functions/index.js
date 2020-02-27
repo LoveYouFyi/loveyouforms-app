@@ -43,6 +43,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     function sanitize(string, charCount) { return string.trim().substr(0, charCount) };
 
     let formFields = await db.collection('formField').get();
+    // webform-submitted fields
     for (const doc of formFields.docs) {
       let maxLength = await doc.data().maxLength;
       // ...rest -> first check if field exists in req.body ...rest
@@ -60,18 +61,19 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 
     // App identifying info
     let appInfoName, appInfoUrl, appInfoFrom;
-    const appInfoRef = db.collection('app').doc(appKey);
-    await appInfoRef.get()
+    const appKeyRef = db.collection('app').doc(appKey);
+    await appKeyRef.get()
       .then(doc => {
         if (!doc.exists) {
           res.end();
         } else {
           // destructure from doc.data().appInfo --> name, url, from 
           // and assign to previously declared vars
-          ( { name: appInfoName, url: appInfoUrl, from: appInfoFrom } 
+          ( { name: appInfoName, url: appInfoUrl, from: appInfoFrom, timeZone: appInfoTimeZone } 
             = doc.data().appInfo );
           sanitizedData.appInfoName = appInfoName;
           sanitizedData.appInfoUrl = appInfoUrl;
+          sanitizedData.appInfoTimeZone = appInfoTimeZone;
         }
       })
       .catch(err => {
