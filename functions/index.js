@@ -141,11 +141,11 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
         emailTemplateData = rest;
         // appkey to query 'spreadsheet' object info
         appKeySubmitted = appKey;
-        // date and time
-        // FIXME get timezone from 'app' config so will post to excel
-        const created = createdDateTime.toDate(); // toDate() is firebase method
-        const createdDate = moment(created).tz("America/New_York").format('L'); // Format date with moment.js
-        const createdTime = moment(created).tz("America/New_York").format('h:mm A z');
+        // date/time: timezone string defined by momentjs.com/timezone: 
+        // https://github.com/moment/moment-timezone/blob/develop/data/packed/latest.json
+        let created = createdDateTime.toDate(); // toDate() is firebase method
+        let createdDate = moment(created).tz(rest.appInfoTimeZone).format('L'); // Format date with moment.js
+        let createdTime = moment(created).tz(rest.appInfoTimeZone).format('h:mm A z');
         // Add date-time to start of data object
         dataRow.createdDate = createdDate;
         dataRow.createdTime = createdTime;
