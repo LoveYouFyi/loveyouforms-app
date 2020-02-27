@@ -114,7 +114,8 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 
 
 // ANCHOR - Firestore To Sheets [Nested email template data]
-exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}').onCreate(async (snapshot, context) => {
+exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}')
+  .onCreate(async (snapshot, context) => {
   
   let dataRow = {}; // sorted data to be converted to array for submit to sheet
   let dataRowForSheet; // data row as array to submit to sheet
@@ -313,7 +314,9 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
 
 
 // ANCHOR Firebase to Sheets [Basic 2 Column List]
-exports.firebaseToSheet = functions.database.ref("/Form").onUpdate(async change => {
+exports.firebaseToSheet = functions.database.ref("/Form")
+  .onUpdate(async change => {
+
   let data = change.after.val();
   console.log("data ################ ", data);
   // Convert JSON to Array following structure below
