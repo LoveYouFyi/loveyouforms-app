@@ -147,13 +147,13 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
         return;
       });
 
-    // Email Template data
+    // Prepare data object with empty sort ordered fields.  Get corresponding header fields.
     await db.collection('emailTemplate').doc(emailTemplateName).get()
       .then(doc => {
         if (!doc.exists) {
           console.log('No such email template name!');
         } else {
-          // Get emailTemplate templateData fields by sort-order, add empty to rowData{}
+          // Get empty fields and add them to object to hold sort order
           doc.data().templateData.map(f => {
             return dataRow[f] = ""; // add prop name + empty string value
           });
@@ -165,15 +165,15 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
         console.log('Error getting email template name!', err);
       });
 
-    // Update rowData{} sort-ordered emailTemplate props with data values
+    // Update sort-ordered props with data values
     Object.assign(dataRow, emailTemplateData);
-    // Object to array because valueArray needs to contain another array
+    // Object to array because sheets data must be as array
     dataRow = Object.values(dataRow);
-    // Sheets Row Data to add ... valueArray: [[ date, time, ... ]]
-    const dataRowForSheet = [( dataRow )];
+    // Sheets Row Data to add as array nested in array: [[ date, time, ... ]]
+    dataRowForSheet = [( dataRow )];
 
     /**
-    * Submit Data Row to app-specific spreadsheet
+    * Prepare to insert dataRowForSheet in app-specific spreadsheet
     */
 
     // Get app spreadsheetId and sheetId based on formSubmission emailTemplate
@@ -193,7 +193,7 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
     // Authorize with google sheets
     await jwtClient.authorize();
 
-    // Add Rows to sheet (header or data)
+    // Row: Add to sheet (header or data)
     const rangeHeader =  `${emailTemplateName}!A1`; // e.g. "contactDefault!A2"
     const rangeData =  `${emailTemplateName}!A2`; // e.g. "contactDefault!A2"
 
@@ -207,7 +207,7 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
       }
     });
     
-    // Blank row insert (sheetId argument: existing vs new sheet)
+    // Row: Blank insert (sheetId argument: existing vs new sheet)
     const blankRowInsertAfterHeader = sheetId => ({
       auth: jwtClient,
       spreadsheetId: spreadsheetId,
@@ -228,26 +228,30 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
       }
     });
 
-    const sheetName = {
+    /**
+    * Insert row data into sheet that matches template name
+    */
+
+    // Check if sheet name exists for data insert
+    const sheetObjectRequest = {
       auth: jwtClient,
       spreadsheetId: spreadsheetId,
       includeGridData: false
     };
-
-    var sheet = await sheets.spreadsheets.get(sheetName);
-
-    let sheetNameExists = sheet.data.sheets.find(e => {
-      return e.properties.title === emailTemplateName;
+    var sheetDetails = await sheets.spreadsheets.get(sheetObjectRequest);
+    let sheetNameExists = sheetDetails.data.sheets.find(sheet => {
+      // if sheet name exists returns sheet 'properties' object, else is undefined
+      return sheet.properties.title === emailTemplateName;
     });
 
+    // If sheet name exists, insert data
+    // Else, create new sheet + insert header + insert data
     if (sheetNameExists) {
       // Update Google Sheets Data
       await sheets.spreadsheets.batchUpdate(blankRowInsertAfterHeader(sheetId));
       await sheets.spreadsheets.values.update(addRow(rangeData)(dataRowForSheet));
+
     } else {
-      /**
-       * Create new sheet if does not exist, add header, and add the dataRow
-       */
 
       // Add sheet
       const addSheet = {
@@ -255,7 +259,6 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
         spreadsheetId: spreadsheetId,
         resource: {
           requests: [
-            // following requires "..." otherwise function error
             {
               "addSheet": {
                 "properties": {
@@ -271,6 +274,7 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
         }
       };
 
+      // Add sheet and return new sheet properties
       let newSheet = await sheets.spreadsheets.batchUpdate(addSheet);
 
       // Get new sheetId and add to app spreadsheet info
@@ -287,20 +291,21 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
           ['spreadsheet.sheetId.' + emailTemplateName]: newSheetId
       });
 
-
-      // New Sheet Actions
+      // New Sheet Actions: add rows for header, then data
       await sheets.spreadsheets.values.update(addRow(rangeHeader)(sheetHeader));
       await sheets.spreadsheets.values.update(addRow(rangeData)(dataRowForSheet));
 
     } // end 'else' add new sheet
 
   }
-  catch(err) {
+  catch(error) {
     // errors in 'errors' object, then map through errors array check for .message prop
-    console.log("err $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", err);
-    const errorMessage = err.errors.map(e => e.message);
-    console.log("Error Message: ############# ", errorMessage);
+    console.log("Error $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", error);
+    const errorMessage = error.errors.map(e => e.message);
+    console.log("Error Message $$$$$$$$$$$$$$$$$$$$$$ ", errorMessage);
+    // Previously used message based on if sheet(range) did not exist
     // if (errorMessage[0].includes("Unable to parse range:")) {
+    res.end();
 
   }
 
