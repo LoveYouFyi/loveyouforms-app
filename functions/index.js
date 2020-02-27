@@ -131,7 +131,7 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
     // Get last form submission 
     const formSubmission = await db.collection('formSubmission')
       .orderBy('createdDateTime', 'desc').limit(1).get();
-      formSubmission.docs.map(doc => {
+      formSubmission.docs.find(doc => {
         // doc.data() is object -> { name: 'jax', email: 'jax@jax.com' }
         let { appKey, createdDateTime, template: { data: { ...rest }, name: templateName  }, webformId } = doc.data(); 
         // For building sort-ordered object that is turned into sheet data-row
