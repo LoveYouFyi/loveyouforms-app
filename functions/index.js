@@ -147,19 +147,12 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
     // Add webformId to data object
     dataRow.webformId = webformId;
 
-    // Prepare data object with empty sort ordered fields.  Get corresponding header fields.
-    let emailTemplate = await db.collection('emailTemplate').doc(emailTemplateName).get();
-    console.log("emailTemplate $$$$$$$$$$$$$$$$$$$$$$ ", emailTemplate);
-    console.log("emailTemplate Keys $$$$$$$$$$$$$$$$$$$$$$ ", Object.keys(emailTemplate));
-    console.log("emailTemplate ID $$$$$$$$$$$$$$$$$$$$$$ ", emailTemplate.id);
-    console.log("emailTemplate.data() $$$$$$$$$$$$$$$$$$$$$$ ", emailTemplate.data());
-
-          // Get empty fields and add them to object to hold sort order
-          emailTemplate.data().templateData.map(f => {
-            return dataRow[f] = ""; // add prop name + empty string value
-          });
-          // sheets requires array within an array
-          sheetHeader = [( emailTemplate.sheetHeader )];
+    // Template arrays for sort-ordered data-row and header fields
+    let emailTemplateDoc = await db.collection('emailTemplate').doc(emailTemplateName).get();
+    // data-row fields: sort ordered with empty string values
+    emailTemplateDoc.data().templateData.map(field => dataRow[field] = ""); // add prop name + empty string value
+    // header fields for sheet
+    sheetHeader = [( emailTemplateDoc.data().sheetHeader )]; // sheets requires array within an array
 
     // Update sort-ordered props with data values
     Object.assign(dataRow, emailTemplateData);
