@@ -141,14 +141,11 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
         emailTemplateData = rest;
         // appkey to query 'spreadsheet' object info
         appKeySubmitted = appKey;
-        // date/time: timezone string defined by momentjs.com/timezone: 
-        // https://github.com/moment/moment-timezone/blob/develop/data/packed/latest.json
-        let created = createdDateTime.toDate(); // toDate() is firebase method
-        let createdDate = moment(created).tz(rest.appInfoTimeZone).format('L'); // Format date with moment.js
-        let createdTime = moment(created).tz(rest.appInfoTimeZone).format('h:mm A z');
-        // Add date-time to start of data object
-        dataRow.createdDate = createdDate;
-        dataRow.createdTime = createdTime;
+        // date/time: timezone string defined by momentjs.com/timezone: https://github.com/moment/moment-timezone/blob/develop/data/packed/latest.json
+        const dateTime = createdDateTime.toDate(); // toDate() is firebase method
+        // Add date-time to start of data object, format date with moment.js
+        dataRow.createdDate = moment(dateTime).tz(rest.appInfoTimeZone).format('L');
+        dataRow.createdTime = moment(dateTime).tz(rest.appInfoTimeZone).format('h:mm A z');
         // Add webformId to data object
         dataRow.webformId = webformId;
         return;
