@@ -49,8 +49,15 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 
     // CORS -check if allowing bypass globally otherwise enforce url restriction
     const globalCors = await db.collection('global').doc('cors').get();
+    if (globalCors.data().bypass) {
+      // allow * so localhost recieves response
+      res.set('Access-Control-Allow-Origin', '*');
+    }
     if (!globalCors.data().bypass) {
-      if (req.headers.origin !== appInfoUrl) { return res.end(); } // origin = url
+      // restrict to url requests that match the app
+      res.set('Access-Control-Allow-Origin', appInfoUrl);
+      // if does not match, end processing: req.headers.origin = url
+      if (req.headers.origin !== appInfoUrl) { return res.end(); } 
     }
 
     // Continue processing if origin url matches appInfoUrl
@@ -105,8 +112,8 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     /**
      * Response
      */
-    // CORS: allow appInfoUrl, allow-all is ('Access-Control-Allow-Origin', '*')
-    return res.set('Access-Control-Allow-Origin', appInfoUrl).status(200).send({
+
+    return res.status(200).send({
       // return empty success response, so client can finish AJAX success
     });
 
