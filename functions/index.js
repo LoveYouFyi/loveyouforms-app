@@ -24,8 +24,6 @@ const jwtClient = new google.auth.JWT({
   key: serviceAccount.private_key,
   scopes: ["https://www.googleapis.com/auth/spreadsheets"] // read and write sheets
 });
-// CORS: to allow cross origin requests for XMLHttpRequest/Ajax
-const cors = require('cors')({origin: true});
 
 // !SECTION
 
@@ -93,20 +91,21 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       }
     };
 
-    // So serverTimestamp works must first create new doc key then post data
+    // For serverTimestamp to work must first create new doc key then post data
     let newKey = db.collection("formSubmission").doc();
     // update the new-key-record using 'set' which works for existing doc
     newKey.set(data);
 
-    return res.send({
+    res.set('Access-Control-Allow-Origin', '*');
+    return res.status(200).send({
       // return empty success response, so client can finish AJAX success
     });
 
   } catch(error) {
     console.log("Error $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", error);
     res.end();
+  } // end catch
 
-  }
 });
 
 
