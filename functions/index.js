@@ -96,7 +96,12 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     // update the new-key-record using 'set' which works for existing doc
     newKey.set(data);
 
+    /**
+     * Response
+     */
+    // CORS allow
     res.set('Access-Control-Allow-Origin', '*');
+    
     return res.status(200).send({
       // return empty success response, so client can finish AJAX success
     });
