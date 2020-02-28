@@ -1,34 +1,41 @@
 // SECTION Requirements
 
-// The Cloud Functions for Firebase SDK to create Cloud Functions and setup triggers.
+// Cloud Functions for Firebase SDK to create Cloud Functions and setup triggers.
 const functions = require('firebase-functions');
-// The Firebase Admin SDK to access the Firebase Realtime Database.
+// Firebase Admin SDK to access the Firebase/Firestore Realtime Database.
 var admin = require("firebase-admin");
 var serviceAccount = require("./service-account.json");
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
   databaseURL: "https://loveyou-forms.firebaseio.com" // FireBase db (not fireStore)
 });
-// Firestore db reference
-let db = admin.firestore();
-// Required for timestamps settings
+let db = admin.firestore(); // Firestore db reference
+// Timestamps: required for timestamp settings
 let FieldValue = require('firebase-admin').firestore.FieldValue; // Timestamp Here
 const settings = { timestampsInSnapshots: true};
-// Timestamp conversions
-let moment = require('moment-timezone');
 db.settings(settings);
-// Google Sheets instance
+let moment = require('moment-timezone'); // Timestamp formats and timezones
+// Google Sheets
 const { google } = require("googleapis");
 const sheets = google.sheets("v4");
-// Create JWT Authentication
+// JWT Authentication (for google sheets)
 const jwtClient = new google.auth.JWT({
   email: serviceAccount.client_email,
   key: serviceAccount.private_key,
   scopes: ["https://www.googleapis.com/auth/spreadsheets"] // read and write sheets
 });
+// CORS: to allow cross origin requests for XMLHttpRequest/Ajax
+const cors = require('cors')({origin: true});
 
 // !SECTION
 
+////////////////////////////////////////////////////////////////////////////////
+// HTTP Cloud Functions
+////////////////////////////////////////////////////////////////////////////////
+
+// Terminate HTTP functions with res.redirect(), res.send(), or res.end().
+// Terminate a synchronous function with a return; statement.
+// https://firebase.google.com/docs/functions/terminate-functions
 
 // ANCHOR Form Handler
 exports.formHandler = functions.https.onRequest(async (req, res) => {
