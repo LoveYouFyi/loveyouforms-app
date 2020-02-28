@@ -46,7 +46,12 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       url: appInfoUrl, 
       timeZone: appInfoTimeZone 
     } = appDoc.data().appInfo;
-    if (req.headers.origin !== appInfoUrl) { return res.end(); } // origin = url
+
+    // CORS -check if allowing bypass globally otherwise enforce url restriction
+    const globalCors = await db.collection('global').doc('cors').get();
+    if (!globalCors.data().bypass) {
+      if (req.headers.origin !== appInfoUrl) { return res.end(); } // origin = url
+    }
 
     // Continue processing if origin url matches appInfoUrl
     sanitizedData.appInfoName = appInfoName;
