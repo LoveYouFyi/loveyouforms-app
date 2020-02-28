@@ -27,10 +27,6 @@ const jwtClient = new google.auth.JWT({
 
 // !SECTION
 
-////////////////////////////////////////////////////////////////////////////////
-// HTTP Cloud Functions
-////////////////////////////////////////////////////////////////////////////////
-
 // Terminate HTTP functions with res.redirect(), res.send(), or res.end().
 // Terminate a synchronous function with a return; statement.
 // https://firebase.google.com/docs/functions/terminate-functions
@@ -39,19 +35,35 @@ const jwtClient = new google.auth.JWT({
 exports.formHandler = functions.https.onRequest(async (req, res) => {
 
   try {
-    // Form submitted data
-    let { app: appKey, template = 'contactDefault', webformId, ...rest } 
-      = req.body; // template default 'contactForm' if not added in webform
+    let sanitizedData = {};
+
+    // End processing if not requested by an authorized app (check origin url)
+    let { app: appKey } = req.body; // Form submission
+    const appDoc = await db.collection('app').doc(appKey).get();
+    let { 
+      from: appInfoFrom, 
+      name: appInfoName, 
+      url: appInfoUrl, 
+      timeZone: appInfoTimeZone 
+    } = appDoc.data().appInfo;
+    if (req.headers.origin !== appInfoUrl) { return res.end(); } // origin = url
+
+    // Continue processing if origin url matches appInfoUrl
+    sanitizedData.appInfoName = appInfoName;
+    sanitizedData.appInfoUrl = appInfoUrl;
+    sanitizedData.appInfoTimeZone = appInfoTimeZone;
+
+    // Form submission
+    let { template = 'contactDefault', webformId, ...rest } = req.body; // template default 'contactForm' if not added in webform
 
     // Sanitize data
-    let sanitizedData = {};
     function sanitize(string, charCount) { return string.trim().substr(0, charCount) };
 
-    let formFields = await db.collection('formField').get();
+    const formFields = await db.collection('formField').get();
     // webform-submitted fields
     for (const doc of formFields.docs) {
       let maxLength = await doc.data().maxLength;
-      // ...rest -> first check if field exists in req.body ...rest
+      // ...rest: if formField exists in req.body
       if (rest[doc.id]) {
         let string = sanitize(rest[doc.id], maxLength);
         sanitizedData[doc.id] = string;
@@ -64,19 +76,8 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       }
     }
 
-    // App identifying info
-    let appInfoName, appInfoUrl, appInfoFrom;
-    const appDoc = await db.collection('app').doc(appKey).get();
-    // destructure and assign:
-    ( { name: appInfoName, url: appInfoUrl, from: appInfoFrom, timeZone: appInfoTimeZone } 
-      = appDoc.data().appInfo );
-    // assign to previously declared vars
-    sanitizedData.appInfoName = appInfoName;
-    sanitizedData.appInfoUrl = appInfoUrl;
-    sanitizedData.appInfoTimeZone = appInfoTimeZone;
-
     // Build object to be saved to db
-    let data = {
+    const data = {
       // spread operator conditionally adds, otherwise function errors if not exist
       // 'from' email if not assigned comes from firebase extension field: DEFAULT_FROM
       appKey,
@@ -92,23 +93,21 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     };
 
     // For serverTimestamp to work must first create new doc key then post data
-    let newKey = db.collection("formSubmission").doc();
+    const newKey = db.collection("formSubmission").doc();
     // update the new-key-record using 'set' which works for existing doc
     newKey.set(data);
 
     /**
      * Response
      */
-    // CORS allow
-    res.set('Access-Control-Allow-Origin', '*');
-    
-    return res.status(200).send({
+    // CORS: allow appInfoUrl, allow-all is ('Access-Control-Allow-Origin', '*')
+    return res.set('Access-Control-Allow-Origin', appInfoUrl).status(200).send({
       // return empty success response, so client can finish AJAX success
     });
 
   } catch(error) {
     console.log("Error $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", error);
-    res.end();
+    return res.end();
   } // end catch
 
 });
