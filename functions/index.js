@@ -37,7 +37,11 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
   try {
     let sanitizedData = {};
 
-    // End processing if not requested by an authorized app (check origin url)
+    /**
+     *  Stop processing if not requested by an authorized app (check origin url)
+     */
+   
+    // Get app info
     let { app: appKey } = req.body; // Form submission
     const appDoc = await db.collection('app').doc(appKey).get();
     let { 
@@ -56,17 +60,26 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     if (!globalCors.data().bypass) {
       // restrict to url requests that match the app
       res.set('Access-Control-Allow-Origin', appInfoUrl);
+      // FIXME - throw error so log shows attempt, instead of returning res.end()
       // if does not match, end processing: req.headers.origin = url
       if (req.headers.origin !== appInfoUrl) { return res.end(); } 
     }
 
-    // Continue processing if origin url matches appInfoUrl
+    /**
+     *  Continue processing if origin url matches appInfoUrl
+     */
+
     sanitizedData.appInfoName = appInfoName;
     sanitizedData.appInfoUrl = appInfoUrl;
     sanitizedData.appInfoTimeZone = appInfoTimeZone;
 
+    // Url redirect: use global if not provided in form submission
+    let responseUrlRedirect;
+    const globalUrlRedirect = await db.collection('global').doc('urlRedirect').get();
+    responseUrlRedirect = globalUrlRedirect.data().default;
+
     // Form submission
-    let { template = 'contactDefault', webformId, ...rest } = req.body; // template default 'contactForm' if not added in webform
+    let { template = 'contactDefault', webformId, urlRedirect, ...rest } = req.body; // template default 'contactForm' if not added in webform
 
     // Sanitize data
     function sanitize(string, charCount) { return string.trim().substr(0, charCount) };
@@ -85,6 +98,9 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
         template = sanitize(template, maxLength);
       } else if (doc.id == 'webformId') {
         webformId = sanitize(webformId, maxLength);
+      } else if (urlRedirect && doc.id == 'urlRedirect') {
+        urlRedirect = sanitize(urlRedirect, maxLength);
+        responseUrlRedirect = urlRedirect;
       }
     }
 
@@ -114,7 +130,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
      */
     let responseBody = { 
       data: {
-        redirect: '/about'
+        redirect: responseUrlRedirect
       }
     }
 
