@@ -112,10 +112,16 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     /**
      * Response
      */
+    let responseBody = { 
+      data: {
+        redirect: '/about'
+      }
+    }
 
-    return res.status(200).send({
-      // return empty success response, so client can finish AJAX success
-    });
+    return res.status(200).send(
+      // return response (even if empty), so client can finish AJAX success
+      responseBody
+    );
 
   } catch(error) {
     console.log("Error $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", error);
