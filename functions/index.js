@@ -102,7 +102,8 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     let { template = 'contactDefault', webformId, urlRedirect, ...rest } = req.body; // template default 'contactForm' if not added in webform
 
     // Sanitize data
-    function sanitize(string, charCount) { return string.trim().substr(0, charCount) };
+    let sanitizeString = (property, charCount) => 
+      property.toString().trim().substr(0, charCount);
 
     const formFields = await db.collection('formField').get();
     // webform-submitted fields
@@ -110,16 +111,16 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       let maxLength = await doc.data().maxLength;
       // ...rest: if formField exists in req.body
       if (rest[doc.id]) {
-        let string = sanitize(rest[doc.id], maxLength);
+        let string = sanitizeString(rest[doc.id], maxLength);
         sanitizedData[doc.id] = string;
       } else if (doc.id == 'appKey') {
-        appKey = sanitize(appKey, maxLength);
+        appKey = sanitizeString(appKey, maxLength);
       } else if (doc.id == 'template') {
-        template = sanitize(template, maxLength);
+        template = sanitizeString(template, maxLength);
       } else if (doc.id == 'webformId') {
-        webformId = sanitize(webformId, maxLength);
+        webformId = sanitizeString(webformId, maxLength);
       } else if (urlRedirect && doc.id == 'urlRedirect') {
-        urlRedirect = sanitize(urlRedirect, maxLength);
+        urlRedirect = sanitizeString(urlRedirect, maxLength);
         responseUrlRedirect = urlRedirect;
       }
     }
