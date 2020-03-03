@@ -37,11 +37,11 @@ const logErrorInfo = error => ({
   info: (new Error()),
 });
 
-const responseErrorBasic = {
+const responseErrorBasic = string => ({
   data: {
-    error: 'Error: Application error.'
+    error: string 
   }
-};
+});
 
 // !SECTION
 
@@ -164,7 +164,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 
     console.error(logErrorInfo(error));
 
-    return res.status(500).send(responseErrorBasic);
+    return res.status(500).send(responseErrorBasic('Error: Application error.'));
 
   } // end catch
 
