@@ -27,6 +27,24 @@ const jwtClient = new google.auth.JWT({
 
 // !SECTION
 
+// SECTION Logging and Errors
+
+const logErrorInfo = error => ({
+  Error: 'Description and source line:',
+  description: error,
+  break: '**************************************************************',
+  Logger: ('Error reported by log enty at:'),
+  info: (new Error()),
+});
+
+let errorBasic = string => ({
+  data: {
+    errors: string
+  }
+});
+
+// !SECTION
+
 // Terminate HTTP functions with res.redirect(), res.send(), or res.end().
 // Terminate a synchronous function with a return; statement.
 // https://firebase.google.com/docs/functions/terminate-functions
@@ -60,9 +78,11 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     if (!globalCors.data().bypass) {
       // restrict to url requests that match the app
       res.set('Access-Control-Allow-Origin', appInfoUrl);
-      // FIXME - throw error so log shows attempt, instead of returning res.end()
       // if does not match, end processing: req.headers.origin = url
-      if (req.headers.origin !== appInfoUrl) { return res.end(); } 
+      if (req.headers.origin !== appInfoUrl) { 
+        console.info(new Error('Origin Url does not match app url.'));
+        return res.end(); 
+      } 
     }
 
     /**
@@ -133,22 +153,25 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
         redirect: responseUrlRedirect
       }
     }
-
+    
     return res.status(200).send(
       // return response (even if empty), so client can finish AJAX success
       responseBody
     );
 
   } catch(error) {
-    console.log("Error $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", error);
-    return res.end();
+
+    console.error(logErrorInfo(error));
+
+    return res.status(500).send(errorBasic('Error: Application error.'));
+
   } // end catch
 
 });
 
 
 // ANCHOR - Firestore To Sheets [Nested email template data]
-exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}')
+exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId}')
   .onCreate(async (snapshot, context) => {
   
   let dataRow = {}; // sorted data to be converted to array for submit to sheet
@@ -312,18 +335,19 @@ exports.firestoreToSheet = functions.firestore.document('formSubmission/{formId}
 
     } // end 'else' add new sheet
 
-  }
-  catch(error) {
-    console.log("Error $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", error);
-    res.end();
+  } catch(error) {
+    
+    console.error(logErrorInfo(error));
 
-  }
+    res.end(); // no need to return response as client is not involved
+
+  } // end catch
 
 });
 
 
 // ANCHOR Firebase to Sheets [Basic 2 Column List]
-exports.firebaseToSheet = functions.database.ref("/Form")
+exports.firebaseToSheets = functions.database.ref("/Form")
   .onUpdate(async change => {
 
   let data = change.after.val();
