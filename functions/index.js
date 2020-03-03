@@ -38,8 +38,8 @@ const logErrorInfo = error => ({
 });
 
 const responseErrorBasic = string => ({
-  data: {
-    error: string 
+  message: {
+    error: string
   }
 });
 
