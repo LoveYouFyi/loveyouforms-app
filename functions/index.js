@@ -96,9 +96,9 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     sanitizedData.appInfoTimeZone = appInfoTimeZone;
 
     // Url redirect: use global if not provided in form submission
-    let responseUrlRedirect;
-    const globalUrlRedirect = await db.collection('global').doc('urlRedirect').get();
-    responseUrlRedirect = globalUrlRedirect.data().default;
+    let urlRedirectResponse;
+    const urlRedirectGlobal = await db.collection('global').doc('urlRedirect').get();
+    urlRedirectResponse = urlRedirectGlobal.data().default;
 
     // Form submission
     let { template = 'contactDefault', webformId, urlRedirect, ...rest } = req.body; // template default 'contactForm' if not added in webform
@@ -123,7 +123,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
         webformId = sanitizeString(webformId, maxLength);
       } else if (urlRedirect && doc.id == 'urlRedirect') {
         urlRedirect = sanitizeString(urlRedirect, maxLength);
-        responseUrlRedirect = urlRedirect;
+        urlRedirectResponse = urlRedirect;
       }
     }
 
@@ -153,7 +153,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
      */
     let responseBody = { 
       data: {
-        redirect: responseUrlRedirect
+        redirect: urlRedirectResponse
       }
     }
     
