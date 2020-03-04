@@ -54,23 +54,28 @@ const responseErrorBasic = string => ({
 exports.formHandler = functions.https.onRequest(async (req, res) => {
 
   try {
-    let sanitizedData = {};
+    let sanitizedHelperFields = {};
+    let sanitizedTemplateDataFields = {};
 
     /**
      *  Check if form submitted by authorized app (compare origin url) or stop processing 
      */
    
-    // Get app info
+    // Get app info and if appKey does not exist then stop processing
     let { app: appKey } = req.body; // Form submission
     const appDoc = await db.collection('app').doc(appKey).get();
-    let { 
-      from: appInfoFrom, 
-      name: appInfoName, 
-      url: appInfoUrl, 
-      timeZone: appInfoTimeZone 
-    } = appDoc.data().appInfo;
+    if (appDoc) {
+      let { from, name, url, timeZone } = appDoc.data().appInfo;
+      sanitizedHelperFields.appInfoFrom = from,
+      sanitizedHelperFields.appInfoName = name,
+      sanitizedHelperFields.appInfoUrl = url,
+      sanitizedHelperFields.appInfoTimeZone = timeZone
+    } else {
+      console.info(new Error('appKey does not exist.'));
+      res.end();
+    }
 
-    // CORS: check if allowing bypass globally to allow req from any url source
+    // CORS: check if allowing bypass globally for req from any url source
     const globalCors = await db.collection('global').doc('cors').get();
     if (globalCors.data().bypass) {
       // allow * so localhost recieves response
@@ -91,9 +96,6 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
      *  Continue processing if not ended
      */
 
-    sanitizedData.appInfoName = appInfoName;
-    sanitizedData.appInfoUrl = appInfoUrl;
-    sanitizedData.appInfoTimeZone = appInfoTimeZone;
 
     // Url redirect: use global if not provided in form submission
     let urlRedirectResponse;
@@ -101,7 +103,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     urlRedirectResponse = urlRedirectGlobal.data().default;
 
     // Form submission
-    let { template = 'contactDefault', webformId, urlRedirect, ...rest } = req.body; // template default 'contactForm' if not added in webform
+    let { template = 'contactDefault', webformId, urlRedirect, ...templateData } = req.body; // template default 'contactForm' if not added in webform
 
     // Sanitize data
     let sanitizeString = (field, charCount) => 
@@ -112,19 +114,21 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     // webform-submitted fields
 //    const webformFields = { template, webformId, urlRedirect };
 //    Object.assign(webformFields, rest);
-console.log("rest $$$$$$$$$$$$$$$$ ", rest);
-    const webformFields = Object.assign({ template, webformId, urlRedirect }, rest );
+console.log("rest $$$$$$$$$$$$$$$$ ", templateData);
+//    const webformFields = Object.assign({ template, webformId, urlRedirect }, rest );
 //    Object.assign(webformFields, rest);
 
-    console.log("webformFields $$$$$$$$$$$$$ ", webformFields);
+ //   console.log("webformFields $$$$$$$$$$$$$ ", webformFields);
 
     for (const doc of formFields.docs) {
       let maxLength = doc.data().maxLength;
-      // ...rest: if formField exists in req.body
-      if (rest[doc.id]) {
-        let string = sanitizeString(rest[doc.id], maxLength);
-        sanitizedData[doc.id] = string;
-      } else if (doc.id == 'appKey') {
+      if (templateData[doc.id]) {
+        sanitizedTemplateDataFields[doc.id] = sanitizeString(templateData[doc.id], maxLength);
+      } else if (req.body[doc.id]) {
+        sanitizedHelperFields[doc.id] = sanitizeString(req.body[doc.id], maxLength);
+      }
+      /* 
+        else if (doc.id == 'appKey') {
         appKey = sanitizeString(appKey, maxLength);
       } else if (doc.id == 'template') {
         template = sanitizeString(template, maxLength);
@@ -134,6 +138,7 @@ console.log("rest $$$$$$$$$$$$$$$$ ", rest);
         urlRedirect = sanitizeString(urlRedirect, maxLength);
         urlRedirectResponse = urlRedirect;
       }
+      */
     }
 
     // Build object to be saved to db
@@ -142,13 +147,13 @@ console.log("rest $$$$$$$$$$$$$$$$ ", rest);
       // 'from' email if not assigned comes from firebase extension field: DEFAULT_FROM
       appKey,
       createdDateTime: FieldValue.serverTimestamp(),
-      ...appInfoFrom && { from: appInfoFrom }, // from: app.(appKey).appInfo.from
+      ...sanitizedHelperFields.appInfoFrom && { from: sanitizedHelperFields.appInfoFrom }, // from: app.(appKey).appInfo.from
       toUids: [ appKey ], // to: app.(appKey).email
-      ...sanitizedData.email && {replyTo: sanitizedData.email}, // webform
-      ...webformId && { webformId }, // webform
+      ...sanitizedHelperFields.email && {replyTo: sanitizedHelperFields.email}, // webform
+      ...sanitizedHelperFields.webformId && { ...sanitizedHelperFields.webformId }, // webform
       template: {
-        name: template,
-        data: sanitizedData
+        name: sanitizedHelperFields.template,
+        data: sanitizedTemplateDataFields
       }
     };
 
