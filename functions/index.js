@@ -4,13 +4,13 @@
 const functions = require('firebase-functions');
 // Firebase Admin SDK to access the Firebase/Firestore Realtime Database.
 const admin = require('firebase-admin');
-// [ CREDENTIALS START ]
+// [**** CREDENTIALS START ****]
 const serviceAccount = require('./service-account.json'); // download from firebase console
 admin.initializeApp({ // initialize firebase admin with credentials
   credential: admin.credential.cert(serviceAccount), // So functions can connect to database
   databaseURL: 'https://loveyou-forms.firebaseio.com' // Needed if using FireBase database (not FireStore)
 });
-// [ CREDENTIALS STOP ]
+// [**** CREDENTIALS STOP ****]
 const db = admin.firestore(); // FireStore database reference
 // Timestamps: required for adding server-timestamps to any database docs
 const FieldValue = require('firebase-admin').firestore.FieldValue; // Timestamp here
@@ -21,8 +21,8 @@ const moment = require('moment-timezone'); // Timestamp formats and timezones
 const { google } = require('googleapis');
 const sheets = google.sheets('v4'); // Google Sheets
 const jwtClient = new google.auth.JWT({ // JWT Authentication (for google sheets)
-  email: serviceAccount.client_email, // [ CREDENTIALS ]
-  key: serviceAccount.private_key, // [ CREDENTIALS ]
+  email: serviceAccount.client_email, // [**** CREDENTIALS ****]
+  key: serviceAccount.private_key, // [**** CREDENTIALS ****]
   scopes: ['https://www.googleapis.com/auth/spreadsheets'] // read and write sheets
 });
 
