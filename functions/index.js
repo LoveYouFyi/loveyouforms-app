@@ -3,26 +3,26 @@
 // Cloud Functions for Firebase SDK to create Cloud Functions and setup triggers.
 const functions = require('firebase-functions');
 // Firebase Admin SDK to access the Firebase/Firestore Realtime Database.
-var admin = require("firebase-admin");
-var serviceAccount = require("./service-account.json");
+const admin = require('firebase-admin');
+const serviceAccount = require('./service-account.json');
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
-  databaseURL: "https://loveyou-forms.firebaseio.com" // FireBase db (not fireStore)
+  databaseURL: 'https://loveyou-forms.firebaseio.com' // FireBase db (not fireStore)
 });
-let db = admin.firestore(); // Firestore db reference
+const db = admin.firestore(); // Firestore db reference
 // Timestamps: required for timestamp settings
-let FieldValue = require('firebase-admin').firestore.FieldValue; // Timestamp Here
+const FieldValue = require('firebase-admin').firestore.FieldValue; // Timestamp Here
 const settings = { timestampsInSnapshots: true};
 db.settings(settings);
-let moment = require('moment-timezone'); // Timestamp formats and timezones
+const moment = require('moment-timezone'); // Timestamp formats and timezones
 // Google Sheets
-const { google } = require("googleapis");
-const sheets = google.sheets("v4");
+const { google } = require('googleapis');
+const sheets = google.sheets('v4');
 // JWT Authentication (for google sheets)
 const jwtClient = new google.auth.JWT({
   email: serviceAccount.client_email,
   key: serviceAccount.private_key,
-  scopes: ["https://www.googleapis.com/auth/spreadsheets"] // read and write sheets
+  scopes: ['https://www.googleapis.com/auth/spreadsheets'] // read and write sheets
 });
 
 // !SECTION
