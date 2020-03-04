@@ -58,7 +58,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     let sanitizedTemplateDataFields = {};
 
     /**
-     *  Check if form submitted by authorized app (compare origin url) or stop processing 
+     *  Check if form submitted by authorized app or stop processing cloud function
      */
    
     // Get app info and if appKey does not exist then stop processing
@@ -75,32 +75,35 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       res.end();
     }
 
-    // CORS: check if allowing bypass globally for req from any url source
-    const globalCors = await db.collection('global').doc('cors').get();
-    if (globalCors.data().bypass) {
-      // allow * so localhost recieves response
+    /**
+     * Global config
+     */
+    const globalConfig = await db.collection('global').get();
+    const globalConfigItems = {};
+    
+    // CORS validation: stop cloud function if CORS check does not pass
+    globalConfig.docs.map(doc => { globalConfigItems[doc.id] = doc.data() });
+    console.log("globalConfigItems $$$$$$$$$$$$$$$$$$$$$$ ", globalConfigItems);
+    if (globalConfigItems.cors.bypass) {
+      // allow * so localhost (or any source) recieves response
       res.set('Access-Control-Allow-Origin', '*');
-    }
-    // CORS: enforce url restriction if not allowing bypass globally
-    if (!globalCors.data().bypass) {
+    } else {
       // restrict to url requests that match the app
-      res.set('Access-Control-Allow-Origin', appInfoUrl);
+      res.set('Access-Control-Allow-Origin', sanitizedHelperFields.appInfoUrl);
       // end processing if url does not match (req.headers.origin = url)
-      if (req.headers.origin !== appInfoUrl) { 
+      if (req.headers.origin !== sanitizedTemplateDataFields.appInfoUrl) { 
         console.info(new Error('Origin Url does not match app url.'));
         return res.end();
       } 
     }
 
+    // Url redirect: global redirect used unless overridden by form field (below)
+    sanitizedHelperFields.urlRedirect = globalConfigItems.urlRedirect.default;
+
     /**
-     *  Continue processing if CORS check passed
+     * Form submission handle fields
      */
 
-    // Url redirect: uses global redirect if not provided via form field
-    const urlRedirectGlobal = await db.collection('global').doc('urlRedirect').get();
-    sanitizedHelperFields.urlRedirect = urlRedirectGlobal.data().default;
-
-    // Form submission
     let { 
       // explicitly destructure helper fields
       templateName = 'contactDefault', webformId, urlRedirect, 
