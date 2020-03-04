@@ -67,9 +67,9 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     if (appDoc) {
       let { from, name, url, timeZone } = appDoc.data().appInfo;
       sanitizedHelperFields.appInfoFrom = from,
-      sanitizedHelperFields.appInfoName = name,
-      sanitizedHelperFields.appInfoUrl = url,
-      sanitizedHelperFields.appInfoTimeZone = timeZone
+      sanitizedTemplateDataFields.appInfoName = name,
+      sanitizedTemplateDataFields.appInfoUrl = url,
+      sanitizedTemplateDataFields.appInfoTimeZone = timeZone
     } else {
       console.info(new Error('appKey does not exist.'));
       res.end();
