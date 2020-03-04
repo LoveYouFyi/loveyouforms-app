@@ -56,7 +56,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     let sanitizedData = {};
 
     /**
-     *  Stop processing if not requested by an authorized app (check origin url)
+     *  Check if req by authorized app, or stop processing (check origin url)
      */
    
     // Get app info
