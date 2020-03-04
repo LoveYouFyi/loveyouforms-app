@@ -96,10 +96,9 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
      *  Continue processing if CORS check passed
      */
 
-    // Url redirect: use global if not provided in form submission
-    let urlRedirectResponse;
+    // Url redirect: uses global redirect if not provided via form field
     const urlRedirectGlobal = await db.collection('global').doc('urlRedirect').get();
-    urlRedirectResponse = urlRedirectGlobal.data().default;
+    sanitizedHelperFields.urlRedirect = urlRedirectGlobal.data().default;
 
     // Form submission
     let { 
@@ -114,8 +113,6 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       field.toString().trim().substr(0, charCount);
 
     const formFields = await db.collection('formField').get();
-
-    console.log("rest $$$$$$$$$$$$$$$$ ", templateData);
 
     for (const doc of formFields.docs) {
       let maxLength = doc.data().maxLength;
@@ -152,7 +149,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
      */
     let responseBody = { 
       data: {
-        redirect: urlRedirectResponse
+        redirect: sanitizedHelperFields.urlRedirect
       }
     }
     
