@@ -108,10 +108,10 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       field.toString().trim().substr(0, charCount);
 
     const formFields = await db.collection('formField').get();
-    console.log("formFields.docs $$$$$$$$$$$$$ ", formFields.docs);
 
     // webform-submitted fields
-    const webformFields = [ template, webformId, urlRedirect, rest ];
+    const webformFields = { template, webformId, urlRedirect };
+    Object.assign(webformFields, rest);
     console.log("webformFields $$$$$$$$$$$$$ ", webformFields);
 
     for (const doc of formFields.docs) {
