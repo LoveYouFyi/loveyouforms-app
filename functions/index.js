@@ -104,13 +104,18 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     let { template = 'contactDefault', webformId, urlRedirect, ...rest } = req.body; // template default 'contactForm' if not added in webform
 
     // Sanitize data
-    let sanitizeString = (property, charCount) => 
-      property.toString().trim().substr(0, charCount);
+    let sanitizeString = (field, charCount) => 
+      field.toString().trim().substr(0, charCount);
 
     const formFields = await db.collection('formField').get();
+    console.log("formFields.docs $$$$$$$$$$$$$ ", formFields.docs);
+
     // webform-submitted fields
+    const webformFields = [ template, webformId, urlRedirect, rest ];
+    console.log("webformFields $$$$$$$$$$$$$ ", webformFields);
+
     for (const doc of formFields.docs) {
-      let maxLength = await doc.data().maxLength;
+      let maxLength = doc.data().maxLength;
       // ...rest: if formField exists in req.body
       if (rest[doc.id]) {
         let string = sanitizeString(rest[doc.id], maxLength);
@@ -334,7 +339,7 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
 
       // New Sheet Actions: add rows for header, then data
       await sheets.spreadsheets.values.update(addRow(rangeHeader)(sheetHeader));
-      await sheets.spreadsheets.values.update(addRow(rangeData)(dataRowForSheet));
+      return sheets.spreadsheets.values.update(addRow(rangeData)(dataRowForSheet));
 
     } // end 'else' add new sheet
 
@@ -342,7 +347,7 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
     
     console.error(logErrorInfo(error));
 
-    res.end(); // no need to return response as client is not involved
+    // 'res' is not defined, so cannot use it
 
   } // end catch
 
