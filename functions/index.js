@@ -93,7 +93,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     }
 
     /**
-     *  Continue processing if not ended
+     *  Continue processing if CORS check passed
      */
 
 
@@ -103,7 +103,12 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     urlRedirectResponse = urlRedirectGlobal.data().default;
 
     // Form submission
-    let { template = 'contactDefault', webformId, urlRedirect, ...templateData } = req.body; // template default 'contactForm' if not added in webform
+    let { 
+      // explicitly destructure helper fields
+      template = 'contactDefault', webformId, urlRedirect, 
+      // collect template fields 
+      ...templateData 
+    } = req.body; // template default 'contactForm' if not added in webform
 
     // Sanitize data
     let sanitizeString = (field, charCount) => 
@@ -111,14 +116,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 
     const formFields = await db.collection('formField').get();
 
-    // webform-submitted fields
-//    const webformFields = { template, webformId, urlRedirect };
-//    Object.assign(webformFields, rest);
-console.log("rest $$$$$$$$$$$$$$$$ ", templateData);
-//    const webformFields = Object.assign({ template, webformId, urlRedirect }, rest );
-//    Object.assign(webformFields, rest);
-
- //   console.log("webformFields $$$$$$$$$$$$$ ", webformFields);
+    console.log("rest $$$$$$$$$$$$$$$$ ", templateData);
 
     for (const doc of formFields.docs) {
       let maxLength = doc.data().maxLength;
@@ -127,18 +125,6 @@ console.log("rest $$$$$$$$$$$$$$$$ ", templateData);
       } else if (req.body[doc.id]) {
         sanitizedHelperFields[doc.id] = sanitizeString(req.body[doc.id], maxLength);
       }
-      /* 
-        else if (doc.id == 'appKey') {
-        appKey = sanitizeString(appKey, maxLength);
-      } else if (doc.id == 'template') {
-        template = sanitizeString(template, maxLength);
-      } else if (doc.id == 'webformId') {
-        webformId = sanitizeString(webformId, maxLength);
-      } else if (urlRedirect && doc.id == 'urlRedirect') {
-        urlRedirect = sanitizeString(urlRedirect, maxLength);
-        urlRedirectResponse = urlRedirect;
-      }
-      */
     }
 
     // Build object to be saved to db
@@ -150,7 +136,7 @@ console.log("rest $$$$$$$$$$$$$$$$ ", templateData);
       ...sanitizedHelperFields.appInfoFrom && { from: sanitizedHelperFields.appInfoFrom }, // from: app.(appKey).appInfo.from
       toUids: [ appKey ], // to: app.(appKey).email
       ...sanitizedHelperFields.email && {replyTo: sanitizedHelperFields.email}, // webform
-      ...sanitizedHelperFields.webformId && { ...sanitizedHelperFields.webformId }, // webform
+      ...sanitizedHelperFields.webformId && { webformId: sanitizedHelperFields.webformId }, // webform
       template: {
         name: sanitizedHelperFields.template,
         data: sanitizedTemplateDataFields
