@@ -96,7 +96,6 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
      *  Continue processing if CORS check passed
      */
 
-
     // Url redirect: use global if not provided in form submission
     let urlRedirectResponse;
     const urlRedirectGlobal = await db.collection('global').doc('urlRedirect').get();
@@ -105,7 +104,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     // Form submission
     let { 
       // explicitly destructure helper fields
-      template = 'contactDefault', webformId, urlRedirect, 
+      templateName = 'contactDefault', webformId, urlRedirect, 
       // collect template fields 
       ...templateData 
     } = req.body; // template default 'contactForm' if not added in webform
@@ -138,7 +137,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       ...sanitizedHelperFields.email && {replyTo: sanitizedHelperFields.email}, // webform
       ...sanitizedHelperFields.webformId && { webformId: sanitizedHelperFields.webformId }, // webform
       template: {
-        name: sanitizedHelperFields.template,
+        name: sanitizedHelperFields.templateName,
         data: sanitizedTemplateDataFields
       }
     };
