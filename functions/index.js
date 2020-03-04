@@ -4,24 +4,25 @@
 const functions = require('firebase-functions');
 // Firebase Admin SDK to access the Firebase/Firestore Realtime Database.
 const admin = require('firebase-admin');
-const serviceAccount = require('./service-account.json');
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-  databaseURL: 'https://loveyou-forms.firebaseio.com' // FireBase db (not fireStore)
+// [ CREDENTIALS START ]
+const serviceAccount = require('./service-account.json'); // download from firebase console
+admin.initializeApp({ // initialize firebase admin with credentials
+  credential: admin.credential.cert(serviceAccount), // So functions can connect to database
+  databaseURL: 'https://loveyou-forms.firebaseio.com' // Needed if using FireBase database (not FireStore)
 });
-const db = admin.firestore(); // Firestore db reference
-// Timestamps: required for timestamp settings
-const FieldValue = require('firebase-admin').firestore.FieldValue; // Timestamp Here
-const settings = { timestampsInSnapshots: true};
-db.settings(settings);
+// [ CREDENTIALS STOP ]
+const db = admin.firestore(); // FireStore database reference
+// Timestamps: required for adding server-timestamps to any database docs
+const FieldValue = require('firebase-admin').firestore.FieldValue; // Timestamp here
+const timestampSettings = { timestampsInSnapshots: true}; // Define timestamp settings
+db.settings(timestampSettings); // Apply timestamp settings to database settings
 const moment = require('moment-timezone'); // Timestamp formats and timezones
-// Google Sheets
+// Google APIs
 const { google } = require('googleapis');
-const sheets = google.sheets('v4');
-// JWT Authentication (for google sheets)
-const jwtClient = new google.auth.JWT({
-  email: serviceAccount.client_email,
-  key: serviceAccount.private_key,
+const sheets = google.sheets('v4'); // Google Sheets
+const jwtClient = new google.auth.JWT({ // JWT Authentication (for google sheets)
+  email: serviceAccount.client_email, // [ CREDENTIALS ]
+  key: serviceAccount.private_key, // [ CREDENTIALS ]
   scopes: ['https://www.googleapis.com/auth/spreadsheets'] // read and write sheets
 });
 
@@ -276,7 +277,7 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
       spreadsheetId: spreadsheetId,
       includeGridData: false
     };
-    var sheetDetails = await sheets.spreadsheets.get(sheetObjectRequest);
+    let sheetDetails = await sheets.spreadsheets.get(sheetObjectRequest);
     let sheetNameExists = sheetDetails.data.sheets.find(sheet => {
       // if sheet name exists returns sheet 'properties' object, else is undefined
       return sheet.properties.title === emailTemplateName;
@@ -360,8 +361,8 @@ exports.firebaseToSheets = functions.database.ref("/Form")
   //  ['COL-A', 'COL-B']
   //]
   //
-  var itemArray = [];
-  var valueArray = [];
+  let itemArray = [];
+  let valueArray = [];
   Object.keys(data).forEach((key, index) => {
     itemArray.push(key);
     itemArray.push(data[key]);
