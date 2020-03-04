@@ -57,7 +57,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     let sanitizedData = {};
 
     /**
-     *  Check if req by authorized app, or stop processing (check origin url)
+     *  Check if form submitted by authorized app (compare origin url) or stop processing 
      */
    
     // Get app info
@@ -70,24 +70,25 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       timeZone: appInfoTimeZone 
     } = appDoc.data().appInfo;
 
-    // CORS -check if allowing bypass globally otherwise enforce url restriction
+    // CORS: check if allowing bypass globally to allow req from any url source
     const globalCors = await db.collection('global').doc('cors').get();
     if (globalCors.data().bypass) {
       // allow * so localhost recieves response
       res.set('Access-Control-Allow-Origin', '*');
     }
+    // CORS: enforce url restriction if not allowing bypass globally
     if (!globalCors.data().bypass) {
       // restrict to url requests that match the app
       res.set('Access-Control-Allow-Origin', appInfoUrl);
-      // if does not match, end processing: req.headers.origin = url
+      // end processing if url does not match (req.headers.origin = url)
       if (req.headers.origin !== appInfoUrl) { 
         console.info(new Error('Origin Url does not match app url.'));
-        return res.end(); 
+        return res.end();
       } 
     }
 
     /**
-     *  Continue processing if origin url matches appInfoUrl
+     *  Continue processing if not ended
      */
 
     sanitizedData.appInfoName = appInfoName;
