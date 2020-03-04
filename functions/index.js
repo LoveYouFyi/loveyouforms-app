@@ -54,37 +54,36 @@ const responseErrorBasic = string => ({
 exports.formHandler = functions.https.onRequest(async (req, res) => {
 
   try {
-    let sanitizedHelperFields = {};
-    let sanitizedTemplateDataFields = {};
+    const globalConfig = {};
+    const sanitizedHelperFields = {};
+    const sanitizedTemplateDataFields = {};
+
+    /**
+     * Global config
+     */
+    const globals = await db.collection('global').get();
+    globals.docs.map(doc => { globalConfig[doc.id] = doc.data() });
 
     /**
      *  Check if form submitted by authorized app or stop processing cloud function
      */
    
-    // Get app info and if appKey does not exist then stop processing
-    let { app: appKey } = req.body; // Form submission
-    const appDoc = await db.collection('app').doc(appKey).get();
-    if (appDoc) {
-      let { from, name, url, timeZone } = appDoc.data().appInfo;
+    // App key validation: if does not exist stop processing otherwise get app info
+    let { appKey } = req.body; // Form submission
+    const app = await db.collection('app').doc(appKey).get();
+    if (app) {
+      let { from, name, url, timeZone } = app.data().appInfo;
       sanitizedHelperFields.appInfoFrom = from,
       sanitizedTemplateDataFields.appInfoName = name,
       sanitizedTemplateDataFields.appInfoUrl = url,
       sanitizedTemplateDataFields.appInfoTimeZone = timeZone
     } else {
-      console.info(new Error('appKey does not exist.'));
+      console.info(new Error('App Key does not exist.'));
       res.end();
     }
 
-    /**
-     * Global config
-     */
-    const globalConfig = await db.collection('global').get();
-    const globalConfigItems = {};
-    
     // CORS validation: stop cloud function if CORS check does not pass
-    globalConfig.docs.map(doc => { globalConfigItems[doc.id] = doc.data() });
-    console.log("globalConfigItems $$$$$$$$$$$$$$$$$$$$$$ ", globalConfigItems);
-    if (globalConfigItems.cors.bypass) {
+    if (globalConfig.cors.bypass) {
       // allow * so localhost (or any source) recieves response
       res.set('Access-Control-Allow-Origin', '*');
     } else {
@@ -97,8 +96,8 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       } 
     }
 
-    // Url redirect: global redirect used unless overridden by form field (below)
-    sanitizedHelperFields.urlRedirect = globalConfigItems.urlRedirect.default;
+    // Url redirect: global redirect unless overridden by form field (below)
+    sanitizedHelperFields.urlRedirect = globalConfig.urlRedirect.default;
 
     /**
      * Form submission handle fields
@@ -109,7 +108,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       templateName = 'contactDefault', webformId, urlRedirect, 
       // collect template fields 
       ...templateData 
-    } = req.body; // template default 'contactForm' if not added in webform
+    } = req.body; // Form submission
 
     // Sanitize data
     let sanitizeString = (field, charCount) => 
@@ -132,17 +131,17 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       // 'from' email if not assigned comes from firebase extension field: DEFAULT_FROM
       appKey,
       createdDateTime: FieldValue.serverTimestamp(),
-      ...sanitizedHelperFields.appInfoFrom && { from: sanitizedHelperFields.appInfoFrom }, // from: app.(appKey).appInfo.from
-      toUids: [ appKey ], // to: app.(appKey).email
-      ...sanitizedHelperFields.email && {replyTo: sanitizedHelperFields.email}, // webform
-      ...sanitizedHelperFields.webformId && { webformId: sanitizedHelperFields.webformId }, // webform
+      ...sanitizedHelperFields.appInfoFrom && { from: sanitizedHelperFields.appInfoFrom },
+      toUids: [ appKey ], // toUids = to email: format required by cloud extension 'trigger email'
+      ...sanitizedHelperFields.email && {replyTo: sanitizedHelperFields.email},
+      ...sanitizedHelperFields.webformId && { webformId: sanitizedHelperFields.webformId },
       template: {
         name: sanitizedHelperFields.templateName,
         data: sanitizedTemplateDataFields
       }
     };
 
-    // For serverTimestamp to work must first create new doc key then post data
+    // For serverTimestamp to work must first create new doc key then 'set' data
     const newKey = db.collection("formSubmission").doc();
     // update the new-key-record using 'set' which works for existing doc
     newKey.set(data);
@@ -157,7 +156,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     }
     
     return res.status(200).send(
-      // return response (even if empty), so client can finish AJAX success
+      // return response (even if empty) so client can finish AJAX success
       responseBody
     );
 
