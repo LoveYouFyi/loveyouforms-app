@@ -70,8 +70,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
      */
    
     // App key validation: if does not exist stop processing otherwise get app info
-    let { appKey } = req.body; // Form submission
-    const app = await db.collection('app').doc(appKey).get();
+    const app = await db.collection('app').doc(req.body.appKey).get();
     if (app) {
       let { from, name, url, timeZone } = app.data().appInfo;
       sanitizedHelperFields.appInfoFrom = from,
@@ -105,8 +104,8 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
      */
 
     let { 
-      // explicitly destructure helper fields
-      templateName = 'contactDefault', webformId, urlRedirect, 
+      // destructure fields that should not be included with template fields
+      templateName = 'contactDefault', webformId, urlRedirect, appKey,
       // collect template fields 
       ...templateData 
     } = req.body; // Form submission
