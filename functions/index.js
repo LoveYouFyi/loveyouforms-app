@@ -63,8 +63,8 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       const allowType = ['i', 't'];
       const formField = [ 'email', 'message', 'name', 'phone', 
             'radioTimeframe', 'selectService', 'templateName', 'urlRedirect', 
-            'webformId', 'appInfoUrl' ];
-      const ignoreSanitize = [ 'from', 'name', 'timezone', 'url' ];
+            'webformId' ];
+      const ignoreSanitize = [ 'from', 'name', 'timeZone', 'url' ];
       const allowProps = formField.concat(ignoreSanitize);
       let sanitizeValue = (value, maxLength) => 
         value.toString().trim().substr(0, maxLength);
@@ -96,13 +96,11 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     console.log("Log 2 ", fields.type());
     fields.add('me', "message", "               please add me!      ", 128);
     console.log("Log 3 ", fields.type());
-    fields.add('i', "appInfoUrl", "http://info.com", 256);
-    console.log("Log 4 ", fields.type());
     fields.add('t', "whyThis", "http://whyThis.com", 256);
-    console.log("Log 5 ", fields.type());
-    console.log("Log 6 ", fields.type().t.greet);
+    console.log("Log 4 ", fields.type());
+    console.log("Log 5 ", fields.type().t.greet);
     fields.add('i', "from", "rfkejfk;erjk;aejfr eakfj rekl;aj f;kera jfkr eak;lfj rk;eaj fk;rj eakfj; r;ekajf kaej;rf kl;aejf rk;ajf k;rjea fkr;j eakarjf kaj klfaj fkl;aj fklae fjkr eaj;f krjaklf jrekajf krl;aej fklreja fklerj aklj erfklj aklej fkl;aj fkl;aje fklrjea kfrjak ");
-    console.log("Log 7 ", fields.type());
+    console.log("Log 6 ", fields.type());
 
 
     ////////////////////////////////////////////////////////////////////////////
@@ -129,10 +127,15 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       sanitizedTemplateDataFields.appInfoName = name,
       sanitizedTemplateDataFields.appInfoUrl = url,
       sanitizedTemplateDataFields.appInfoTimeZone = timeZone
+      fields.add('i', 'from', from);
+      fields.add('i', 'name', name);
+      fields.add('i', 'url', url);
+      fields.add('i', 'timeZone', timeZone);
     } else {
       console.info(new Error('App Key does not exist.'));
       res.end();
     }
+    console.log("Log 7 ", fields.type());
 
     // CORS validation: stop cloud function if CORS check does not pass
     if (globalConfig.cors.bypass) {
