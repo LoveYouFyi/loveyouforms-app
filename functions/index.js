@@ -111,9 +111,12 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     /**
      * Global config
      */
-    const globalConfig = {};
     const globals = await db.collection('global').get();
-    globals.docs.map(doc => { globalConfig[doc.id] = doc.data() });
+    const globalConfig = globals.docs.reduce((object, doc) => { 
+      object[doc.id] = doc.data();
+      return object;
+    }, {});
+
 
     /**
      *  Check if form submitted by authorized app or stop processing cloud function
@@ -153,6 +156,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 
     // Url redirect: global redirect unless overridden by form field (below)
     sanitizedHelperFields.urlRedirect = globalConfig.urlRedirect.default;
+    fields.add('i', 'urlRedirect', globalConfig.urlRedirect.default);
 
     /**
      * Form submission handle fields
