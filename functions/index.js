@@ -54,13 +54,14 @@ const responseErrorBasic = string => ({
 exports.formHandler = functions.https.onRequest(async (req, res) => {
 
   try {
-    const globalConfig = {};
+
     const sanitizedHelperFields = {};
     const sanitizedTemplateDataFields = {};
 
     /**
      * Global config
      */
+    const globalConfig = {};
     const globals = await db.collection('global').get();
     globals.docs.map(doc => { globalConfig[doc.id] = doc.data() });
 
