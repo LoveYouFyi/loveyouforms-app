@@ -66,9 +66,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
         templateData: {}
       };
       const allowTypes = ['other', 'templateData'];
-      const allowFormFields = formFields.docs.map(doc => doc.id );
-      const ignoreSanitize = [ 'appInfoFrom', 'appInfoName', 'appInfoTimeZone', 'appInfoUrl' ];
-      const allowProps = allowFormFields.concat(ignoreSanitize);
+      const allowFields = formFields.docs.map(doc => doc.id );
       let sanitizeValue = (value, maxLength) => 
         value.toString().trim().substr(0, maxLength);
     
@@ -79,10 +77,8 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
         add: (typeKey, propKey, value, maxLength) => {
           if (!allowTypes.includes(typeKey)) { 
             console.error(`Error: 'Type Key' you entered '${typeKey}', must be one of: ${allowTypes}`); 
-          } else if (!allowProps.includes(propKey)) {
-            console.error(`Error: 'Prop Key' you entered '${propKey}' must be one of: ${allowProps}`); 
-          } else if (ignoreSanitize.includes(propKey)) {
-            addProp(typeKey, propKey, value);
+          } else if (!allowFields.includes(propKey)) {
+            console.error(`Error: 'Prop Key' you entered '${propKey}' must be one of: ${allowFields}`); 
           } else {
             let valueSanitized = sanitizeValue(value, maxLength);
             addProp(typeKey, propKey, valueSanitized);
