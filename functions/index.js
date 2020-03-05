@@ -55,6 +55,58 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 
   try {
 
+    const fields = (() => {
+      const type = {
+        i: {},
+        t: {}
+      };
+      const allowType = ['i', 't'];
+      const formField = [ 'email', 'message', 'name', 'phone', 
+            'radioTimeframe', 'selectService', 'templateName', 'urlRedirect', 
+            'webformId', 'appInfoUrl' ];
+      const ignoreSanitize = [ 'from', 'name', 'timezone', 'url' ];
+      const allowProps = formField.concat(ignoreSanitize);
+      let sanitizeValue = (value, maxLength) => 
+        value.toString().trim().substr(0, maxLength);
+    
+      let addProp = (typeName, propName, value) => {
+        Object.assign(type[typeName], { [propName]: value });
+      }
+      return {
+        add: (typeName, propName, value, maxLength) => {
+          if (!allowType.includes(typeName)) { 
+            console.error(`Error: 'Type Name' you entered '${typeName}', must be one of: ${allowType}`); 
+          } else if (!allowProps.includes(propName)) {
+            console.error(`Error: 'Prop Name' you entered '${propName}' must be one of: ${allowProps}`); 
+          } else if (ignoreSanitize.includes(propName)) {
+            addProp(typeName, propName, value);
+          } else {
+            let valueSanitized = sanitizeValue(value, maxLength);
+            addProp(typeName, propName, valueSanitized);
+          }
+        },
+        type: () => {
+          return type;
+        },
+      }
+    })();
+    
+    console.log("Log 1 ", fields.type());
+    fields.add('t', "message", "                 hi there      ", 128);
+    console.log("Log 2 ", fields.type());
+    fields.add('me', "message", "               please add me!      ", 128);
+    console.log("Log 3 ", fields.type());
+    fields.add('i', "appInfoUrl", "http://info.com", 256);
+    console.log("Log 4 ", fields.type());
+    fields.add('t', "whyThis", "http://whyThis.com", 256);
+    console.log("Log 5 ", fields.type());
+    console.log("Log 6 ", fields.type().t.greet);
+    fields.add('i', "from", "rfkejfk;erjk;aejfr eakfj rekl;aj f;kera jfkr eak;lfj rk;eaj fk;rj eakfj; r;ekajf kaej;rf kl;aejf rk;ajf k;rjea fkr;j eakarjf kaj klfaj fkl;aj fklae fjkr eaj;f krjaklf jrekajf krl;aej fklreja fklerj aklj erfklj aklej fkl;aj fkl;aje fklrjea kfrjak ");
+    console.log("Log 7 ", fields.type());
+
+
+    ////////////////////////////////////////////////////////////////////////////
+
     const sanitizedHelperFields = {};
     const sanitizedTemplateDataFields = {};
 
