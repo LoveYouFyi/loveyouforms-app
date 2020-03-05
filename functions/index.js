@@ -61,7 +61,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
         template: {}
       };
       const allowType = ['info', 'template'];
-      const formField = [ 'email', 'message', 'name', 'phone', 
+      const formField = [ 'appKey', 'email', 'message', 'name', 'phone', 
             'radioTimeframe', 'selectService', 'templateName', 'urlRedirect', 
             'webformId' ];
       const ignoreSanitize = [ 'appInfoFrom', 'appInfoName', 'appInfoTimeZone', 'appInfoUrl' ];
@@ -94,10 +94,6 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     let iFields = fields.type().info;    
     let tFields = fields.type().template;
 
-    ////////////////////////////////////////////////////////////////////////////
-
-    const sanitizedHelperFields = {};
-    const sanitizedTemplateDataFields = {};
 
     /**
      * Global config
@@ -118,14 +114,13 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     if (app) {
       let { from, name, url, timeZone } = app.data().appInfo;
       fields.add('info', 'appInfoFrom', from);
-      fields.add('info', 'appInfoName', name);
-      fields.add('info', 'appInfoUrl', url);
+      fields.add('template', 'appInfoName', name);
+      fields.add('template', 'appInfoUrl', url);
       fields.add('template', 'appInfoTimeZone', timeZone);
     } else {
       console.info(new Error('App Key does not exist.'));
       res.end();
     }
-
 
     // CORS validation: stop cloud function if CORS check does not pass
     if (globalConfig.cors.bypass) {
@@ -164,18 +159,13 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     for (const doc of formFields.docs) {
       let maxLength = doc.data().maxLength;
       if (templateData[doc.id]) {
-//        sanitizedTemplateDataFields[doc.id] = sanitizeString(templateData[doc.id], maxLength);
         fields.add("template", doc.id, templateData[doc.id], maxLength );
       } else if (req.body[doc.id]) {
-//        sanitizedHelperFields[doc.id] = sanitizeString(req.body[doc.id], maxLength);
         fields.add("info", doc.id, req.body[doc.id], maxLength );
       }
     }
+
     console.log("Log 8 ", fields.type());
-    console.log("Here $$$$$$$$$$$$$$$$$$$$ ", iFields.templateName);
-    console.log("Here $$$$$$$$$$$$$$$$$$$$ ", iFields.templateName);
-    console.log("tFields $$$$$$$$$$$$$$$$$$$$ ", tFields);
-    console.log("fields.type().template $$$$$$$$$$$$$$$$$$$$ ", fields.type().template);
 
     // Build object to be saved to db
     const data = {
