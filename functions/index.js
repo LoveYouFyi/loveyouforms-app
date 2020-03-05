@@ -158,20 +158,24 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       ...templateData 
     } = req.body; // Form submission
 
-    // Sanitize data
-    let sanitizeString = (field, charCount) => 
-      field.toString().trim().substr(0, charCount);
-
+    // Sanitize 
     const formFields = await db.collection('formField').get();
 
     for (const doc of formFields.docs) {
       let maxLength = doc.data().maxLength;
       if (templateData[doc.id]) {
-        sanitizedTemplateDataFields[doc.id] = sanitizeString(templateData[doc.id], maxLength);
+//        sanitizedTemplateDataFields[doc.id] = sanitizeString(templateData[doc.id], maxLength);
+        fields.add("template", doc.id, templateData[doc.id], maxLength );
       } else if (req.body[doc.id]) {
-        sanitizedHelperFields[doc.id] = sanitizeString(req.body[doc.id], maxLength);
+//        sanitizedHelperFields[doc.id] = sanitizeString(req.body[doc.id], maxLength);
+        fields.add("info", doc.id, req.body[doc.id], maxLength );
       }
     }
+    console.log("Log 8 ", fields.type());
+    console.log("Here $$$$$$$$$$$$$$$$$$$$ ", iFields.templateName);
+    console.log("Here $$$$$$$$$$$$$$$$$$$$ ", iFields.templateName);
+    console.log("tFields $$$$$$$$$$$$$$$$$$$$ ", tFields);
+    console.log("fields.type().template $$$$$$$$$$$$$$$$$$$$ ", fields.type().template);
 
     // Build object to be saved to db
     const data = {
@@ -181,11 +185,11 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       createdDateTime: FieldValue.serverTimestamp(),
       ...iFields.appInfoFrom && { from: iFields.appInfoFrom },
       toUids: [ appKey ], // toUids = to email: format required by cloud extension 'trigger email'
-      ...sanitizedHelperFields.email && {replyTo: sanitizedHelperFields.email},
-      ...sanitizedHelperFields.webformId && { webformId: sanitizedHelperFields.webformId },
+      ...tFields.email && {replyTo: tFields.email},
+      ...iFields.webformId && { webformId: iFields.webformId },
       template: {
-        name: sanitizedHelperFields.templateName,
-        data: sanitizedTemplateDataFields
+        name: iFields.templateName,
+        data: tFields
       }
     };
 
