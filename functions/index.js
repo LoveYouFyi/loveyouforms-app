@@ -136,8 +136,17 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       fields.add('templateData', 'appInfoUrl', appUrl);
       fields.add('templateData', 'appInfoTimeZone', appTimeZone);
 */
+//      if (templateData[doc.id]) {
+        //fields.addTemplate(doc.id, templateData[doc.id], maxLength );
+      //} else if (req.body[doc.id]) {
+        //fields.addOther(doc.id, req.body[doc.id], maxLength );
+      //} 
+
       for (let [key, value] of Object.entries(appInfo)) {
-        fields.addOther(key, value);
+        console.log("key ", key)
+        key === appInfo.appFrom
+          ? fields.addOther(key, value) 
+          : fields.addTemplate(key, value);
       }
 
     } else {
@@ -193,7 +202,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       // 'from' email if not assigned comes from firebase extension field: DEFAULT_FROM
       appKey,
       createdDateTime: FieldValue.serverTimestamp(),
-      ...oFields.appInfoFrom && { from: oFields.appInfoFrom },
+      ...oFields.appFrom && { from: oFields.appFrom },
       toUids: [ appKey ], // toUids = to email: format required by cloud extension 'trigger email'
       ...tFields.email && {replyTo: tFields.email},
       ...oFields.webformId && { webformId: oFields.webformId },
@@ -254,6 +263,7 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
     // Destructure Snapshot.data() which contains this form submission data
     let { appKey, createdDateTime, template: { data: { ...rest }, 
       name: templateName  }, webformId } = snapshot.data(); 
+    console.log("rest $$$$$$$$$$$$$$$$$$$$$$$$ ", rest);
     // For building sort-ordered object that is turned into sheet data-row
     emailTemplateName = templateName;
     emailTemplateData = rest;
@@ -262,8 +272,8 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
     // date/time: timezone string defined by momentjs.com/timezone: https://github.com/moment/moment-timezone/blob/develop/data/packed/latest.json
     const dateTime = createdDateTime.toDate(); // toDate() is firebase method
     // Add date-time to start of data object, format date with moment.js
-    dataRow.createdDate = moment(dateTime).tz(rest.appInfoTimeZone).format('L');
-    dataRow.createdTime = moment(dateTime).tz(rest.appInfoTimeZone).format('h:mm A z');
+    dataRow.createdDate = moment(dateTime).tz(rest.appTimeZone).format('L');
+    dataRow.createdTime = moment(dateTime).tz(rest.appTimeZone).format('h:mm A z');
     // Add webformId to data object
     dataRow.webformId = webformId;
 
