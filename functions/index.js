@@ -55,15 +55,15 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 
   try {
 
-    let iFields; // get fields of type 'info' with iFields.propName
-    let tFields; // get fields of type 'template' with tFields.propName
+    let oFields; // get fields of type 'other' with iFields.propKey
+    let tFields; // get fields of type 'template' with tFields.propKey
 
     const fields = (() => {
       const type = {
-        info: {},
-        template: {}
+        other: {},
+        templateData: {}
       };
-      const allowType = ['info', 'template'];
+      const allowType = ['other', 'templateData'];
       const formField = [ 'appKey', 'email', 'message', 'name', 'phone', 
             'radioTimeframe', 'selectService', 'templateName', 'urlRedirect', 
             'webformId' ];
@@ -76,16 +76,16 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
         Object.assign(type[typeName], { [propName]: value });
       }
       return {
-        add: (typeName, propName, value, maxLength) => {
-          if (!allowType.includes(typeName)) { 
-            console.error(`Error: 'Type Name' you entered '${typeName}', must be one of: ${allowType}`); 
-          } else if (!allowProps.includes(propName)) {
-            console.error(`Error: 'Prop Name' you entered '${propName}' must be one of: ${allowProps}`); 
-          } else if (ignoreSanitize.includes(propName)) {
-            addProp(typeName, propName, value);
+        add: (typeKey, propKey, value, maxLength) => {
+          if (!allowType.includes(typeKey)) { 
+            console.error(`Error: 'Type Key' you entered '${typeKey}', must be one of: ${allowType}`); 
+          } else if (!allowProps.includes(propKey)) {
+            console.error(`Error: 'Prop Key' you entered '${propKey}' must be one of: ${allowProps}`); 
+          } else if (ignoreSanitize.includes(propKey)) {
+            addProp(typeKey, propKey, value);
           } else {
             let valueSanitized = sanitizeValue(value, maxLength);
-            addProp(typeName, propName, valueSanitized);
+            addProp(typeKey, propKey, valueSanitized);
           }
         },
         type: () => {
@@ -94,8 +94,8 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       }
     })();
    
-    iFields = fields.type().info;
-    tFields = fields.type().template;
+    oFields = fields.type().other;
+    tFields = fields.type().templateData;
 
 
     /**
@@ -116,10 +116,10 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     const app = await db.collection('app').doc(req.body.appKey).get();
     if (app) {
       let { from, name, url, timeZone } = app.data().appInfo;
-      fields.add('info', 'appInfoFrom', from);
-      fields.add('template', 'appInfoName', name);
-      fields.add('template', 'appInfoUrl', url);
-      fields.add('template', 'appInfoTimeZone', timeZone);
+      fields.add('other', 'appInfoFrom', from);
+      fields.add('templateData', 'appInfoName', name);
+      fields.add('templateData', 'appInfoUrl', url);
+      fields.add('templateData', 'appInfoTimeZone', timeZone);
     } else {
       console.info(new Error('App Key does not exist.'));
       res.end();
@@ -131,16 +131,16 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       res.set('Access-Control-Allow-Origin', '*');
     } else {
       // restrict to url requests that match the app
-      res.set('Access-Control-Allow-Origin', iFields.appInfoUrl);
+      res.set('Access-Control-Allow-Origin', oFields.appInfoUrl);
       // end processing if url does not match (req.headers.origin = url)
-      if (req.headers.origin !== iFields.appInfoUrl) { 
+      if (req.headers.origin !== oFields.appInfoUrl) { 
         console.info(new Error('Origin Url does not match app url.'));
         return res.end();
       } 
     }
 
     // Url redirect: global redirect unless overridden by form field (below)
-    fields.add('info', 'urlRedirect', globalConfig.urlRedirect.default);
+    fields.add('other', 'urlRedirect', globalConfig.urlRedirect.default);
 
     console.log("Log 7 ", fields.type());
 
@@ -149,7 +149,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
      */
 
     let { 
-      // destructure fields that should not be included with template fields
+      // destructure fields that should not be included with templateData fields
       templateName = 'contactDefault', webformId, urlRedirect, appKey,
       // collect template fields 
       ...templateData 
@@ -161,9 +161,9 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     for (const doc of formFields.docs) {
       let maxLength = doc.data().maxLength;
       if (templateData[doc.id]) {
-        fields.add("template", doc.id, templateData[doc.id], maxLength );
+        fields.add('templateData', doc.id, templateData[doc.id], maxLength );
       } else if (req.body[doc.id]) {
-        fields.add("info", doc.id, req.body[doc.id], maxLength );
+        fields.add('other', doc.id, req.body[doc.id], maxLength );
       }
     }
 
@@ -175,12 +175,12 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       // 'from' email if not assigned comes from firebase extension field: DEFAULT_FROM
       appKey,
       createdDateTime: FieldValue.serverTimestamp(),
-      ...iFields.appInfoFrom && { from: iFields.appInfoFrom },
+      ...oFields.appInfoFrom && { from: oFields.appInfoFrom },
       toUids: [ appKey ], // toUids = to email: format required by cloud extension 'trigger email'
       ...tFields.email && {replyTo: tFields.email},
-      ...iFields.webformId && { webformId: iFields.webformId },
+      ...oFields.webformId && { webformId: oFields.webformId },
       template: {
-        name: iFields.templateName,
+        name: oFields.templateName,
         data: tFields
       }
     };
@@ -195,7 +195,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
      */
     let responseBody = { 
       data: {
-        redirect: iFields.urlRedirect
+        redirect: oFields.urlRedirect
       }
     }
     
