@@ -144,7 +144,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 
       for (let [key, value] of Object.entries(appInfo)) {
         console.log("key ", key)
-        key === appInfo.appFrom
+        key === 'appFrom'
           ? fields.addOther(key, value) 
           : fields.addTemplate(key, value);
       }
@@ -263,8 +263,8 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
     // Destructure Snapshot.data() which contains this form submission data
     let { appKey, createdDateTime, template: { data: { ...rest }, 
       name: templateName  }, webformId } = snapshot.data(); 
-    console.log("rest $$$$$$$$$$$$$$$$$$$$$$$$ ", rest);
-    // For building sort-ordered object that is turned into sheet data-row
+    
+      // For building sort-ordered object that is turned into sheet data-row
     emailTemplateName = templateName;
     emailTemplateData = rest;
     // appkey to query 'spreadsheet' object info
