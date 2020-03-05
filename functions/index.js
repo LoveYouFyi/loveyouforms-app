@@ -55,6 +55,9 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 
   try {
 
+    let iFields; // get fields of type 'info' with iFields.propName
+    let tFields; // get fields of type 'template' with tFields.propName
+
     const fields = (() => {
       const type = {
         info: {},
@@ -91,8 +94,8 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       }
     })();
    
-    let iFields = fields.type().info;    
-    let tFields = fields.type().template;
+    iFields = fields.type().info;
+    tFields = fields.type().template;
 
 
     /**
@@ -137,7 +140,6 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     }
 
     // Url redirect: global redirect unless overridden by form field (below)
-//    sanitizedHelperFields.urlRedirect = globalConfig.urlRedirect.default;
     fields.add('info', 'urlRedirect', globalConfig.urlRedirect.default);
 
     console.log("Log 7 ", fields.type());
