@@ -64,7 +64,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       const formField = [ 'email', 'message', 'name', 'phone', 
             'radioTimeframe', 'selectService', 'templateName', 'urlRedirect', 
             'webformId' ];
-      const ignoreSanitize = [ 'from', 'name', 'timeZone', 'url' ];
+      const ignoreSanitize = [ 'appInfoFrom', 'name', 'timeZone', 'url' ];
       const allowProps = formField.concat(ignoreSanitize);
       let sanitizeValue = (value, maxLength) => 
         value.toString().trim().substr(0, maxLength);
@@ -91,8 +91,8 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       }
     })();
    
-    let iField = fields.type().info;    
-    let tField = fields.type().template;
+    let iFields = fields.type().info;    
+    let tFields = fields.type().template;
 
     ////////////////////////////////////////////////////////////////////////////
 
@@ -117,11 +117,11 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     const app = await db.collection('app').doc(req.body.appKey).get();
     if (app) {
       let { from, name, url, timeZone } = app.data().appInfo;
-      sanitizedHelperFields.appInfoFrom = from,
+//      sanitizedHelperFields.appInfoFrom = from,
       sanitizedTemplateDataFields.appInfoName = name,
       sanitizedTemplateDataFields.appInfoUrl = url,
       sanitizedTemplateDataFields.appInfoTimeZone = timeZone
-      fields.add('info', 'from', from);
+      fields.add('info', 'appInfoFrom', from);
       fields.add('info', 'name', name);
       fields.add('info', 'url', url);
       fields.add('info', 'timeZone', timeZone);
@@ -183,7 +183,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       // 'from' email if not assigned comes from firebase extension field: DEFAULT_FROM
       appKey,
       createdDateTime: FieldValue.serverTimestamp(),
-      ...sanitizedHelperFields.appInfoFrom && { from: sanitizedHelperFields.appInfoFrom },
+      ...iFields.appInfoFrom && { from: iFields.appInfoFrom },
       toUids: [ appKey ], // toUids = to email: format required by cloud extension 'trigger email'
       ...sanitizedHelperFields.email && {replyTo: sanitizedHelperFields.email},
       ...sanitizedHelperFields.webformId && { webformId: sanitizedHelperFields.webformId },
@@ -203,7 +203,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
      */
     let responseBody = { 
       data: {
-        redirect: iField.urlRedirect
+        redirect: iFields.urlRedirect
       }
     }
     
