@@ -64,7 +64,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       const formField = [ 'email', 'message', 'name', 'phone', 
             'radioTimeframe', 'selectService', 'templateName', 'urlRedirect', 
             'webformId' ];
-      const ignoreSanitize = [ 'appInfoFrom', 'name', 'timeZone', 'url' ];
+      const ignoreSanitize = [ 'appInfoFrom', 'appInfoName', 'appInfoTimeZone', 'appInfoUrl' ];
       const allowProps = formField.concat(ignoreSanitize);
       let sanitizeValue = (value, maxLength) => 
         value.toString().trim().substr(0, maxLength);
@@ -117,14 +117,10 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     const app = await db.collection('app').doc(req.body.appKey).get();
     if (app) {
       let { from, name, url, timeZone } = app.data().appInfo;
-//      sanitizedHelperFields.appInfoFrom = from,
-      sanitizedTemplateDataFields.appInfoName = name,
-      sanitizedTemplateDataFields.appInfoUrl = url,
-      sanitizedTemplateDataFields.appInfoTimeZone = timeZone
       fields.add('info', 'appInfoFrom', from);
-      fields.add('info', 'name', name);
-      fields.add('info', 'url', url);
-      fields.add('info', 'timeZone', timeZone);
+      fields.add('info', 'appInfoName', name);
+      fields.add('info', 'appInfoUrl', url);
+      fields.add('template', 'appInfoTimeZone', timeZone);
     } else {
       console.info(new Error('App Key does not exist.'));
       res.end();
@@ -137,9 +133,9 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       res.set('Access-Control-Allow-Origin', '*');
     } else {
       // restrict to url requests that match the app
-      res.set('Access-Control-Allow-Origin', sanitizedHelperFields.appInfoUrl);
+      res.set('Access-Control-Allow-Origin', iFields.appInfoUrl);
       // end processing if url does not match (req.headers.origin = url)
-      if (req.headers.origin !== sanitizedTemplateDataFields.appInfoUrl) { 
+      if (req.headers.origin !== iFields.appInfoUrl) { 
         console.info(new Error('Origin Url does not match app url.'));
         return res.end();
       } 
