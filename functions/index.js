@@ -61,6 +61,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     let formFields = await db.collection('formField').get();
 
     const fields = (() => {
+      const prop = {};
       const type = {
         other: {},
         templateData: {}
@@ -70,19 +71,34 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       let sanitizeValue = (value, maxLength) => 
         value.toString().trim().substr(0, maxLength);
     
-      let addProp = (typeName, propName, value) => {
-        Object.assign(type[typeName], { [propName]: value });
+      let addProp = (typeName, propKey, value) => {
+        Object.assign(type[typeName], { [propKey]: value });
+      }
+      let addPropToo = (typeName, propKey, value) => {
+        Object.assign(type[typeName], { [propKey]: value });
+      }
+      let add = (typeKey, propKey, value, maxLength) => {
+        if (!allowFields.includes(propKey)) {
+          console.error(`Error: 'Prop Key' you entered '${propKey}' must be one of: ${allowFields}`); 
+        } else {
+          let valueSanitized = sanitizeValue(value, maxLength);
+          addProp(typeKey, propKey, valueSanitized);
+        }
       }
       return {
-        add: (typeKey, propKey, value, maxLength) => {
-          if (!allowTypes.includes(typeKey)) { 
-            console.error(`Error: 'Type Key' you entered '${typeKey}', must be one of: ${allowTypes}`); 
-          } else if (!allowFields.includes(propKey)) {
+        addProp: (propKey, value, maxLength) => {
+          if (!allowFields.includes(propKey)) {
             console.error(`Error: 'Prop Key' you entered '${propKey}' must be one of: ${allowFields}`); 
           } else {
             let valueSanitized = sanitizeValue(value, maxLength);
-            addProp(typeKey, propKey, valueSanitized);
+            addPropToo(propKey, valueSanitized);
           }
+        },
+        addOther: (propKey, value, maxLength) => {
+          add('other', propKey, value, maxLength);
+        },
+        addTemplate: (propKey, value, maxLength) => {
+          add('templateData', propKey, value, maxLength);
         },
         type: () => {
           return type;
@@ -111,11 +127,19 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     // App key validation: if does not exist stop processing otherwise get app info
     const app = await db.collection('app').doc(req.body.appKey).get();
     if (app) {
-      let { from, name, url, timeZone } = app.data().appInfo;
-      fields.add('other', 'appInfoFrom', from);
-      fields.add('templateData', 'appInfoName', name);
-      fields.add('templateData', 'appInfoUrl', url);
-      fields.add('templateData', 'appInfoTimeZone', timeZone);
+      let appInfo = app.data().appInfo;
+      console.log("appInfo typeof $$$$$$$$$$$$$$$$$$$$$ ", typeof appInfo);
+      console.log("appInfo $$$$$$$$$$$$$$$$$$$$$ ", appInfo);
+/*
+      fields.add('other', 'appInfoFrom', appFrom);
+      fields.add('templateData', 'appInfoName', appName);
+      fields.add('templateData', 'appInfoUrl', appUrl);
+      fields.add('templateData', 'appInfoTimeZone', appTimeZone);
+*/
+      for (let [key, value] of Object.entries(appInfo)) {
+        fields.addOther(key, value);
+      }
+
     } else {
       console.info(new Error('App Key does not exist.'));
       res.end();
@@ -136,7 +160,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     }
 
     // Url redirect: global redirect unless overridden by form field (below)
-    fields.add('other', 'urlRedirect', globalConfig.urlRedirect.default);
+    fields.addOther('urlRedirect', globalConfig.urlRedirect.default);
 
     console.log("Log 7 ", fields.type());
 
@@ -155,9 +179,9 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     for (const doc of formFields.docs) {
       let maxLength = doc.data().maxLength;
       if (templateData[doc.id]) {
-        fields.add('templateData', doc.id, templateData[doc.id], maxLength );
+        fields.addTemplate(doc.id, templateData[doc.id], maxLength );
       } else if (req.body[doc.id]) {
-        fields.add('other', doc.id, req.body[doc.id], maxLength );
+        fields.addOther(doc.id, req.body[doc.id], maxLength );
       }
     }
 
