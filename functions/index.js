@@ -57,10 +57,10 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 
     const fields = (() => {
       const type = {
-        i: {},
-        t: {}
+        info: {},
+        template: {}
       };
-      const allowType = ['i', 't'];
+      const allowType = ['info', 'template'];
       const formField = [ 'email', 'message', 'name', 'phone', 
             'radioTimeframe', 'selectService', 'templateName', 'urlRedirect', 
             'webformId' ];
@@ -90,18 +90,9 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
         },
       }
     })();
-    
-    console.log("Log 1 ", fields.type());
-    fields.add('t', "message", "                 hi there      ", 128);
-    console.log("Log 2 ", fields.type());
-    fields.add('me', "message", "               please add me!      ", 128);
-    console.log("Log 3 ", fields.type());
-    fields.add('t', "whyThis", "http://whyThis.com", 256);
-    console.log("Log 4 ", fields.type());
-    console.log("Log 5 ", fields.type().t.greet);
-    fields.add('i', "from", "rfkejfk;erjk;aejfr eakfj rekl;aj f;kera jfkr eak;lfj rk;eaj fk;rj eakfj; r;ekajf kaej;rf kl;aejf rk;ajf k;rjea fkr;j eakarjf kaj klfaj fkl;aj fklae fjkr eaj;f krjaklf jrekajf krl;aej fklreja fklerj aklj erfklj aklej fkl;aj fkl;aje fklrjea kfrjak ");
-    console.log("Log 6 ", fields.type());
-
+   
+    let iField = fields.type().info;    
+    let tField = fields.type().template;
 
     ////////////////////////////////////////////////////////////////////////////
 
@@ -130,15 +121,15 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       sanitizedTemplateDataFields.appInfoName = name,
       sanitizedTemplateDataFields.appInfoUrl = url,
       sanitizedTemplateDataFields.appInfoTimeZone = timeZone
-      fields.add('i', 'from', from);
-      fields.add('i', 'name', name);
-      fields.add('i', 'url', url);
-      fields.add('i', 'timeZone', timeZone);
+      fields.add('info', 'from', from);
+      fields.add('info', 'name', name);
+      fields.add('info', 'url', url);
+      fields.add('info', 'timeZone', timeZone);
     } else {
       console.info(new Error('App Key does not exist.'));
       res.end();
     }
-    console.log("Log 7 ", fields.type());
+
 
     // CORS validation: stop cloud function if CORS check does not pass
     if (globalConfig.cors.bypass) {
@@ -155,8 +146,10 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     }
 
     // Url redirect: global redirect unless overridden by form field (below)
-    sanitizedHelperFields.urlRedirect = globalConfig.urlRedirect.default;
-    fields.add('i', 'urlRedirect', globalConfig.urlRedirect.default);
+//    sanitizedHelperFields.urlRedirect = globalConfig.urlRedirect.default;
+    fields.add('info', 'urlRedirect', globalConfig.urlRedirect.default);
+
+    console.log("Log 7 ", fields.type());
 
     /**
      * Form submission handle fields
@@ -210,7 +203,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
      */
     let responseBody = { 
       data: {
-        redirect: sanitizedHelperFields.urlRedirect
+        redirect: iField.urlRedirect
       }
     }
     
