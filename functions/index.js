@@ -58,17 +58,17 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     let oFields; // get fields of type 'other' with iFields.propKey
     let tFields; // get fields of type 'template' with tFields.propKey
 
+    let formFields = await db.collection('formField').get();
+
     const fields = (() => {
       const type = {
         other: {},
         templateData: {}
       };
-      const allowType = ['other', 'templateData'];
-      const formField = [ 'appKey', 'email', 'message', 'name', 'phone', 
-            'radioTimeframe', 'selectService', 'templateName', 'urlRedirect', 
-            'webformId' ];
+      const allowTypes = ['other', 'templateData'];
+      const allowFormFields = formFields.docs.map(doc => doc.id );
       const ignoreSanitize = [ 'appInfoFrom', 'appInfoName', 'appInfoTimeZone', 'appInfoUrl' ];
-      const allowProps = formField.concat(ignoreSanitize);
+      const allowProps = allowFormFields.concat(ignoreSanitize);
       let sanitizeValue = (value, maxLength) => 
         value.toString().trim().substr(0, maxLength);
     
@@ -77,8 +77,8 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       }
       return {
         add: (typeKey, propKey, value, maxLength) => {
-          if (!allowType.includes(typeKey)) { 
-            console.error(`Error: 'Type Key' you entered '${typeKey}', must be one of: ${allowType}`); 
+          if (!allowTypes.includes(typeKey)) { 
+            console.error(`Error: 'Type Key' you entered '${typeKey}', must be one of: ${allowTypes}`); 
           } else if (!allowProps.includes(propKey)) {
             console.error(`Error: 'Prop Key' you entered '${propKey}' must be one of: ${allowProps}`); 
           } else if (ignoreSanitize.includes(propKey)) {
@@ -155,9 +155,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       ...templateData 
     } = req.body; // Form submission
 
-    // Sanitize 
-    const formFields = await db.collection('formField').get();
-
+    // Add webform key/value pairs to fields 
     for (const doc of formFields.docs) {
       let maxLength = doc.data().maxLength;
       if (templateData[doc.id]) {
