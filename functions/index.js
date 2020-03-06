@@ -127,28 +127,11 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     // App key validation: if does not exist stop processing otherwise get app info
     const app = await db.collection('app').doc(req.body.appKey).get();
     if (app) {
-      let appInfo = app.data().appInfo;
-      console.log("appInfo typeof $$$$$$$$$$$$$$$$$$$$$ ", typeof appInfo);
-      console.log("appInfo $$$$$$$$$$$$$$$$$$$$$ ", appInfo);
-/*
-      fields.add('other', 'appInfoFrom', appFrom);
-      fields.add('templateData', 'appInfoName', appName);
-      fields.add('templateData', 'appInfoUrl', appUrl);
-      fields.add('templateData', 'appInfoTimeZone', appTimeZone);
-*/
-//      if (templateData[doc.id]) {
-        //fields.addTemplate(doc.id, templateData[doc.id], maxLength );
-      //} else if (req.body[doc.id]) {
-        //fields.addOther(doc.id, req.body[doc.id], maxLength );
-      //} 
-
-      for (let [key, value] of Object.entries(appInfo)) {
-        console.log("key ", key)
+      for (let [key, value] of Object.entries(app.data().appInfo)) {
         key === 'appFrom'
           ? fields.addOther(key, value) 
           : fields.addTemplate(key, value);
       }
-
     } else {
       console.info(new Error('App Key does not exist.'));
       res.end();
