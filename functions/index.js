@@ -190,19 +190,12 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       // collect template fields 
       ...formElements 
     } = req.body; // Form submission
-    console.log("templateData $$$$$$$$$$$$$$$$$$$ ", formElements);
+    
     let templateName = globalConfig.defaultTemplate.name;
-    console.log("templateName $$$$$$$$$$$$$$$$$$$ ", templateName);
-    console.log("req.body.templateName 1) $$$$$$$$$$$$$$$$$$$ ", req.body.templateName);
     if (req.body.templateName) { templateName = req.body.templateName }
-    console.log("templateName 2) $$$$$$$$$$$$$$$$$$$ ", templateName);
     let validTemplateData = await db.collection('emailTemplate').doc(templateName).get();
     validTemplateData = validTemplateData.data().templateData;
     console.log("validTemplateData ARRAY: $$$$$$$$$$$$$$$$$$$ ", validTemplateData);
-//    let appInfoData = app.data().appInfo;
-    //console.log("appInfoData $$$$$$$$$$$$$$$$$$$$ ", appInfoData);
-    //templateData = Object.assign(templateData, app.data().appInfo);
-    //console.log("templateData 2) $$$$$$$$$$$$$$$$$$$$ ", templateData);
 
     // Add webform key/value pairs to fields 
     for (const doc of formFields.docs) {
