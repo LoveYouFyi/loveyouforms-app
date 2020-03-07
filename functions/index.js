@@ -55,8 +55,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 
   try {
 
-    let oFields; // get fields of type 'other' with iFields.propKey
-    let tFields; // get fields of type 'template' with tFields.propKey
+    let getProps; // get fields of type 'other' with iFields.propKey
     
     const props = (() => {
 
@@ -80,7 +79,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     
       const isRequired = () => { throw new Error('maxLength is required')};
     
-      let setProp = (propKey, value, maxLength = isRequired()) => {
+      let setProp = (propKey, value, maxLength) => {
         let valueSanitized = sanitizeValue(value, maxLength);
         if (validTemplateProps.includes(propKey)) {
           props.templateProps[propKey] = valueSanitized;
@@ -92,7 +91,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
         validTemplateProps = data;
       }
       return {
-        validTemplateProps: (valid) => {
+        setValidTemplateProps: (valid) => {
           setValidTemplateProps(valid)
         },
         setProp: (propKey, value, maxLength) => {
@@ -124,10 +123,11 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     // App key validation: if does not exist stop processing otherwise get app info
     const app = await db.collection('app').doc(req.body.appKey).get();
     if (app) {
+      console.log("app $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", app.id);
+      props.setProp('appKey', app.id);
       for (let [key, value] of Object.entries(app.data().appInfo)) {
-          fields.addOther(key, value) 
-          fields.addTemplate(key, value);
-          fields.addAppInfo(key, value);
+          //fields.addAppInfo(key, value);
+          props.setProp(key, value);
       }
     } else {
       console.info(new Error('App Key does not exist.'));
@@ -140,7 +140,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       res.set('Access-Control-Allow-Origin', '*');
     } else {
       // restrict to url requests that match the app
-      res.set('Access-Control-Allow-Origin', oFields.appInfoUrl);
+      res.set('Access-Control-Allow-Origin', props.data().appUrl);
       // end processing if url does not match (req.headers.origin = url)
       if (req.headers.origin !== oFields.appInfoUrl) { 
         console.info(new Error('Origin Url does not match app url.'));
@@ -149,9 +149,9 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     }
 
     // Url redirect: global redirect unless overridden by form field (below)
-    fields.addOther('urlRedirect', globalConfig.urlRedirect.default);
+    props.setProp('urlRedirect', globalConfig.urlRedirect.default);
 
-    console.log("Log 7 ", fields.type());
+    console.log("Log 7 ", props.data());
 
     /**
      * Form submission handle fields
@@ -181,27 +181,31 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       // collect template fields 
       ...formElements 
     } = req.body; // Form submission
-    
+
+//    let allData = Object.assign(formElements, app.data().appInfo);
+    //console.log("allData $$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", allData);
+
     let templateName = globalConfig.defaultTemplate.name;
     if (req.body.templateName) { templateName = req.body.templateName }
     let validTemplateData = await db.collection('emailTemplate').doc(templateName).get();
     validTemplateData = validTemplateData.data().templateData;
     console.log("validTemplateData ARRAY: $$$$$$$$$$$$$$$$$$$ ", validTemplateData);
-    
-    console.log("allData $$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", allData);
+    props.setValidTemplateProps(validTemplateData); 
+
     // Add webform key/value pairs to fields 
-    for (const doc of formFields.docs) {
+    for (const doc of formFields.docs) { // perhaps set up formFields.docs as array before this
       let maxLength = doc.data().maxLength;
  //     if (validTemplateData.includes(doc.id) && formElements.hasOwnProperty(doc.id)) {
-      if (allData.hasOwnProperty(doc.id)) {
-        console.log("fields.addTemplate ******************* ", doc.id, formElements[doc.id], maxLength );
+      if (formElements.hasOwnProperty(doc.id)) {
+        console.log("props.setProp ******************* ", doc.id, formElements[doc.id], maxLength );
+        props.setProp(doc.id, formElements[doc.id], maxLength);
 //        fields.addTemplate(doc.id, templateData[doc.id], maxLength );
 //      } else if (formElements.hasOwnProperty(doc.id)) {
         //console.log("fields.Other ******************* ", doc.id, formElements[doc.id], maxLength );
-      //}
+      }
     }
 
-    console.log("Log 8 ", fields.type());
+    console.log("Log 8 ", props.data());
 
     // Build object to be saved to db
     const data = {
