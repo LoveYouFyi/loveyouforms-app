@@ -67,9 +67,9 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       let data = ({ appKey, appFrom, webformId, templateName, templateProps  } = props) => ({  
         appKey, createdDateTime: FieldValue.serverTimestamp(), 
         from: appFrom, toUids: [ appKey ], replyTo: templateProps.email, webformId, 
-        template: { templateName, templateData: templateProps }
+        template: { name: templateName, templateData: templateProps }
       });
-    
+      // FIXME remove 'response' and simply update urlRediret above
       let response = ({ urlRedirect } = props) => ({
         responseBody: { data: { redirect: urlRedirect } }
       });
@@ -259,7 +259,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 // ANCHOR - Firestore To Sheets [Nested email template data]
 exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId}')
   .onCreate(async (snapshot, context) => {
-  
+    console.log("snapshot 111111111111111111111 ");
   let dataRow = {}; // sorted data to be converted to array for submit to sheet
   let dataRowForSheet; // data row as array to submit to sheet
   let emailTemplateName;
@@ -273,11 +273,13 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
     /**
     * Prepare Data Row 
     */
+    console.log("snapshot 22222222222222222222222 ");
 
     // Destructure Snapshot.data() which contains this form submission data
     let { appKey, createdDateTime, template: { data: { ...rest }, 
       name: templateName  }, webformId } = snapshot.data(); 
      
+    console.log("snapshot 3333333333333333333333333 ");
     // For building sort-ordered object that is turned into sheet data-row
     emailTemplateName = templateName;
     emailTemplateData = rest;
