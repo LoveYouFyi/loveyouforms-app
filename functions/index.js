@@ -206,7 +206,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     }
 
     console.log("Log 8 ", props.data());
-
+/*
     // Build object to be saved to db
     const data = {
       // spread operator conditionally adds, otherwise function errors if not exist
@@ -222,21 +222,24 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
         data: tFields
       }
     };
-
+*/
     // For serverTimestamp to work must first create new doc key then 'set' data
     const newKey = db.collection("formSubmission").doc();
     // update the new-key-record using 'set' which works for existing doc
-    newKey.set(data);
+    newKey.set(props.data());
 
+    let responseBody = props.response();
+    console.log(responseBody);
     /**
      * Response
      */
+    /*
     let responseBody = { 
       data: {
-        redirect: oFields.urlRedirect
+        redirect: responseRedirect
       }
     }
-    
+    */ 
     return res.status(200).send(
       // return response (even if empty) so client can finish AJAX success
       responseBody
