@@ -59,14 +59,14 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     
     const props = (() => {
 
-      let props = { appKey: '', appFrom: '', to: '', reply: '', webformId: '', 
+      let props = { appKey: '', appFrom: '', reply: '', webformId: '', 
         templateName: '', templateProps: {}, urlRedirect: '' }
     
       let validTemplateProps = [];
       
-      let data = ({ appKey, appFrom, to, reply, webformId, templateName, templateProps  } = props) => ({  
+      let data = ({ appKey, appFrom, webformId, templateName, templateProps  } = props) => ({  
         appKey, createdDateTime: FieldValue.serverTimestamp(), 
-        from: appFrom, toUids: [ to ], replyTo: reply, webformId, 
+        from: appFrom, toUids: [ appKey ], replyTo: templateProps.email, webformId, 
         template: { templateName, templateData: templateProps }
       });
     
