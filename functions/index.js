@@ -57,6 +57,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 
     let oFields; // get fields of type 'other' with iFields.propKey
     let tFields; // get fields of type 'template' with tFields.propKey
+    let aFields;
 
     let formFields = await db.collection('formField').get();
 
@@ -64,9 +65,10 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       const prop = {};
       const type = {
         other: {},
-        templateData: {}
+        templateData: {},
+        appInfo: {},
       };
-      const allowTypes = ['other', 'templateData'];
+      const allowTypes = ['other', 'templateData', 'appInfo'];
       const allowFields = formFields.docs.map(doc => doc.id );
       let sanitizeValue = (value, maxLength) => 
         value.toString().trim().substr(0, maxLength);
@@ -100,6 +102,9 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
         addTemplate: (propKey, value, maxLength) => {
           add('templateData', propKey, value, maxLength);
         },
+        addAppInfo: (propKey, value, maxLength) => {
+          add('appInfo', propKey, value, maxLength);
+        },
         type: () => {
           return type;
         },
@@ -108,6 +113,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
    
     oFields = fields.type().other;
     tFields = fields.type().templateData;
+    aFields = fields.type().appInfo;
 
 
     /**
@@ -128,9 +134,9 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     const app = await db.collection('app').doc(req.body.appKey).get();
     if (app) {
       for (let [key, value] of Object.entries(app.data().appInfo)) {
-        key === 'appFrom'
-          ? fields.addOther(key, value) 
-          : fields.addTemplate(key, value);
+          fields.addOther(key, value) 
+          fields.addTemplate(key, value);
+          fields.addAppInfo(key, value);
       }
     } else {
       console.info(new Error('App Key does not exist.'));
@@ -159,7 +165,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     /**
      * Form submission handle fields
      */
-
+/*
     let { 
       // destructure fields that should not be included with templateData fields
       templateName = 'contactDefault', webformId, urlRedirect, appKey,
@@ -174,6 +180,38 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
         fields.addTemplate(doc.id, templateData[doc.id], maxLength );
       } else if (req.body[doc.id]) {
         fields.addOther(doc.id, req.body[doc.id], maxLength );
+      }
+    }
+*/
+
+    let { 
+      // destructure fields that should not be included with templateData fields
+      // templateName = 'contactDefault', webformId, urlRedirect, appKey,
+      // collect template fields 
+      ...formElements 
+    } = req.body; // Form submission
+    console.log("templateData $$$$$$$$$$$$$$$$$$$ ", formElements);
+    let templateName = globalConfig.defaultTemplate.name;
+    console.log("templateName $$$$$$$$$$$$$$$$$$$ ", templateName);
+    console.log("req.body.templateName 1) $$$$$$$$$$$$$$$$$$$ ", req.body.templateName);
+    if (req.body.templateName) { templateName = req.body.templateName }
+    console.log("templateName 2) $$$$$$$$$$$$$$$$$$$ ", templateName);
+    let validTemplateData = await db.collection('emailTemplate').doc(templateName).get();
+    validTemplateData = validTemplateData.data().templateData;
+    console.log("validTemplateData ARRAY: $$$$$$$$$$$$$$$$$$$ ", validTemplateData);
+//    let appInfoData = app.data().appInfo;
+    //console.log("appInfoData $$$$$$$$$$$$$$$$$$$$ ", appInfoData);
+    //templateData = Object.assign(templateData, app.data().appInfo);
+    //console.log("templateData 2) $$$$$$$$$$$$$$$$$$$$ ", templateData);
+
+    // Add webform key/value pairs to fields 
+    for (const doc of formFields.docs) {
+      let maxLength = doc.data().maxLength;
+      if (validTemplateData.includes(doc.id) && formElements.hasOwnProperty(doc.id)) {
+        console.log("fields.addTemplate ******************* ", doc.id, formElements[doc.id], maxLength );
+//        fields.addTemplate(doc.id, templateData[doc.id], maxLength );
+      } else if (formElements.hasOwnProperty(doc.id)) {
+        console.log("fields.Other ******************* ", doc.id, formElements[doc.id], maxLength );
       }
     }
 
