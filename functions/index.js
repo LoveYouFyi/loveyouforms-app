@@ -142,7 +142,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       // restrict to url requests that match the app
       res.set('Access-Control-Allow-Origin', props.data().appUrl);
       // end processing if url does not match (req.headers.origin = url)
-      if (req.headers.origin !== oFields.appInfoUrl) { 
+      if (req.headers.origin !== props.data().appUrl) { 
         console.info(new Error('Origin Url does not match app url.'));
         return res.end();
       } 
@@ -277,8 +277,8 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
     // Destructure Snapshot.data() which contains this form submission data
     let { appKey, createdDateTime, template: { data: { ...rest }, 
       name: templateName  }, webformId } = snapshot.data(); 
-    
-      // For building sort-ordered object that is turned into sheet data-row
+     
+    // For building sort-ordered object that is turned into sheet data-row
     emailTemplateName = templateName;
     emailTemplateData = rest;
     // appkey to query 'spreadsheet' object info
