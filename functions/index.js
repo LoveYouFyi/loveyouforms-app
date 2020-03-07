@@ -57,63 +57,54 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 
     let oFields; // get fields of type 'other' with iFields.propKey
     let tFields; // get fields of type 'template' with tFields.propKey
-    let aFields;
+    
+    const props = (() => {
 
-    let formFields = await db.collection('formField').get();
-
-    const fields = (() => {
-      const prop = {};
-      const type = {
-        other: {},
-        templateData: {},
-        appInfo: {},
-      };
-      const allowTypes = ['other', 'templateData', 'appInfo'];
-      const allowFields = formFields.docs.map(doc => doc.id );
+      let props = { appKey: '', appFrom: '', to: '', reply: '', webformId: '', 
+        templateName: '', templateProps: {}, urlRedirect: '' }
+    
+      let validTemplateProps = [];
+      
+      let data = ({ appKey, appFrom, to, reply, webformId, templateName, templateProps  } = props) => ({  
+        appKey, createdDateTime: FieldValue.serverTimestamp(), 
+        from: appFrom, toUids: [ to ], replyTo: reply, webformId, 
+        template: { templateName, templateData: templateProps }
+      });
+    
+      let response = ({ urlRedirect } = props) => ({
+        responseBody: { data: { redirect: urlRedirect } }
+      });
+    
       let sanitizeValue = (value, maxLength) => 
         value.toString().trim().substr(0, maxLength);
     
-      let addProp = (typeName, propKey, value) => {
-        Object.assign(type[typeName], { [propKey]: value });
-      }
-      let addPropToo = (typeName, propKey, value) => {
-        Object.assign(type[typeName], { [propKey]: value });
-      }
-      let add = (typeKey, propKey, value, maxLength) => {
-        if (!allowFields.includes(propKey)) {
-          console.error(`Error: 'Prop Key' you entered '${propKey}' must be one of: ${allowFields}`); 
+      const isRequired = () => { throw new Error('maxLength is required')};
+    
+      let setProp = (propKey, value, maxLength = isRequired()) => {
+        let valueSanitized = sanitizeValue(value, maxLength);
+        if (validTemplateProps.includes(propKey)) {
+          props.templateProps[propKey] = valueSanitized;
         } else {
-          let valueSanitized = sanitizeValue(value, maxLength);
-          addProp(typeKey, propKey, valueSanitized);
+          props[propKey] = valueSanitized;
         }
       }
+      let setValidTemplateProps = data => {
+        validTemplateProps = data;
+      }
       return {
-        addProp: (propKey, value, maxLength) => {
-          if (!allowFields.includes(propKey)) {
-            console.error(`Error: 'Prop Key' you entered '${propKey}' must be one of: ${allowFields}`); 
-          } else {
-            let valueSanitized = sanitizeValue(value, maxLength);
-            addPropToo(propKey, valueSanitized);
-          }
+        validTemplateProps: (valid) => {
+          setValidTemplateProps(valid)
         },
-        addOther: (propKey, value, maxLength) => {
-          add('other', propKey, value, maxLength);
+        setProp: (propKey, value, maxLength) => {
+          return setProp(propKey, value, maxLength);
         },
-        addTemplate: (propKey, value, maxLength) => {
-          add('templateData', propKey, value, maxLength);
-        },
-        addAppInfo: (propKey, value, maxLength) => {
-          add('appInfo', propKey, value, maxLength);
-        },
-        type: () => {
-          return type;
-        },
+        data: () => data(),
+        validData: () => validTemplateProps,
+        response: () => response(),
       }
     })();
-   
-    oFields = fields.type().other;
-    tFields = fields.type().templateData;
-    aFields = fields.type().appInfo;
+
+    let formFields = await db.collection('formField').get();
 
 
     /**
@@ -196,16 +187,18 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     let validTemplateData = await db.collection('emailTemplate').doc(templateName).get();
     validTemplateData = validTemplateData.data().templateData;
     console.log("validTemplateData ARRAY: $$$$$$$$$$$$$$$$$$$ ", validTemplateData);
-
+    
+    console.log("allData $$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", allData);
     // Add webform key/value pairs to fields 
     for (const doc of formFields.docs) {
       let maxLength = doc.data().maxLength;
-      if (validTemplateData.includes(doc.id) && formElements.hasOwnProperty(doc.id)) {
+ //     if (validTemplateData.includes(doc.id) && formElements.hasOwnProperty(doc.id)) {
+      if (allData.hasOwnProperty(doc.id)) {
         console.log("fields.addTemplate ******************* ", doc.id, formElements[doc.id], maxLength );
 //        fields.addTemplate(doc.id, templateData[doc.id], maxLength );
-      } else if (formElements.hasOwnProperty(doc.id)) {
-        console.log("fields.Other ******************* ", doc.id, formElements[doc.id], maxLength );
-      }
+//      } else if (formElements.hasOwnProperty(doc.id)) {
+        //console.log("fields.Other ******************* ", doc.id, formElements[doc.id], maxLength );
+      //}
     }
 
     console.log("Log 8 ", fields.type());
