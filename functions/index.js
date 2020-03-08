@@ -55,20 +55,24 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 
   try {
 
-    let getProps; // get fields of type 'other' with iFields.propKey
-    
     const props = (() => {
 
       let props = { appKey: '', appFrom: '', reply: '', webformId: '', 
         templateName: '', templateProps: {}, urlRedirect: '' }
       
-      let getProps = ({ 
-        appKey, appFrom, webformId, templateName, templateProps, 
+      let getProps = ({ appKey, appFrom, webformId, templateName, templateProps, 
         templateProps: { email: replyTo }, urlRedirect  } = props) => ({
         data: {
-          appKey, createdDateTime: FieldValue.serverTimestamp(), 
-          from: appFrom, toUids: [ appKey ], replyTo, webformId, 
-          template: { name: templateName, data: templateProps }
+          appKey, 
+          createdDateTime: FieldValue.serverTimestamp(), 
+          from: appFrom, 
+          toUids: [ appKey ], 
+          replyTo, 
+          webformId, 
+          template: { 
+            name: templateName, 
+            data: templateProps 
+          }
         },
         urlRedirect
       });
@@ -103,7 +107,6 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       }
     })();
 
-    let formFields = await db.collection('formField').get();
 
 
     /**
@@ -149,46 +152,45 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       ...formElements 
     } = req.body; 
 
-    // Template name: set global unless form overrides
+    // Template name: global config unless form override
     let templateName = globalConfig.defaultTemplate.name;
     if (req.body.templateName) { templateName = req.body.templateName }
     props.set('templateName', templateName);
-    // Template data whitelist: set template props okay to be added to email template
+    // Template whitelist data: set template props okay to be added to email template
     let validTemplateData = await db.collection('emailTemplate').doc(templateName).get();
     validTemplateData = validTemplateData.data().templateData;
     props.setValidTemplateProps(validTemplateData); 
-    // App Info props: set after data whitelist or props will be excluded from the email template data
+    // App Info props: set after data whitelist or props will be excluded from template props
     props.set('appKey', app.id);
     let appInfoObject = app.data().appInfo;
     for (const prop in appInfoObject) {
       props.set(prop, appInfoObject[prop]);
     }
 
+    // FIXME formFields as array so do not need to loop through all?
+    let formFields = await db.collection('formField').get();
     // Add webform key/value pairs to fields 
-    for (const doc of formFields.docs) { // perhaps set up formFields.docs as array before this
+    for (const doc of formFields.docs) {
       let maxLength = doc.data().maxLength;
       if (formElements.hasOwnProperty(doc.id)) {
         props.set(doc.id, formElements[doc.id], maxLength);
       }
     }
 
-    console.log("Log 8 ", props.get().data);
-
     // For serverTimestamp to work must first create new doc key then 'set' data
     const newKey = db.collection("formSubmission").doc();
     // update the new-key-record using 'set' which works for existing doc
     newKey.set(props.get().data)
 
-//    let responseBody = props.response();
     /**
      * Response
      */
-//    let getUrlRedirect = props.getUrlRedirect();
     let responseBody = { 
       data: {
         redirect: props.get().urlRedirect
       }
     }
+
     return res.status(200).send(
       // return response (even if empty) so client can finish AJAX success
       responseBody
