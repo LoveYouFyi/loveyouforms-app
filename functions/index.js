@@ -99,10 +99,9 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
         },
         data: () => data(),
         validTemplateProps: () => validTemplateProps,
-        response: () => response(),
-        getUrlRedirect: () => {
-          console.log("props.urlRedirect $$$$$$$$$$$$$$$$$$$$$$ ", props.urlRedirect);
-          return props.urlRedirect;
+        getProp: (propKey) => {
+          console.log("prop[propKey] $$$$$$$$$$$$$$$$$$$$$$ ", props[propKey]);
+          return props[propKey];
         }
       }
     })();
@@ -186,7 +185,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 //    let getUrlRedirect = props.getUrlRedirect();
     let responseBody = { 
       data: {
-        redirect: props.getUrlRedirect()
+        redirect: props.getProp('urlRedirect')
       }
     }
     return res.status(200).send(
