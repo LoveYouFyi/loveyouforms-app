@@ -57,10 +57,10 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 
     const props = (() => {
 
-      let props = { appKey: '', appFrom: '', reply: '', webformId: '', 
+      let props = { appKey: '', appFrom: '', appUrl: '', reply: '', webformId: '', 
         templateName: '', templateProps: {}, urlRedirect: '' }
       
-      let getProps = ({ appKey, appFrom, webformId, templateName, templateProps, 
+      let getProps = ({ appKey, appFrom, appUrl, webformId, templateName, templateProps, 
         templateProps: { email: replyTo }, urlRedirect  } = props) => ({
         data: {
           appKey, 
@@ -74,6 +74,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
             data: templateProps 
           }
         },
+        appUrl,
         urlRedirect
       });
    
@@ -84,11 +85,10 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     
       let setProp = (propKey, value, maxLength) => {
         let valueSanitized = sanitizeValue(value, maxLength);
+        props[propKey] = valueSanitized; // add each prop to props, then also...
         if (validTemplateProps.includes(propKey)) {
           props.templateProps[propKey] = valueSanitized;
-        } else {
-          props[propKey] = valueSanitized;
-        }
+        } 
       }
 
       let setValidTemplateProps = data => {
@@ -108,7 +108,6 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     })();
 
 
-
     /**
      * Global config
      */
@@ -125,7 +124,10 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
    
     // App key validation: if does not exist stop processing otherwise get app info
     const app = await db.collection('app').doc(req.body.appKey).get();
-    if (!app) {
+    if (app) {
+      props.set('appKey', app.id);
+      props.set('appUrl', app.data().appInfo.appUrl); // must set before cors check
+    } else {
       console.info(new Error('App Key does not exist.'));
       res.end();
     }
@@ -136,9 +138,9 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       res.set('Access-Control-Allow-Origin', '*');
     } else {
       // restrict to url requests that match the app
-      res.set('Access-Control-Allow-Origin', props.get().data.appUrl);
+      res.set('Access-Control-Allow-Origin', props.get().appUrl);
       // end processing if url does not match (req.headers.origin = url)
-      if (req.headers.origin !== props.get().data.appUrl) { 
+      if (req.headers.origin !== props.get().appUrl) { 
         console.info(new Error('Origin Url does not match app url.'));
         return res.end();
       } 
@@ -161,7 +163,6 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     validTemplateData = validTemplateData.data().templateData;
     props.setValidTemplateProps(validTemplateData); 
     // App Info props: set after data whitelist or props will be excluded from template props
-    props.set('appKey', app.id);
     let appInfoObject = app.data().appInfo;
     for (const prop in appInfoObject) {
       props.set(prop, appInfoObject[prop]);
@@ -210,7 +211,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 // ANCHOR - Firestore To Sheets [Nested email template data]
 exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId}')
   .onCreate(async (snapshot, context) => {
-    console.log("snapshot 111111111111111111111 ");
+
   let dataRow = {}; // sorted data to be converted to array for submit to sheet
   let dataRowForSheet; // data row as array to submit to sheet
   let emailTemplateName;
@@ -224,13 +225,11 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
     /**
     * Prepare Data Row 
     */
-    console.log("snapshot 22222222222222222222222 ");
 
     // Destructure Snapshot.data() which contains this form submission data
     let { appKey, createdDateTime, template: { data: { ...rest }, 
       name: templateName  }, webformId } = snapshot.data(); 
      
-    console.log("snapshot 3333333333333333333333333 ");
     // For building sort-ordered object that is turned into sheet data-row
     emailTemplateName = templateName;
     emailTemplateData = rest;
