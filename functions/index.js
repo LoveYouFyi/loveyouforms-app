@@ -68,7 +68,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
         templateProps: { email: replyTo }  } = props) => ({  
         appKey, createdDateTime: FieldValue.serverTimestamp(), 
         from: appFrom, toUids: [ appKey ], replyTo, webformId, 
-        template: { name: templateName, templateData: templateProps }
+        template: { name: templateName, data: templateProps }
       });
       // FIXME remove 'response' and simply update urlRediret above
       let response = ({ urlRedirect } = props) => ({
