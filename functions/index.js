@@ -71,20 +71,17 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
         template: { name: templateName, data: templateProps }
       });
       // FIXME remove 'response' and simply update urlRediret above
-      let response = ({ urlRedirect } = props) => ({
-        responseBody: { data: { redirect: urlRedirect } }
-      });
+
+//      let response = ({ urlRedirect } = props) => ({
+        //responseBody: { data: { redirect: urlRedirect } }
+      //});
     
       let sanitizeValue = (value, maxLength) => 
         value.toString().trim().substr(0, maxLength);
     
-      const isRequired = () => { throw new Error('maxLength is required')};
-    
       let setProp = (propKey, value, maxLength) => {
         let valueSanitized = sanitizeValue(value, maxLength);
-        console.log("valueSenitized $$$$$$$$$$$$$$$$$$$$$$$$$$ ", propKey, valueSanitized);
         if (validTemplateProps.includes(propKey)) {
- //         console.log("setProp $$$$$$$$$$$$$$$$$$$$$$$$$$ ", typeof propKey, propKey, value);
           props.templateProps[propKey] = valueSanitized;
         } else {
           props[propKey] = valueSanitized;
@@ -103,6 +100,10 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
         data: () => data(),
         validTemplateProps: () => validTemplateProps,
         response: () => response(),
+        getUrlRedirect: () => {
+          console.log("props.urlRedirect $$$$$$$$$$$$$$$$$$$$$$ ", props.urlRedirect);
+          return props.urlRedirect;
+        }
       }
     })();
 
@@ -147,47 +148,15 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     // Url redirect: global redirect unless overridden by form field (below)
     props.setProp('urlRedirect', globalConfig.urlRedirect.default);
 
-//    console.log("Log 7 ", props.data());
-
-    /**
-     * Form submission handle fields
-     */
-/*
     let { 
-      // destructure fields that should not be included with templateData fields
-      templateName = 'contactDefault', webformId, urlRedirect, appKey,
-      // collect template fields 
-      ...templateData 
-    } = req.body; // Form submission
-
-    // Add webform key/value pairs to fields 
-    for (const doc of formFields.docs) {
-      let maxLength = doc.data().maxLength;
-      if (templateData[doc.id]) {
-        fields.addTemplate(doc.id, templateData[doc.id], maxLength );
-      } else if (req.body[doc.id]) {
-        fields.addOther(doc.id, req.body[doc.id], maxLength );
-      }
-    }
-*/
-
-    let { 
-      // destructure fields that should not be included with templateData fields
-      // templateName = 'contactDefault', webformId, urlRedirect, appKey,
-      // collect template fields 
       ...formElements 
     } = req.body; // Form submission
-
-//    let allData = Object.assign(formElements, app.data().appInfo);
-    //console.log("allData $$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", allData);
 
     let templateName = globalConfig.defaultTemplate.name;
     if (req.body.templateName) { templateName = req.body.templateName }
     let validTemplateData = await db.collection('emailTemplate').doc(templateName).get();
     validTemplateData = validTemplateData.data().templateData;
-//    console.log("validTemplateData ARRAY: $$$$$$$$$$$$$$$$$$$ ", validTemplateData);
     props.setValidTemplateProps(validTemplateData); 
-//    console.log("validTemplateProps $$$$$$$$$$$$$$$$$$$$$$ ", props.validTemplateProps());
     
     props.setProp('appKey', app.id);
     let appInfoObject = app.data().appInfo;
@@ -198,52 +167,28 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     // Add webform key/value pairs to fields 
     for (const doc of formFields.docs) { // perhaps set up formFields.docs as array before this
       let maxLength = doc.data().maxLength;
- //     if (validTemplateData.includes(doc.id) && formElements.hasOwnProperty(doc.id)) {
       if (formElements.hasOwnProperty(doc.id)) {
-//        console.log("props.setProp ******************* ", doc.id, formElements[doc.id], maxLength );
         props.setProp(doc.id, formElements[doc.id], maxLength);
-//        fields.addTemplate(doc.id, templateData[doc.id], maxLength );
-//      } else if (formElements.hasOwnProperty(doc.id)) {
-        //console.log("fields.Other ******************* ", doc.id, formElements[doc.id], maxLength );
       }
     }
-    console.log("validTemplateProps $$$$$$$$$$$$$$$$$$$$$$ ", props.validTemplateProps());
 
     console.log("Log 8 ", props.data());
-/*
-    // Build object to be saved to db
-    const data = {
-      // spread operator conditionally adds, otherwise function errors if not exist
-      // 'from' email if not assigned comes from firebase extension field: DEFAULT_FROM
-      appKey,
-      createdDateTime: FieldValue.serverTimestamp(),
-      ...oFields.appFrom && { from: oFields.appFrom },
-      toUids: [ appKey ], // toUids = to email: format required by cloud extension 'trigger email'
-      ...tFields.email && {replyTo: tFields.email},
-      ...oFields.webformId && { webformId: oFields.webformId },
-      template: {
-        name: oFields.templateName,
-        data: tFields
-      }
-    };
-*/
+
     // For serverTimestamp to work must first create new doc key then 'set' data
     const newKey = db.collection("formSubmission").doc();
     // update the new-key-record using 'set' which works for existing doc
     newKey.set(props.data());
 
-    let responseBody = props.response();
-    console.log(responseBody);
+//    let responseBody = props.response();
     /**
      * Response
      */
-    /*
+//    let getUrlRedirect = props.getUrlRedirect();
     let responseBody = { 
       data: {
-        redirect: responseRedirect
+        redirect: props.getUrlRedirect()
       }
     }
-    */ 
     return res.status(200).send(
       // return response (even if empty) so client can finish AJAX success
       responseBody
