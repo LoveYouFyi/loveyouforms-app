@@ -61,8 +61,6 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 
       let props = { appKey: '', appFrom: '', reply: '', webformId: '', 
         templateName: '', templateProps: {}, urlRedirect: '' }
-    
-      let validTemplateProps = [];
       
       let getProps = ({ 
         appKey, appFrom, webformId, templateName, templateProps, 
@@ -74,12 +72,9 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
         },
         urlRedirect
       });
-      // FIXME remove 'response' and simply update urlRediret above
+   
+      let validTemplateProps = [];
 
-//      let response = ({ urlRedirect } = props) => ({
-        //responseBody: { data: { redirect: urlRedirect } }
-      //});
-    
       let sanitizeValue = (value, maxLength) => 
         value.toString().trim().substr(0, maxLength);
     
@@ -91,21 +86,20 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
           props[propKey] = valueSanitized;
         }
       }
+
       let setValidTemplateProps = data => {
         validTemplateProps = data;
       }
+
       return {
         setValidTemplateProps: (valid) => {
           setValidTemplateProps(valid)
         },
-        getValidTemplateProps: () => validTemplateProps,
-        setProp: (propKey, value, maxLength) => {
+        getValidTemplateProps: () => validTemplateProps, // fyi only - not used
+        set: (propKey, value, maxLength) => {
           return setProp(propKey, value, maxLength);
         },
-        getProp: () => getProps(),
-        getProps: (propKey) => {
-          return props[propKey];
-        }
+        get: () => getProps(),
       }
     })();
 
@@ -139,47 +133,51 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       res.set('Access-Control-Allow-Origin', '*');
     } else {
       // restrict to url requests that match the app
-      res.set('Access-Control-Allow-Origin', props.getProp().data.appUrl);
+      res.set('Access-Control-Allow-Origin', props.get().data.appUrl);
       // end processing if url does not match (req.headers.origin = url)
-      if (req.headers.origin !== props.getProp().data.appUrl) { 
+      if (req.headers.origin !== props.get().data.appUrl) { 
         console.info(new Error('Origin Url does not match app url.'));
         return res.end();
       } 
     }
 
     // Url redirect: global redirect unless overridden by form field (below)
-    props.setProp('urlRedirect', globalConfig.urlRedirect.default);
+    props.set('urlRedirect', globalConfig.urlRedirect.default);
 
+    // Form submission: all form elements...
     let { 
       ...formElements 
-    } = req.body; // Form submission
+    } = req.body; 
 
+    // Template name: set global unless form overrides
     let templateName = globalConfig.defaultTemplate.name;
     if (req.body.templateName) { templateName = req.body.templateName }
+    props.set('templateName', templateName);
+    // Template data whitelist: set template props okay to be added to email template
     let validTemplateData = await db.collection('emailTemplate').doc(templateName).get();
     validTemplateData = validTemplateData.data().templateData;
     props.setValidTemplateProps(validTemplateData); 
-    
-    props.setProp('appKey', app.id);
+    // App Info props: set after data whitelist or props will be excluded from the email template data
+    props.set('appKey', app.id);
     let appInfoObject = app.data().appInfo;
     for (const prop in appInfoObject) {
-      props.setProp(prop, app.data().appInfo[prop]);
+      props.set(prop, appInfoObject[prop]);
     }
 
     // Add webform key/value pairs to fields 
     for (const doc of formFields.docs) { // perhaps set up formFields.docs as array before this
       let maxLength = doc.data().maxLength;
       if (formElements.hasOwnProperty(doc.id)) {
-        props.setProp(doc.id, formElements[doc.id], maxLength);
+        props.set(doc.id, formElements[doc.id], maxLength);
       }
     }
 
-    console.log("Log 8 ", props.getProp().data);
+    console.log("Log 8 ", props.get().data);
 
     // For serverTimestamp to work must first create new doc key then 'set' data
     const newKey = db.collection("formSubmission").doc();
     // update the new-key-record using 'set' which works for existing doc
-    newKey.set(props.getProp().data)
+    newKey.set(props.get().data)
 
 //    let responseBody = props.response();
     /**
@@ -188,7 +186,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 //    let getUrlRedirect = props.getUrlRedirect();
     let responseBody = { 
       data: {
-        redirect: props.getProp().urlRedirect
+        redirect: props.get().urlRedirect
       }
     }
     return res.status(200).send(
