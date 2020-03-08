@@ -64,11 +64,15 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     
       let validTemplateProps = [];
       
-      let data = ({ appKey, appFrom, webformId, templateName, templateProps, 
-        templateProps: { email: replyTo }  } = props) => ({  
-        appKey, createdDateTime: FieldValue.serverTimestamp(), 
-        from: appFrom, toUids: [ appKey ], replyTo, webformId, 
-        template: { name: templateName, data: templateProps }
+      let getProps = ({ 
+        appKey, appFrom, webformId, templateName, templateProps, 
+        templateProps: { email: replyTo }, urlRedirect  } = props) => ({
+        data: {
+          appKey, createdDateTime: FieldValue.serverTimestamp(), 
+          from: appFrom, toUids: [ appKey ], replyTo, webformId, 
+          template: { name: templateName, data: templateProps }
+        },
+        urlRedirect
       });
       // FIXME remove 'response' and simply update urlRediret above
 
@@ -94,13 +98,12 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
         setValidTemplateProps: (valid) => {
           setValidTemplateProps(valid)
         },
+        getValidTemplateProps: () => validTemplateProps,
         setProp: (propKey, value, maxLength) => {
           return setProp(propKey, value, maxLength);
         },
-        data: () => data(),
-        validTemplateProps: () => validTemplateProps,
-        getProp: (propKey) => {
-          console.log("prop[propKey] $$$$$$$$$$$$$$$$$$$$$$ ", props[propKey]);
+        getProp: () => getProps(),
+        getProps: (propKey) => {
           return props[propKey];
         }
       }
@@ -136,9 +139,9 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       res.set('Access-Control-Allow-Origin', '*');
     } else {
       // restrict to url requests that match the app
-      res.set('Access-Control-Allow-Origin', props.data().appUrl);
+      res.set('Access-Control-Allow-Origin', props.getProp().data.appUrl);
       // end processing if url does not match (req.headers.origin = url)
-      if (req.headers.origin !== props.data().appUrl) { 
+      if (req.headers.origin !== props.getProp().data.appUrl) { 
         console.info(new Error('Origin Url does not match app url.'));
         return res.end();
       } 
@@ -171,12 +174,12 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       }
     }
 
-    console.log("Log 8 ", props.data());
+    console.log("Log 8 ", props.getProp().data);
 
     // For serverTimestamp to work must first create new doc key then 'set' data
     const newKey = db.collection("formSubmission").doc();
     // update the new-key-record using 'set' which works for existing doc
-    newKey.set(props.data());
+    newKey.set(props.getProp().data)
 
 //    let responseBody = props.response();
     /**
@@ -185,7 +188,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 //    let getUrlRedirect = props.getUrlRedirect();
     let responseBody = { 
       data: {
-        redirect: props.getProp('urlRedirect')
+        redirect: props.getProp().urlRedirect
       }
     }
     return res.status(200).send(
