@@ -58,10 +58,10 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     const props = (() => {
 
       let props = { appKey: '', appFrom: '', appUrl: '', email: '', 
-        webformId: '', templateName: '', templateProps: {}, urlRedirect: '' }
+        webformId: '', templateName: '', templateData: {}, urlRedirect: '' }
       
       let getProps = ({ appKey, appFrom, appUrl, email, webformId, 
-        templateName, templateProps, urlRedirect  } = props) => ({
+        templateName, templateData, urlRedirect  } = props) => ({
         data: {
           appKey, 
           createdDateTime: FieldValue.serverTimestamp(), 
@@ -71,7 +71,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
           webformId, 
           template: { 
             name: templateName, 
-            data: templateProps 
+            data: templateData
           }
         },
         appUrl,
@@ -87,7 +87,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
         let valueSanitized = sanitizeValue(value, maxLength);
         props[propKey] = valueSanitized; // add each prop to props, then also...
         if (validTemplateProps.includes(propKey)) {
-          props.templateProps[propKey] = valueSanitized;
+          props.templateData[propKey] = valueSanitized;
         } 
       }
 
@@ -161,7 +161,6 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     // Template whitelist data: set template props okay to be added to email template
     let validTemplateData = await db.collection('emailTemplate').doc(templateName).get();
     validTemplateData = validTemplateData.data().templateData;
-    console.log("validTempateData $$$$$$$$$$$$$$$$$$$$$$$ ", validTemplateData);
     props.setValidTemplateProps(validTemplateData); 
     // App Info props: set after data whitelist or props will be excluded from template props
     let appInfoObject = app.data().appInfo;
@@ -169,9 +168,8 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       props.set(prop, appInfoObject[prop]);
     }
 
-    // FIXME formFields as array so do not need to loop through all?
+    // Form Elements: Add to props with corresponding maxLength value
     let formFields = await db.collection('formField').get();
-    // Add webform key/value pairs to fields 
     for (const doc of formFields.docs) {
       let maxLength = doc.data().maxLength;
       if (formElements.hasOwnProperty(doc.id)) {
@@ -187,16 +185,13 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     /**
      * Response
      */
-    let responseBody = { 
+
+    return res.status(200).send({
+      // return response (even if empty) so client can finish AJAX success
       data: {
         redirect: props.get().urlRedirect
       }
-    }
-
-    return res.status(200).send(
-      // return response (even if empty) so client can finish AJAX success
-      responseBody
-    );
+    });
 
   } catch(error) {
 
