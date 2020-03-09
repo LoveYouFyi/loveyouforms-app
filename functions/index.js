@@ -57,17 +57,17 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 
     const props = (() => {
 
-      let props = { appKey: '', appFrom: '', appUrl: '', reply: '', webformId: '', 
-        templateName: '', templateProps: {}, urlRedirect: '' }
+      let props = { appKey: '', appFrom: '', appUrl: '', email: '', 
+        webformId: '', templateName: '', templateProps: {}, urlRedirect: '' }
       
-      let getProps = ({ appKey, appFrom, appUrl, webformId, templateName, templateProps, 
-        templateProps: { email: replyTo }, urlRedirect  } = props) => ({
+      let getProps = ({ appKey, appFrom, appUrl, email, webformId, 
+        templateName, templateProps, urlRedirect  } = props) => ({
         data: {
           appKey, 
           createdDateTime: FieldValue.serverTimestamp(), 
           from: appFrom, 
           toUids: [ appKey ], 
-          replyTo, 
+          replyTo: email,
           webformId, 
           template: { 
             name: templateName, 
@@ -161,6 +161,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     // Template whitelist data: set template props okay to be added to email template
     let validTemplateData = await db.collection('emailTemplate').doc(templateName).get();
     validTemplateData = validTemplateData.data().templateData;
+    console.log("validTempateData $$$$$$$$$$$$$$$$$$$$$$$ ", validTemplateData);
     props.setValidTemplateProps(validTemplateData); 
     // App Info props: set after data whitelist or props will be excluded from template props
     let appInfoObject = app.data().appInfo;
