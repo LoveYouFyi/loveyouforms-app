@@ -146,7 +146,11 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       } 
     }
 
-    // Url redirect: global redirect unless overridden by form field (below)
+    /**
+     *  Continue with form processing since passed valid app checks
+     */
+
+    // Url redirect: use global redirect by default unless overridden by form elements
     props.set('urlRedirect', globalConfig.urlRedirect.default);
 
     // Template name: global config unless form override
