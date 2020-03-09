@@ -78,7 +78,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
         urlRedirect
       });
    
-      let validTemplateProps = [];
+      let templateDataWhitelist = [];
 
       let sanitizeValue = (value, maxLength) => 
         value.toString().trim().substr(0, maxLength);
@@ -86,20 +86,20 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       let setProp = (propKey, value, maxLength) => {
         let valueSanitized = sanitizeValue(value, maxLength);
         props[propKey] = valueSanitized; // add each prop to props, then also...
-        if (validTemplateProps.includes(propKey)) {
+        if (templateDataWhitelist.includes(propKey)) {
           props.templateData[propKey] = valueSanitized;
         } 
       }
 
-      let setValidTemplateProps = data => {
-        validTemplateProps = data;
+      let setTemplateDataWhitelist = array => {
+        templateDataWhitelist = array;
       }
 
       return {
-        setValidTemplateProps: (valid) => {
-          setValidTemplateProps(valid)
+        setTemplateDataWhitelist: (array) => {
+          setTemplateDataWhitelist(array)
         },
-        getValidTemplateProps: () => validTemplateProps, // fyi only - not used
+        getTemplateDataWhitelist: () => templateDataWhitelist, // fyi only - not used
         set: (propKey, value, maxLength) => {
           return setProp(propKey, value, maxLength);
         },
@@ -149,26 +149,25 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     // Url redirect: global redirect unless overridden by form field (below)
     props.set('urlRedirect', globalConfig.urlRedirect.default);
 
-    // Form submission: all form elements...
-    let { 
-      ...formElements 
-    } = req.body; 
-
     // Template name: global config unless form override
     let templateName = globalConfig.defaultTemplate.name;
     if (req.body.templateName) { templateName = req.body.templateName }
     props.set('templateName', templateName);
-    // Template whitelist data: set template props okay to be added to email template
-    let validTemplateData = await db.collection('emailTemplate').doc(templateName).get();
-    validTemplateData = validTemplateData.data().templateData;
-    props.setValidTemplateProps(validTemplateData); 
-    // App Info props: set after data whitelist or props will be excluded from template props
+
+    // Template data whitelist: template props allowed to be added to email template
+    let templateDataWhitelist = await db.collection('emailTemplate').doc(templateName).get();
+    templateDataWhitelist = templateDataWhitelist.data().templateData;
+    props.setTemplateDataWhitelist(templateDataWhitelist); 
+
+    // App Info: set after template data whitelist or props will be excluded from template data
     let appInfoObject = app.data().appInfo;
     for (const prop in appInfoObject) {
       props.set(prop, appInfoObject[prop]);
     }
 
-    // Form Elements: Add to props with corresponding maxLength value
+    // Form Elements: Add submitted to props with maxLength values
+    let { ...formElements } = req.body; 
+    // Collection formField contains maxLength values
     let formFields = await db.collection('formField').get();
     for (const doc of formFields.docs) {
       let maxLength = doc.data().maxLength;
