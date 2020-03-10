@@ -219,17 +219,13 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
       let other = { emailTemplateName: '' };
  
       let setHeader = array => {
-        console.log("header 111111111111111111111111 ", array);
         header = array; // add each prop to props, then also...
-        console.log("header 222222222222222222222222 ", header);
       }
       let getHeader = () => {
-        console.log("header 333333333333333333333333333333 ", header);
         return header
       }
  
       let setRowData = (propKey, value) => {
-        console.log("propKey + value: ", propKey, value)
         rowData[propKey] = value; // add each prop to props, then also...
       }
       let getRowData = () => {
@@ -280,11 +276,9 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
 
     let templateDataProps = templateData;
     for (const property in templateDataProps) {
-      console.log("for in $$$$$$$$$$$$$$$$$$$$$ ", property, templateDataProps[property]); 
       props.setRowData(property, templateDataProps[property]);
     }
 
-    console.log("props.getRowData() 1111111111111111111111111111 ", props.getRowData());
     // For building sort-ordered object that is turned into sheet data-row
     //props.setRowData('templateData', templateData);
     
@@ -298,7 +292,6 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
     // Add webformId to data object
     dataRow.webformId = webformId;
     props.setRowData('webformId', webformId);
-    console.log("props.getRowData() 222222222222222222222222222222 ", props.getRowData());
 
     // Template array for sort-ordered data-row and header fields
     let emailTemplateDoc = await db.collection('emailTemplate').doc(templateName).get();
@@ -310,7 +303,6 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
 
     // Update sort-ordered props with data values
     Object.assign(dataRow, templateData);
-    console.log("props.getRowData() 333333333333333333333333333 ", props.getRowData());
 //    let myDataRow = Object.assign(props.getRowData(), templateData);
     // Object to array because sheets data must be as array
     dataRow = Object.values(dataRow);
