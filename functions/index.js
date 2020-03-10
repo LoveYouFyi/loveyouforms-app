@@ -232,7 +232,10 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
         return props;
       }
       let getHeader = () => {
-        return header
+        return [( header )]; // Return as array
+      }
+      let getRowValues = () => {
+        return [( Object.values(rowData) )]; // Return as nested array
       }
       let getRowData = () => {
         // Convert header array to object so can assign rowData with correct sort order
@@ -256,6 +259,7 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
         get: () => getProps(),
         getHeader: () => getHeader(),
         getRowData: () => getRowData(),
+        getRowValues: () => getRowValues(),
       }
     })();
 
@@ -291,7 +295,9 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
     emailTemplateDoc.data().templateData.map(field => props.setRowData([field], "")); // add prop name + empty string value
     console.log("props.getRowData 8888888888888888888888888888888 ", props.getRowData());
     // header fields for sheet
+    /**
     let sheetHeader = [( emailTemplateDoc.data().sheetHeader )]; // sheets requires array within an array
+    */
     props.setHeader(( emailTemplateDoc.data().sheetHeader ));
 
     // Set values to already-sorted dataRow props
@@ -309,11 +315,13 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
     dataRowToo = Object.values(props.getRowData());
     console.log("dataRowToo = Object.values(myDataRow) $$$$$$$$$$$$$$$$$$$$$$$$$ ", dataRowToo);
     // Sheets Row Data to add as array nested in array: [[ date, time, ... ]]
+    /**
     dataRowForSheet = [( dataRow )];
-
+    */
     console.log("props.get() $$$$$$$$$$$$$$$$$$$$$$ ", props.get());
     console.log("props.getHeader() $$$$$$$$$$$$$$$$$$$$$ ", props.getHeader());
     console.log("props.getRowData() 444444444444444444444444 ", props.getRowData());
+    console.log("props.getRowValues() 444444444444444444444444 ", props.getRowValues());
 
     /**
     * Prepare to insert data-row in app-specific spreadsheet
@@ -383,7 +391,7 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
     if (sheetNameExists) {
       // Update Google Sheets Data
       await sheets.spreadsheets.batchUpdate(blankRowInsertAfterHeader(sheetId));
-      await sheets.spreadsheets.values.update(addRow(rangeData)(dataRowForSheet));
+      await sheets.spreadsheets.values.update(addRow(rangeData)(props.getRowValues()));
 
     } else {
 
@@ -427,8 +435,8 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
       });
 
       // New Sheet Actions: add rows for header, then data
-      await sheets.spreadsheets.values.update(addRow(rangeHeader)(sheetHeader));
-      return sheets.spreadsheets.values.update(addRow(rangeData)(dataRowForSheet));
+      await sheets.spreadsheets.values.update(addRow(rangeHeader)(props.getHeader()));
+      return sheets.spreadsheets.values.update(addRow(rangeData)(props.getRowValues()));
 
     } // end 'else' add new sheet
 
