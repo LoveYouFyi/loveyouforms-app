@@ -298,7 +298,7 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
     for (const property in templateDataProps) {
       props.setRowData(property, templateDataProps[property]);
     }
-
+    console.log("props.getRowData 9999999999999999999999999999999 ", props.getRowData());
     // For building sort-ordered object that is turned into sheet data-row
     //props.setRowData('templateData', templateData);
     // Update sort-ordered props with data values
