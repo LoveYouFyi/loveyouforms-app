@@ -270,16 +270,16 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
     * Prepare to insert data-row in app-specific spreadsheet
     */
 
-    // Get app spreadsheetId and sheetId based on formSubmission emailTemplate
+    // Get app spreadsheetId and sheetId (one spreadsheet with multiple sheets possible)
     let app = await db.collection('app').doc(appKey).get();
-    let spreadsheetId = app.data().spreadsheet.id;
-    let sheetId = app.data().spreadsheet.sheetId[templateName];
+    let spreadsheetId = app.data().spreadsheet.id; // one spreadsheet per app
+    let sheetId = app.data().spreadsheet.sheetId[templateName]; // multiple possible sheets
 
     // Authorize with google sheets
     await jwtClient.authorize();
 
     // Row: Add to sheet (header or data)
-    const rangeHeader =  `${templateName}!A1`; // e.g. "contactDefault!A2"
+    const rangeHeader =  `${templateName}!A1`; // e.g. "contactDefault!A1"
     const rangeData =  `${templateName}!A2`; // e.g. "contactDefault!A2"
 
     const addRow = range => values => ({
