@@ -214,16 +214,8 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
   try {
     const props = (() => {
 
-      let props = { emailTemplateName: '' };
-      let header = [];
       let rowData = {};
  
-      let setProp = (propKey, value) => {
-        props[propKey] = value; // add each prop to props, then also...
-      }
-      let setHeader = array => {
-        header = array; // add each prop to props, then also...
-      }
       let setRowData = (propKey, value) => {
         rowData[propKey] = value; // add each prop to props, then also...
       }
@@ -238,33 +230,18 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
         return [( Object.values(rowData) )]; // Return as nested array
       }
       let getRowData = () => {
-        // Convert header array to object so can assign rowData with correct sort order
-//        let headerAsObject = {};
-        //header.map(title => headerAsObject[title] = "");
-        //console.log("header 111111111111111111111111111111 ", header);
-        //console.log("rowData 111111111111111111111111111111 ", rowData);
-
-        //return Object.assign(headerAsObject, rowData); // assign retains sort order
         return rowData
       }
 
       return {
-        set: (propKey, value) => {
-          return setProp(propKey, value);
-        },
-        setHeader: (array) => setHeader(array),
         setRowData: (propKey, value) => {
           return setRowData(propKey, value);
         },
-        get: () => getProps(),
-        getHeader: () => getHeader(),
         getRowData: () => getRowData(),
         getRowValues: () => getRowValues(),
       }
     })();
 
-    let dataRow = {}; // sorted data to be converted to array for submit to sheet
-    let dataRowForSheet; // data row as array to submit to sheet
 
     /**
     * Prepare Data Row 
@@ -273,53 +250,35 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
     // Destructure Snapshot.data() which contains this form submission data
     let { appKey, createdDateTime, template: { data: { ...templateData }, 
       name: templateName  }, webformId } = snapshot.data(); 
-    console.log("templateData $$$$$$$$$$$$$$$$$$$$$ ", templateData); 
 
     let templateDataProps = templateData;
     // date/time: timezone string defined by momentjs.com/timezone: https://github.com/moment/moment-timezone/blob/develop/data/packed/latest.json
     const dateTime = createdDateTime.toDate(); // toDate() is firebase method
     // Add date-time to start of data object, format date with moment.js
-    dataRow.createdDate = moment(dateTime).tz(templateData.appTimeZone).format('L');
-    dataRow.createdTime = moment(dateTime).tz(templateData.appTimeZone).format('h:mm A z');
     props.setRowData('createdDate', moment(dateTime).tz(templateDataProps.appTimeZone).format('L'));
     props.setRowData('createdTime', moment(dateTime).tz(templateDataProps.appTimeZone).format('h:mm A z'));
     // Add webformId to data object
-    dataRow.webformId = webformId;
     props.setRowData('webformId', webformId);
-    console.log("props.getRowData 7777777777777777777777777777777 ", props.getRowData());
 
     // Template array for sort-ordered data-row and header fields
     let emailTemplateDoc = await db.collection('emailTemplate').doc(templateName).get();
     // data-row fields: sort ordered with empty string values
-    emailTemplateDoc.data().templateData.map(field => dataRow[field] = ""); // add prop name + empty string value
-    emailTemplateDoc.data().templateData.map(field => props.setRowData([field], "")); // add prop name + empty string value
-    console.log("props.getRowData 8888888888888888888888888888888 ", props.getRowData());
+    emailTemplateDoc.data().templateData.map(
+      field => props.setRowData([field], "")
+    ); // add prop name + empty string value
     // header fields for sheet
     /**
     let sheetHeader = [( emailTemplateDoc.data().sheetHeader )]; // sheets requires array within an array
     */
-    props.setHeader(( emailTemplateDoc.data().sheetHeader ));
+    let header = [( emailTemplateDoc.data().sheetHeader )];
 
     // Set values to already-sorted dataRow props
     for (const property in templateDataProps) {
       props.setRowData(property, templateDataProps[property]);
     }
-    console.log("props.getRowData 9999999999999999999999999999999 ", props.getRowData());
     // For building sort-ordered object that is turned into sheet data-row
     //props.setRowData('templateData', templateData);
     // Update sort-ordered props with data values
-    Object.assign(dataRow, templateData); // DO NOT USE OBJECT ASSIGN: The data is only down here, it is not actually in the props.function
-    // Can use Object.values but do not use object assign, let props.SetRowData with for in... above 
-    dataRow = Object.values(dataRow);
-    console.log("dataRow = Object.values(myDataRow) $$$$$$$$$$$$$$$$$$$$$$$$$ ", dataRow);
-    dataRowToo = Object.values(props.getRowData());
-    console.log("dataRowToo = Object.values(myDataRow) $$$$$$$$$$$$$$$$$$$$$$$$$ ", dataRowToo);
-    // Sheets Row Data to add as array nested in array: [[ date, time, ... ]]
-    /**
-    dataRowForSheet = [( dataRow )];
-    */
-    console.log("props.get() $$$$$$$$$$$$$$$$$$$$$$ ", props.get());
-    console.log("props.getHeader() $$$$$$$$$$$$$$$$$$$$$ ", props.getHeader());
     console.log("props.getRowData() 444444444444444444444444 ", props.getRowData());
     console.log("props.getRowValues() 444444444444444444444444 ", props.getRowValues());
 
@@ -435,7 +394,7 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
       });
 
       // New Sheet Actions: add rows for header, then data
-      await sheets.spreadsheets.values.update(addRow(rangeHeader)(props.getHeader()));
+      await sheets.spreadsheets.values.update(addRow(rangeHeader)(header));
       return sheets.spreadsheets.values.update(addRow(rangeData)(props.getRowValues()));
 
     } // end 'else' add new sheet
