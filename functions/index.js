@@ -265,6 +265,29 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
     }
     /** [End] Row Data: Sorted ************************************************/
 
+    /** [Start] Row Data: Sorted **********************************************/
+    // Add/set row data to props object to match sort order of sheet header 
+    // 1) Start with date, time, and, webformId for all template types
+    // date/time: timezone string defined by momentjs.com/timezone: https://github.com/moment/moment-timezone/blob/develop/data/packed/latest.json
+    let fDate = moment(dateTime).tz(templateData.appTimeZone).format('L');
+    let fTime = moment(dateTime).tz(templateData.appTimeZone).format('h:mm A z');
+    // 2) Add templateData sorted elements with empty string values so the order 
+    // of props in rowData will match sheetHeader order
+//    let fEmailTemplateData = emailTemplate.data().templateData.map(e => props.setRowData([e], ""));
+    let fTemplateData = emailTemplate.data().templateData.reduce((a, c) => {
+      a[c] = "";
+      if (templateData[c]) { a[c] = templateData[c] }
+      return a
+    }, {});
+    // 3) Update sort-ordered props with the formSubmission data values
+    console.log("fDate $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", fDate);
+    console.log("fTime $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", fTime);
+    console.log("webformId $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", webformId);
+    console.log("fTemplateData $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", fTemplateData);
+
+    /** [End] Row Data: Sorted ************************************************/
+
+
 
     /**
     * Prepare to insert data-row in app-specific spreadsheet
