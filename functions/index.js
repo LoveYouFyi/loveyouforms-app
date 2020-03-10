@@ -215,14 +215,14 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
 
     const props = (() => {
 
-      let rowData = {}; // prop and value
+      let rowData = {};
  
       let setRowData = (propKey, value) => {
         rowData[propKey] = value;
       }
 
       let getRowDataValues = () => {
-        return [( Object.values(rowData) )]; // Values only as nested array
+        return [( Object.values(rowData) )]; // sheets requires nested as array
       }
 
       return {
@@ -245,7 +245,7 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
     let emailTemplate = await db.collection('emailTemplate').doc(templateName).get();
 
     // header fields for sheet
-    let sheetHeader = [( emailTemplate.data().sheetHeader )];
+    let sheetHeader = [( emailTemplate.data().sheetHeader )]; // sheets requires nested as array
 
     // date/time: timezone string defined by momentjs.com/timezone: https://github.com/moment/moment-timezone/blob/develop/data/packed/latest.json
     const dateTime = createdDateTime.toDate(); // toDate() is firebase method
