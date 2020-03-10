@@ -235,14 +235,9 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
         return header
       }
       let getRowDataSorted = () => {
-        console.log("header $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", header);
-        // return row data in same order as header array
+        // Convert header array to object so can assign rowData with correct sort order
         let headerAsObject = {};
-        header.map(field => headerAsObject[field] = "");
-        console.log("flat header 22222222222222222222222222 ", header);
-//        let headerObject = Object.assign({}, flatHeader);
- //       console.log("headerObject 3333333333333333333333333 ", headerObject);
-//        console.log("Object.assign 3333333333333333333333333 ", Object.assign(headerObject, rowData));
+        header.map(title => headerAsObject[title] = "");
         return Object.assign(header, rowData); // assign retains sort order
       }
       let getRowData = () => {
@@ -276,7 +271,7 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
       name: templateName  }, webformId } = snapshot.data(); 
     console.log("templateData $$$$$$$$$$$$$$$$$$$$$ ", templateData); 
 
-    // FIrst set header because so when call data it is sorted: Template array for sort-ordered data-row and header fields
+    // FIrst set header so when call data it is sorted: Template array for sort-ordered data-row and header fields
     let emailTemplateDoc = await db.collection('emailTemplate').doc(templateName).get();
     // data-row fields: sort ordered with empty string values
     emailTemplateDoc.data().templateData.map(field => dataRow[field] = ""); // add prop name + empty string value
