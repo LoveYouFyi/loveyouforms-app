@@ -279,12 +279,14 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
       if (templateData[c]) { a[c] = templateData[c] }
       return a
     }, {});
+    let rowData = object => [( Object.values(object) )];
     // 3) Update sort-ordered props with the formSubmission data values
     console.log("fDate $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", fDate);
     console.log("fTime $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", fTime);
     console.log("webformId $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", webformId);
     console.log("fTemplateData $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", fTemplateData);
-
+    console.log("rowData(fTemplateData) $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", rowData(fTemplateData));
+    
     /** [End] Row Data: Sorted ************************************************/
 
 
