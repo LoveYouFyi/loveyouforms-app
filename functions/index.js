@@ -302,12 +302,12 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
     // For building sort-ordered object that is turned into sheet data-row
     //props.setRowData('templateData', templateData);
     // Update sort-ordered props with data values
-    Object.assign(dataRow, templateData);
-//    let myDataRow = Object.assign(props.getRowData(), templateData);
-//    console.log("Object.assign myDataRow $$$$$$$$$$$$$$$$$$$$$$$$$$$ ", myDataRow);
-    // Object to array because sheets data must be as array
+    Object.assign(dataRow, templateData); // DO NOT USE OBJECT ASSIGN: The data is only down here, it is not actually in the props.function
+    // Can use Object.values but do not use object assign, let props.SetRowData with for in... above 
     dataRow = Object.values(dataRow);
-//    console.log("Object.values(myDataRow) $$$$$$$$$$$$$$$$$$$$$$$$$ ", Object.values(myDataRow));
+    console.log("dataRow = Object.values(myDataRow) $$$$$$$$$$$$$$$$$$$$$$$$$ ", dataRow);
+    dataRowToo = Object.values(props.getRowData());
+    console.log("dataRowToo = Object.values(myDataRow) $$$$$$$$$$$$$$$$$$$$$$$$$ ", dataRowToo);
     // Sheets Row Data to add as array nested in array: [[ date, time, ... ]]
     dataRowForSheet = [( dataRow )];
 
