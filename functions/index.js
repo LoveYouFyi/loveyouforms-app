@@ -214,56 +214,46 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
   try {
     const props = (() => {
 
+      let props = { emailTemplateName: '' };
       let header = [];
       let rowData = {};
-      let other = { emailTemplateName: '' };
  
+      let setProp = (propKey, value) => {
+        props[propKey] = value; // add each prop to props, then also...
+      }
       let setHeader = array => {
         header = array; // add each prop to props, then also...
       }
-      let getHeader = () => {
-        return header
-      }
- 
       let setRowData = (propKey, value) => {
         rowData[propKey] = value; // add each prop to props, then also...
+      }
+
+      let getProps = () => {
+        return props;
+      }
+      let getHeader = () => {
+        return header
       }
       let getRowData = () => {
         return rowData;
       }
 
-      let setOther = (propKey, value) => {
-        other[propKey] = value; // add each prop to props, then also...
-      }
-      let getOther = ({ emailTemplateName  } = other) => ({
-        emailTemplateName,
-      });
-
       return {
-        setTemplateDataWhitelist: (array) => {
-          setTemplateDataWhitelist(array)
+        set: (propKey, value) => {
+          return setProp(propKey, value);
         },
-        getTemplateDataWhitelist: () => templateDataWhitelist, // fyi only - not used
-        setHeader: (array) => {
-          return setHeader(array)
-        },
+        setHeader: (array) => setHeader(array),
         setRowData: (propKey, value) => {
           return setRowData(propKey, value);
         },
-        setOther: (propKey, value) => {
-          return setOther(propKey, value);
-        },
+        get: () => getProps(),
         getHeader: () => getHeader(),
         getRowData: () => getRowData(),
-        getOther: () => getOther(),
       }
     })();
 
     let dataRow = {}; // sorted data to be converted to array for submit to sheet
     let dataRowForSheet; // data row as array to submit to sheet
-    let spreadsheetId;
-    let sheetId;
-    let sheetHeader;
 
     /**
     * Prepare Data Row 
@@ -278,7 +268,7 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
     for (const property in templateDataProps) {
       props.setRowData(property, templateDataProps[property]);
     }
-
+    console.log("props.getRowData() $$$$$$$$$$$$$$$$$$$$$$$$ ", props.getRowData());
     // For building sort-ordered object that is turned into sheet data-row
     //props.setRowData('templateData', templateData);
     
@@ -287,8 +277,8 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
     // Add date-time to start of data object, format date with moment.js
     dataRow.createdDate = moment(dateTime).tz(templateData.appTimeZone).format('L');
     dataRow.createdTime = moment(dateTime).tz(templateData.appTimeZone).format('h:mm A z');
-    props.setRowData('createdDate', moment(dateTime).tz(templateData.appTimeZone).format('L'));
-    props.setRowData('createdTime', moment(dateTime).tz(templateData.appTimeZone).format('h:mm A z'));
+    props.setRowData('createdDate', moment(dateTime).tz(templateDataProps.appTimeZone).format('L'));
+    props.setRowData('createdTime', moment(dateTime).tz(templateDataProps.appTimeZone).format('h:mm A z'));
     // Add webformId to data object
     dataRow.webformId = webformId;
     props.setRowData('webformId', webformId);
@@ -298,7 +288,7 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
     // data-row fields: sort ordered with empty string values
     emailTemplateDoc.data().templateData.map(field => dataRow[field] = ""); // add prop name + empty string value
     // header fields for sheet
-    sheetHeader = [( emailTemplateDoc.data().sheetHeader )]; // sheets requires array within an array
+    let sheetHeader = [( emailTemplateDoc.data().sheetHeader )]; // sheets requires array within an array
     props.setHeader([( emailTemplateDoc.data().sheetHeader )]);
 
     // Update sort-ordered props with data values
@@ -310,9 +300,10 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
     // Sheets Row Data to add as array nested in array: [[ date, time, ... ]]
     dataRowForSheet = [( dataRow )];
 
+    console.log("props.get() $$$$$$$$$$$$$$$$$$$$$$ ", props.get());
     console.log("props.getHeader() $$$$$$$$$$$$$$$$$$$$$ ", props.getHeader());
     console.log("props.getRowData() 444444444444444444444444 ", props.getRowData());
-    console.log("props.getOTher() $$$$$$$$$$$$$$$$$$$$$$ ", props.getOther());
+
 
     /**
     * Prepare to insert data-row in app-specific spreadsheet
@@ -320,8 +311,8 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
 
     // Get app spreadsheetId and sheetId based on formSubmission emailTemplate
     let appDoc = await db.collection('app').doc(appKey).get();
-    spreadsheetId = appDoc.data().spreadsheet.id;
-    sheetId = appDoc.data().spreadsheet.sheetId[templateName];
+    let spreadsheetId = appDoc.data().spreadsheet.id;
+    let sheetId = appDoc.data().spreadsheet.sheetId[templateName];
 
     // Authorize with google sheets
     await jwtClient.authorize();
