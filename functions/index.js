@@ -271,9 +271,9 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
     */
 
     // Get app spreadsheetId and sheetId based on formSubmission emailTemplate
-    let appDoc = await db.collection('app').doc(appKey).get();
-    let spreadsheetId = appDoc.data().spreadsheet.id;
-    let sheetId = appDoc.data().spreadsheet.sheetId[templateName];
+    let app = await db.collection('app').doc(appKey).get();
+    let spreadsheetId = app.data().spreadsheet.id;
+    let sheetId = app.data().spreadsheet.sheetId[templateName];
 
     // Authorize with google sheets
     await jwtClient.authorize();
