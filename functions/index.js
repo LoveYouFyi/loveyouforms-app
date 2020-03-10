@@ -212,33 +212,24 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
   .onCreate(async (snapshot, context) => {
 
   try {
+
     const props = (() => {
 
-      let rowData = {};
+      let rowData = {}; // prop and value
  
       let setRowData = (propKey, value) => {
-        rowData[propKey] = value; // add each prop to props, then also...
+        rowData[propKey] = value;
       }
 
-      let getProps = () => {
-        return props;
-      }
-      let getHeader = () => {
-        return [( header )]; // Return as array
-      }
-      let getRowValues = () => {
-        return [( Object.values(rowData) )]; // Return as nested array
-      }
-      let getRowData = () => {
-        return rowData
+      let getRowDataValues = () => {
+        return [( Object.values(rowData) )]; // Values only as nested array
       }
 
       return {
         setRowData: (propKey, value) => {
           return setRowData(propKey, value);
         },
-        getRowData: () => getRowData(),
-        getRowValues: () => getRowValues(),
+        getRowDataValues: () => getRowDataValues(),
       }
     })();
 
@@ -251,36 +242,31 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
     let { appKey, createdDateTime, template: { data: { ...templateData }, 
       name: templateName  }, webformId } = snapshot.data(); 
 
-    let templateDataProps = templateData;
+    let emailTemplate = await db.collection('emailTemplate').doc(templateName).get();
+
+    // header fields for sheet
+    let sheetHeader = [( emailTemplate.data().sheetHeader )];
+
     // date/time: timezone string defined by momentjs.com/timezone: https://github.com/moment/moment-timezone/blob/develop/data/packed/latest.json
     const dateTime = createdDateTime.toDate(); // toDate() is firebase method
     // Add date-time to start of data object, format date with moment.js
-    props.setRowData('createdDate', moment(dateTime).tz(templateDataProps.appTimeZone).format('L'));
-    props.setRowData('createdTime', moment(dateTime).tz(templateDataProps.appTimeZone).format('h:mm A z'));
-    // Add webformId to data object
+    props.setRowData('createdDate', moment(dateTime).tz(templateData.appTimeZone).format('L'));
+    props.setRowData('createdTime', moment(dateTime).tz(templateData.appTimeZone).format('h:mm A z'));
     props.setRowData('webformId', webformId);
-
     // Template array for sort-ordered data-row and header fields
-    let emailTemplateDoc = await db.collection('emailTemplate').doc(templateName).get();
+//    let emailTemplateDoc = await db.collection('emailTemplate').doc(templateName).get();
     // data-row fields: sort ordered with empty string values
-    emailTemplateDoc.data().templateData.map(
+    emailTemplate.data().templateData.map(
       field => props.setRowData([field], "")
     ); // add prop name + empty string value
-    // header fields for sheet
-    /**
-    let sheetHeader = [( emailTemplateDoc.data().sheetHeader )]; // sheets requires array within an array
-    */
-    let header = [( emailTemplateDoc.data().sheetHeader )];
 
     // Set values to already-sorted dataRow props
-    for (const property in templateDataProps) {
-      props.setRowData(property, templateDataProps[property]);
+    for (const property in templateData) {
+      props.setRowData(property, templateData[property]);
     }
     // For building sort-ordered object that is turned into sheet data-row
-    //props.setRowData('templateData', templateData);
     // Update sort-ordered props with data values
-    console.log("props.getRowData() 444444444444444444444444 ", props.getRowData());
-    console.log("props.getRowValues() 444444444444444444444444 ", props.getRowValues());
+
 
     /**
     * Prepare to insert data-row in app-specific spreadsheet
@@ -350,7 +336,7 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
     if (sheetNameExists) {
       // Update Google Sheets Data
       await sheets.spreadsheets.batchUpdate(blankRowInsertAfterHeader(sheetId));
-      await sheets.spreadsheets.values.update(addRow(rangeData)(props.getRowValues()));
+      await sheets.spreadsheets.values.update(addRow(rangeData)(props.getRowDataValues()));
 
     } else {
 
@@ -394,8 +380,8 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
       });
 
       // New Sheet Actions: add rows for header, then data
-      await sheets.spreadsheets.values.update(addRow(rangeHeader)(header));
-      return sheets.spreadsheets.values.update(addRow(rangeData)(props.getRowValues()));
+      await sheets.spreadsheets.values.update(addRow(rangeHeader)(sheetHeader));
+      return sheets.spreadsheets.values.update(addRow(rangeData)(props.getRowDataValues()));
 
     } // end 'else' add new sheet
 
