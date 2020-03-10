@@ -214,7 +214,7 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
   try {
 
     /**
-    * Prepare row data values and get sheet header
+    * Prepare row data values and sheet header
     */
 
     const props = (() => {
@@ -332,12 +332,13 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
     // If sheet name exists, insert data
     // Else, create new sheet + insert header + insert data
     if (sheetNameExists) {
-      // Update Google Sheets Data
+      // Insert into spreadsheet a blank row and the new data row
       await sheets.spreadsheets.batchUpdate(blankRowInsertAfterHeader(sheetId));
       await sheets.spreadsheets.values.update(addRow(rangeData)(props.getRowDataValues()));
 
     } else {
-
+      // Create new sheet, insert heder and new row data
+      
       // Request object for adding sheet to existing spreadsheet
       const addSheet = () => ({
         auth: jwtClient,
@@ -360,7 +361,8 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
         }
       });
 
-      // Add sheet: returns new sheet properties
+      // Add new sheet:
+      // 'addSheet' request object returns new sheet properties
       // Get new sheetId and add to app spreadsheet info
       // newSheet returns 'data' object with properties:
       //   prop: spreadsheetId
@@ -378,7 +380,7 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
           ['spreadsheet.sheetId.' + templateName]: newSheetId(newSheet)
       });
 
-      // New Sheet Actions: add rows for header, then data
+      // New Sheet Actions: add row header then row data
       await sheets.spreadsheets.values.update(addRow(rangeHeader)(sheetHeader));
       return sheets.spreadsheets.values.update(addRow(rangeData)(props.getRowDataValues()));
 
