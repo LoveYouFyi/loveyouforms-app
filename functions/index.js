@@ -218,12 +218,15 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
       let rowData = {};
       let other = { emailTemplateName: '' };
  
-      let setHeader = (header) => {
-        header = header; // add each prop to props, then also...
+      let setHeader = array => {
+        console.log("header 111111111111111111111111 ", array);
+        header = array; // add each prop to props, then also...
+        console.log("header 222222222222222222222222 ", header);
       }
-      let getHeader = () => (
-        header
-      );
+      let getHeader = () => {
+        console.log("header 333333333333333333333333333333 ", header);
+        return header
+      }
  
       let setRowData = (propKey, value) => {
         console.log("propKey + value: ", propKey, value)
