@@ -338,7 +338,7 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
 
     } else {
 
-      // Add sheet
+      // Request object for adding sheet to existing spreadsheet
       const addSheet = () => ({
         auth: jwtClient,
         spreadsheetId: spreadsheetId,
@@ -360,7 +360,7 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
         }
       });
 
-      // Add sheet and return new sheet properties
+      // Add sheet: returns new sheet properties
       let newSheet = await sheets.spreadsheets.batchUpdate(addSheet());
 
       // Get new sheetId and add to app spreadsheet info
