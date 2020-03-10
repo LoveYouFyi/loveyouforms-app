@@ -213,8 +213,11 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
 
   try {
 
-    const props = (() => {
+    /**
+    * Prepare row data values and get sheet header
+    */
 
+    const props = (() => {
       let rowData = {};
  
       let setRowData = (propKey, value) => {
@@ -233,39 +236,34 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
       }
     })();
 
-
-    /**
-    * Prepare Data Row 
-    */
-
-    // Destructure Snapshot.data() which contains this form submission data
+    // Form Submission: values from Snapshot.data()
     let { appKey, createdDateTime, template: { data: { ...templateData }, 
-      name: templateName  }, webformId } = snapshot.data(); 
+      name: templateName  }, webformId } = snapshot.data();
 
+    // Template: two sort-ordered arrays of strings
+    // sheetHeader is sorted according to desired sheets visual
+    // templateData is sorted to match the order of the sheetHeader
     let emailTemplate = await db.collection('emailTemplate').doc(templateName).get();
 
-    // header fields for sheet
-    let sheetHeader = [( emailTemplate.data().sheetHeader )]; // sheets requires nested as array
-
+    // Header fields for sheet requires to be nested as array
+    let sheetHeader = [( emailTemplate.data().sheetHeader )]; 
+   
+    /** [Start] Row Data: Sorted **********************************************/
+    // Add/set row data to props object to match sort order of sheet header 
+    // 1) Start with date, time, and, webformId for all template types
     // date/time: timezone string defined by momentjs.com/timezone: https://github.com/moment/moment-timezone/blob/develop/data/packed/latest.json
     const dateTime = createdDateTime.toDate(); // toDate() is firebase method
-    // Add date-time to start of data object, format date with moment.js
     props.setRowData('createdDate', moment(dateTime).tz(templateData.appTimeZone).format('L'));
     props.setRowData('createdTime', moment(dateTime).tz(templateData.appTimeZone).format('h:mm A z'));
     props.setRowData('webformId', webformId);
-    // Template array for sort-ordered data-row and header fields
-//    let emailTemplateDoc = await db.collection('emailTemplate').doc(templateName).get();
-    // data-row fields: sort ordered with empty string values
-    emailTemplate.data().templateData.map(
-      field => props.setRowData([field], "")
-    ); // add prop name + empty string value
-
-    // Set values to already-sorted dataRow props
+    // 2) Add templateData sorted elements with empty string values so the order 
+    // of props in rowData will match sheetHeader order
+    emailTemplate.data().templateData.map(e => props.setRowData([e], ""));
+    // 3) Update sort-ordered props with the formSubmission data values
     for (const property in templateData) {
       props.setRowData(property, templateData[property]);
     }
-    // For building sort-ordered object that is turned into sheet data-row
-    // Update sort-ordered props with data values
+    /** [End] Row Data: Sorted ************************************************/
 
 
     /**
