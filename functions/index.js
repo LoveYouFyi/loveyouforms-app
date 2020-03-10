@@ -318,12 +318,12 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
     */
 
     // Check if sheet name exists for data insert
-    const sheetObjectRequest = {
+    const sheetObjectRequest = () => ({
       auth: jwtClient,
       spreadsheetId: spreadsheetId,
       includeGridData: false
-    };
-    let sheetDetails = await sheets.spreadsheets.get(sheetObjectRequest);
+    });
+    let sheetDetails = await sheets.spreadsheets.get(sheetObjectRequest());
     let sheetNameExists = sheetDetails.data.sheets.find(sheet => {
       // if sheet name exists returns sheet 'properties' object, else is undefined
       return sheet.properties.title === templateName;
@@ -339,7 +339,7 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
     } else {
 
       // Add sheet
-      const addSheet = {
+      const addSheet = () => ({
         auth: jwtClient,
         spreadsheetId: spreadsheetId,
         resource: {
@@ -358,10 +358,10 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
             }
           ]
         }
-      };
+      });
 
       // Add sheet and return new sheet properties
-      let newSheet = await sheets.spreadsheets.batchUpdate(addSheet);
+      let newSheet = await sheets.spreadsheets.batchUpdate(addSheet());
 
       // Get new sheetId and add to app spreadsheet info
       // newSheet returns 'data' object with properties:
