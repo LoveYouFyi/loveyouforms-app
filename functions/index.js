@@ -282,25 +282,25 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
     // Add webformId to data object
     dataRow.webformId = webformId;
     props.setRowData('webformId', webformId);
-
-    for (const property in templateDataProps) {
-      props.setRowData(property, templateDataProps[property]);
-    }
-    console.log("props.getRowData() $$$$$$$$$$$$$$$$$$$$$$$$ ", props.getRowData());
+    console.log("props.getRowData 7777777777777777777777777777777 ", props.getRowData());
 
     // Template array for sort-ordered data-row and header fields
     let emailTemplateDoc = await db.collection('emailTemplate').doc(templateName).get();
     // data-row fields: sort ordered with empty string values
     emailTemplateDoc.data().templateData.map(field => dataRow[field] = ""); // add prop name + empty string value
+    emailTemplateDoc.data().templateData.map(field => props.setRowData([field], "")); // add prop name + empty string value
+    console.log("props.getRowData 8888888888888888888888888888888 ", props.getRowData());
     // header fields for sheet
     let sheetHeader = [( emailTemplateDoc.data().sheetHeader )]; // sheets requires array within an array
     props.setHeader(( emailTemplateDoc.data().sheetHeader ));
 
+    // Set values to already-sorted dataRow props
+    for (const property in templateDataProps) {
+      props.setRowData(property, templateDataProps[property]);
+    }
+
     // For building sort-ordered object that is turned into sheet data-row
     //props.setRowData('templateData', templateData);
-    console.log("Object.assign(dataRow $$$$$$$$$$$$$$$$$$$$$$$ ", dataRow);
-    console.log("Object.assign(templateData $$$$$$$$$$$$$$$$$$$$$$$ ", templateData);
-    console.log("Object.assign(dataRow, templateData $$$$$$$$$$$$$$$$$$$$$$$ ", Object.assign(dataRow, templateData));
     // Update sort-ordered props with data values
     Object.assign(dataRow, templateData);
 //    let myDataRow = Object.assign(props.getRowData(), templateData);
@@ -314,7 +314,6 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
     console.log("props.get() $$$$$$$$$$$$$$$$$$$$$$ ", props.get());
     console.log("props.getHeader() $$$$$$$$$$$$$$$$$$$$$ ", props.getHeader());
     console.log("props.getRowData() 444444444444444444444444 ", props.getRowData());
-
 
     /**
     * Prepare to insert data-row in app-specific spreadsheet
