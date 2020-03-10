@@ -241,8 +241,8 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
       name: templateName  }, webformId } = snapshot.data();
 
     // Template: two sort-ordered arrays of strings
-    // sheetHeader is sorted according to desired sheets visual
-    // templateData is sorted to match the order of the sheetHeader
+    // sheetHeader array is sorted according to desired sheets visual
+    // templateData array is sorted to match the order of the sheetHeader
     let emailTemplate = await db.collection('emailTemplate').doc(templateName).get();
 
     // Header fields for sheet requires to be nested as array
@@ -361,20 +361,21 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
       });
 
       // Add sheet: returns new sheet properties
-      let newSheet = await sheets.spreadsheets.batchUpdate(addSheet());
-
       // Get new sheetId and add to app spreadsheet info
       // newSheet returns 'data' object with properties:
-      // prop: spreadsheetId
-      // prop: replies[0].addSheet.properties (sheetId, title, index, sheetType, gridProperties { rowCount, columnCount }
-      // Map replies array array to get sheetId
-      let newSheetProps = {};
-      newSheet.data.replies.map(reply => newSheetProps.addSheet = reply.addSheet); 
-      let newSheetId = newSheetProps.addSheet.properties.sheetId;
+      //   prop: spreadsheetId
+      //   prop: replies[0].addSheet.properties (sheetId, title, index, sheetType, gridProperties { rowCount, columnCount }
+      let newSheet = await sheets.spreadsheets.batchUpdate(addSheet());
+      // Map 'replies' array to get sheetId
+      let newSheetId = sheet => {
+        let newSheet = {};
+        sheet.data.replies.map(reply => newSheet.addSheet = reply.addSheet);
+        return newSheet.addSheet.properties.sheetId;
+      };
 
       // Add new sheetId to app spreadsheet info
       db.collection('app').doc(appKey).update({
-          ['spreadsheet.sheetId.' + templateName]: newSheetId
+          ['spreadsheet.sheetId.' + templateName]: newSheetId(newSheet)
       });
 
       // New Sheet Actions: add rows for header, then data
@@ -386,8 +387,6 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
   } catch(error) {
     
     console.error(logErrorInfo(error));
-
-    // 'res' is not defined, so cannot use it
 
   } // end catch
 
