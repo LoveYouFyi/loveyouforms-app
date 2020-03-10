@@ -211,66 +211,129 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId}')
   .onCreate(async (snapshot, context) => {
 
-  let dataRow = {}; // sorted data to be converted to array for submit to sheet
-  let dataRowForSheet; // data row as array to submit to sheet
-  let emailTemplateName;
-  let emailTemplateData;
-  let appKeySubmitted; // use in submit data
-  let spreadsheetId;
-  let sheetId;
-  let sheetHeader;
-
   try {
+    const props = (() => {
+
+      let header = [];
+      let rowData = {};
+      let other = { emailTemplateName: '' };
+ 
+      let setHeader = (header) => {
+        header = header; // add each prop to props, then also...
+      }
+      let getHeader = () => (
+        header
+      );
+ 
+      let setRowData = (propKey, value) => {
+        console.log("propKey + value: ", propKey, value)
+        rowData[propKey] = value; // add each prop to props, then also...
+      }
+      let getRowData = () => {
+        return rowData;
+      }
+
+      let setOther = (propKey, value) => {
+        other[propKey] = value; // add each prop to props, then also...
+      }
+      let getOther = ({ emailTemplateName  } = other) => ({
+        emailTemplateName,
+      });
+
+      return {
+        setTemplateDataWhitelist: (array) => {
+          setTemplateDataWhitelist(array)
+        },
+        getTemplateDataWhitelist: () => templateDataWhitelist, // fyi only - not used
+        setHeader: (array) => {
+          return setHeader(array)
+        },
+        setRowData: (propKey, value) => {
+          return setRowData(propKey, value);
+        },
+        setOther: (propKey, value) => {
+          return setOther(propKey, value);
+        },
+        getHeader: () => getHeader(),
+        getRowData: () => getRowData(),
+        getOther: () => getOther(),
+      }
+    })();
+
+    let dataRow = {}; // sorted data to be converted to array for submit to sheet
+    let dataRowForSheet; // data row as array to submit to sheet
+    let spreadsheetId;
+    let sheetId;
+    let sheetHeader;
+
     /**
     * Prepare Data Row 
     */
 
     // Destructure Snapshot.data() which contains this form submission data
-    let { appKey, createdDateTime, template: { data: { ...rest }, 
+    let { appKey, createdDateTime, template: { data: { ...templateData }, 
       name: templateName  }, webformId } = snapshot.data(); 
-     
+    console.log("templateData $$$$$$$$$$$$$$$$$$$$$ ", templateData); 
+
+    let templateDataProps = templateData;
+    for (const property in templateDataProps) {
+      console.log("for in $$$$$$$$$$$$$$$$$$$$$ ", property, templateDataProps[property]); 
+      props.setRowData(property, templateDataProps[property]);
+    }
+
+    console.log("props.getRowData() 1111111111111111111111111111 ", props.getRowData());
     // For building sort-ordered object that is turned into sheet data-row
-    emailTemplateName = templateName;
-    emailTemplateData = rest;
-    // appkey to query 'spreadsheet' object info
-    appKeySubmitted = appKey;
+    //props.setRowData('templateData', templateData);
+    
     // date/time: timezone string defined by momentjs.com/timezone: https://github.com/moment/moment-timezone/blob/develop/data/packed/latest.json
     const dateTime = createdDateTime.toDate(); // toDate() is firebase method
     // Add date-time to start of data object, format date with moment.js
-    dataRow.createdDate = moment(dateTime).tz(rest.appTimeZone).format('L');
-    dataRow.createdTime = moment(dateTime).tz(rest.appTimeZone).format('h:mm A z');
+    dataRow.createdDate = moment(dateTime).tz(templateData.appTimeZone).format('L');
+    dataRow.createdTime = moment(dateTime).tz(templateData.appTimeZone).format('h:mm A z');
+    props.setRowData('createdDate', moment(dateTime).tz(templateData.appTimeZone).format('L'));
+    props.setRowData('createdTime', moment(dateTime).tz(templateData.appTimeZone).format('h:mm A z'));
     // Add webformId to data object
     dataRow.webformId = webformId;
+    props.setRowData('webformId', webformId);
+    console.log("props.getRowData() 222222222222222222222222222222 ", props.getRowData());
 
-    // Template arrays for sort-ordered data-row and header fields
-    let emailTemplateDoc = await db.collection('emailTemplate').doc(emailTemplateName).get();
+    // Template array for sort-ordered data-row and header fields
+    let emailTemplateDoc = await db.collection('emailTemplate').doc(templateName).get();
     // data-row fields: sort ordered with empty string values
     emailTemplateDoc.data().templateData.map(field => dataRow[field] = ""); // add prop name + empty string value
     // header fields for sheet
     sheetHeader = [( emailTemplateDoc.data().sheetHeader )]; // sheets requires array within an array
+    props.setHeader([( emailTemplateDoc.data().sheetHeader )]);
 
     // Update sort-ordered props with data values
-    Object.assign(dataRow, emailTemplateData);
+    Object.assign(dataRow, templateData);
+    console.log("props.getRowData() 333333333333333333333333333 ", props.getRowData());
+//    let myDataRow = Object.assign(props.getRowData(), templateData);
     // Object to array because sheets data must be as array
     dataRow = Object.values(dataRow);
+//    console.log("Object.values(myDataRow) $$$$$$$$$$$$$$$$$$$$$$$$$ ", Object.values(myDataRow));
     // Sheets Row Data to add as array nested in array: [[ date, time, ... ]]
     dataRowForSheet = [( dataRow )];
+
+    console.log("props.getHeader() $$$$$$$$$$$$$$$$$$$$$ ", props.getHeader());
+    console.log("props.getRowData() 444444444444444444444444 ", props.getRowData());
+    console.log("props.getOTher() $$$$$$$$$$$$$$$$$$$$$$ ", props.getOther());
 
     /**
     * Prepare to insert data-row in app-specific spreadsheet
     */
 
     // Get app spreadsheetId and sheetId based on formSubmission emailTemplate
-    let appDoc = await db.collection('app').doc(appKeySubmitted).get();
+    let appDoc = await db.collection('app').doc(appKey).get();
     spreadsheetId = appDoc.data().spreadsheet.id;
-    sheetId = appDoc.data().spreadsheet.sheetId[emailTemplateName];
+    sheetId = appDoc.data().spreadsheet.sheetId[templateName];
 
     // Authorize with google sheets
     await jwtClient.authorize();
 
     // Row: Add to sheet (header or data)
-    const rangeHeader =  `${emailTemplateName}!A1`; // e.g. "contactDefault!A2"
-    const rangeData =  `${emailTemplateName}!A2`; // e.g. "contactDefault!A2"
+    const rangeHeader =  `${templateName}!A1`; // e.g. "contactDefault!A2"
+    const rangeData =  `${templateName}!A2`; // e.g. "contactDefault!A2"
 
     const addRow = range => values => ({
       auth: jwtClient,
@@ -316,7 +379,7 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
     let sheetDetails = await sheets.spreadsheets.get(sheetObjectRequest);
     let sheetNameExists = sheetDetails.data.sheets.find(sheet => {
       // if sheet name exists returns sheet 'properties' object, else is undefined
-      return sheet.properties.title === emailTemplateName;
+      return sheet.properties.title === templateName;
     });
 
     // If sheet name exists, insert data
@@ -337,7 +400,7 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
             {
               "addSheet": {
                 "properties": {
-                  "title": emailTemplateName,
+                  "title": templateName,
                   "index": 0,
                   "gridProperties": {
                     "rowCount": 1000,
@@ -363,8 +426,8 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
       let newSheetId = newSheetProps.addSheet.properties.sheetId;
 
       // Add new sheetId to app spreadsheet info
-      db.collection('app').doc(appKeySubmitted).update({
-          ['spreadsheet.sheetId.' + emailTemplateName]: newSheetId
+      db.collection('app').doc(appKey).update({
+          ['spreadsheet.sheetId.' + templateName]: newSheetId
       });
 
       // New Sheet Actions: add rows for header, then data
