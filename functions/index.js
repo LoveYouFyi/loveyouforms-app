@@ -126,6 +126,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     // App key validation: if does not exist stop processing otherwise get app info
     const app = await db.collection('app').doc(req.body.appKey).get();
     if (app) {
+      // FIXME SET: appKey, appUrl
       props.set('appKey', app.id);
       props.set('appUrl', app.data().appInfo.appUrl); // must set before cors check
     } else {
@@ -139,6 +140,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       res.set('Access-Control-Allow-Origin', '*');
     } else {
       // restrict to url requests that match the app
+      // FIXME GET: appUrl
       res.set('Access-Control-Allow-Origin', props.get().appUrl);
       // end processing if url does not match (req.headers.origin = url)
       if (req.headers.origin !== props.get().appUrl) { 
@@ -150,13 +152,15 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     /**
      *  Continue with form processing since passed valid app checks
      */
-
+  
     // Url redirect: use global redirect by default unless overridden by form elements
+    // FIXME SET: urlRedirect
     props.set('urlRedirect', globalConfig.urlRedirect.default);
 
     // Template name: global config unless form override
     let templateName = globalConfig.defaultTemplate.name;
     if (req.body.templateName) { templateName = req.body.templateName }
+    // FIXME SET: templateName
     props.set('templateName', templateName);
 
     // Template data whitelist: template props allowed to be added to email template
@@ -166,6 +170,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 
     // App Info: set after template data whitelist or props will be excluded from template data
     let appInfoObject = app.data().appInfo;
+    // FIXME SET: appInfo props
     for (const prop in appInfoObject) {
       props.set(prop, appInfoObject[prop]);
     }
@@ -174,6 +179,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     let { ...formElements } = req.body; 
     // Collection formField contains maxLength values
     let formFields = await db.collection('formField').get();
+    // FIXME SET: formElements
     for (const doc of formFields.docs) {
       let maxLength = doc.data().maxLength;
       if (formElements.hasOwnProperty(doc.id)) {
@@ -184,6 +190,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     // For serverTimestamp to work must first create new doc key then 'set' data
     const newKey = db.collection("formSubmission").doc();
     // update the new-key-record using 'set' which works for existing doc
+    // FIXME GET ALL: data
     newKey.set(props.get().data)
 
     /**
@@ -193,6 +200,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     return res.status(200).send({
       // return response (even if empty) so client can finish AJAX success
       data: {
+        // FIXME GET: urlRedirect
         redirect: props.get().urlRedirect
       }
     });
