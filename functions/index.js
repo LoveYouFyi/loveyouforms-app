@@ -230,14 +230,14 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
     // Header fields for sheet requires nested array of strings [ [ 'Date', 'Time', etc ] ]
     let sheetHeader = [( emailTemplate.data().sheetHeader )]; 
 
-    /** [Start] Row Data: Sorted **********************************************/
-    // Convert strings to prop/value objects so data can be merged in sort order
-    // date/time: timezone string defined by momentjs.com/timezone: https://github.com/moment/moment-timezone/blob/develop/data/packed/latest.json
+    /** [Start] Row Data: Sort & Merge ****************************************/
+    // Strings to 'prop: value' objects so data to be merged has uniform format
+    // timezone 'tz' string defined by momentjs.com/timezone: https://github.com/moment/moment-timezone/blob/develop/data/packed/latest.json
     const dateTime = createdDateTime.toDate(); // toDate() is firebase method
     let createdDate = toObject('createdDate')(moment(dateTime).tz(templateData.appTimeZone).format('L'));
     let createdTime = toObject('createdTime')(moment(dateTime).tz(templateData.appTimeZone).format('h:mm A z'));
     let dataWebformId = toObject('webformId')(webformId);
-    // Reduce emailTemplate.templateData array, this returns an object that 
+    // Reduce array emailTemplate.templateData, this returns an object that 
     // is sort-ordered to matach the sheetHeader fields.
     let templateDataSorted = emailTemplate.data().templateData.reduce((a, c) => {
       templateData[c] ? a[c] = templateData[c] : a[c] = "";
@@ -247,7 +247,7 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
     // Data-row for sheet requires nested array of strings [ [ 'John Smith', etc ] ]
     let sheetDataRow = [( Object.values({ ...createdDate, ...createdTime, 
       ...dataWebformId, ...templateDataSorted }) )];
-    /** [End] Row Data: Sorted ************************************************/
+    /** [End] Row Data: Sort & Merge ******************************************/
 
 
     /**
