@@ -32,8 +32,6 @@ const jwtClient = new google.auth.JWT({ // JWT Authentication (for google sheets
 
 let toObject = string => val => ({ [string]: val });
 
-
-
 const logErrorInfo = error => ({
   Error: 'Description and source line:',
   description: error,
@@ -221,77 +219,35 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
     * Prepare row data values and sheet header
     */
 
-    const props = (() => {
-      let rowData = {};
- 
-      let setRowData = (propKey, value) => {
-        rowData[propKey] = value;
-      }
-
-      let getRowDataValues = () => {
-        return [( Object.values(rowData) )]; // sheets requires nested as array
-      }
-
-      return {
-        setRowData: (propKey, value) => {
-          return setRowData(propKey, value);
-        },
-        getRowDataValues: () => getRowDataValues(),
-      }
-    })();
-
     // Form Submission: values from Snapshot.data()
     let { appKey, createdDateTime, template: { data: { ...templateData }, 
       name: templateName  }, webformId } = snapshot.data();
 
     // Template: two sort-ordered arrays of strings
     // sheetHeader array is sorted according to desired sheets visual
-    // templateData array is sorted to match the order of the sheetHeader
+    // templateData array is sorted to match the order of sheetHeader
     let emailTemplate = await db.collection('emailTemplate').doc(templateName).get();
 
-    // Header fields for sheet requires to be nested as array
+    // Header fields for sheet requires nested array of strings [ [ 'Date', 'Time', etc ] ]
     let sheetHeader = [( emailTemplate.data().sheetHeader )]; 
-   
-    /** [Start] Row Data: Sorted **********************************************/
-    // Add/set row data to props object to match sort order of sheet header 
-    // 1) Start with date, time, and, webformId for all template types
-    // date/time: timezone string defined by momentjs.com/timezone: https://github.com/moment/moment-timezone/blob/develop/data/packed/latest.json
-    const dateTime = createdDateTime.toDate(); // toDate() is firebase method
-    props.setRowData('createdDate', moment(dateTime).tz(templateData.appTimeZone).format('L'));
-    props.setRowData('createdTime', moment(dateTime).tz(templateData.appTimeZone).format('h:mm A z'));
-    props.setRowData('webformId', webformId);
-    // 2) Add templateData sorted elements with empty string values so the order 
-    // of props in rowData will match sheetHeader order
-    emailTemplate.data().templateData.map(e => props.setRowData([e], ""));
-    // 3) Update sort-ordered props with the formSubmission data values
-    for (const property in templateData) {
-      props.setRowData(property, templateData[property]);
-    }
-    /** [End] Row Data: Sorted ************************************************/
 
     /** [Start] Row Data: Sorted **********************************************/
-    // Add/set row data to props object to match sort order of sheet header 
-    // 1) Start with date, time, and, webformId for all template types
+    // Convert strings to prop/value objects so data can be merged in sort order
     // date/time: timezone string defined by momentjs.com/timezone: https://github.com/moment/moment-timezone/blob/develop/data/packed/latest.json
+    const dateTime = createdDateTime.toDate(); // toDate() is firebase method
     let createdDate = toObject('createdDate')(moment(dateTime).tz(templateData.appTimeZone).format('L'));
     let createdTime = toObject('createdTime')(moment(dateTime).tz(templateData.appTimeZone).format('h:mm A z'));
     let dataWebformId = toObject('webformId')(webformId);
-    // 2) Add templateData sorted elements with empty string values so the order 
-    // of props in rowData will match sheetHeader order
-//    let fEmailTemplateData = emailTemplate.data().templateData.map(e => props.setRowData([e], ""));
-    // object of string props/value pairs
+    // Reduce emailTemplate.templateData array, this returns an object that 
+    // is sort-ordered to matach the sheetHeader fields.
     let templateDataSorted = emailTemplate.data().templateData.reduce((a, c) => {
       templateData[c] ? a[c] = templateData[c] : a[c] = "";
       return a
     }, {});
-    // nested array with string values: [ [ 'John Smith', 'john@smith.com', etc ]]
-    let rowData = [( Object.values({ ...createdDate, ...createdTime, 
-      ...dataWebformId, ...templateDataSorted}) )];
-
-    // 3) Update sort-ordered props with the formSubmission data values
-    console.log("objTemplateDataSorted $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", templateDataSorted);
-    console.log("rowData(fTemplateData) $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", rowData);
-    
+    // Values-only: merge objects in sort-order and return only values
+    // Data-row for sheet requires nested array of strings [ [ 'John Smith', etc ] ]
+    let sheetDataRow = [( Object.values({ ...createdDate, ...createdTime, 
+      ...dataWebformId, ...templateDataSorted }) )];
     /** [End] Row Data: Sorted ************************************************/
 
 
@@ -363,8 +319,7 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
     if (sheetNameExists) {
       // Insert into spreadsheet a blank row and the new data row
       await sheets.spreadsheets.batchUpdate(blankRowInsertAfterHeader(sheetId));
-//      await sheets.spreadsheets.values.update(addRow(rangeData)(props.getRowDataValues()));
-      await sheets.spreadsheets.values.update(addRow(rangeData)(rowData));
+      await sheets.spreadsheets.values.update(addRow(rangeData)(sheetDataRow));
 
     } else {
       // Create new sheet, insert heder and new row data
@@ -412,7 +367,7 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
 
       // New Sheet Actions: add row header then row data
       await sheets.spreadsheets.values.update(addRow(rangeHeader)(sheetHeader));
-      return sheets.spreadsheets.values.update(addRow(rangeData)(props.getRowDataValues()));
+      return sheets.spreadsheets.values.update(addRow(rangeData)(sheetDataRow));
 
     } // end 'else' add new sheet
 
