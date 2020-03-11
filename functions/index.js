@@ -187,6 +187,70 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       }
     }
 
+    
+
+    /** [Start] Row Data: Sort & Merge ****************************************/
+    const vals = (() => {
+
+      let props = {};
+    
+      let get = ({ ...key } = props) => ({
+        data: {
+          appKey: key.appKey, 
+          createdDateTime: FieldValue.serverTimestamp(), 
+          from: key.appFrom, 
+          toUids: [ key.appKey ], 
+//          replyTo: key.templateData.email,
+//          webformId: key.templateData.webformId, 
+          template: { 
+            name: key.templateName, 
+            data: key.templateData
+          }
+        },
+        urlRedirect: key.urlRedirect
+      });
+    
+      let sanitize = (value, maxLength) => 
+        value.toString().trim().substr(0, maxLength);
+    
+      return {
+        set: (propKey, value, maxLength) => {
+          return props[propKey] = sanitize(value, maxLength);
+        },
+        get: () => get(),
+      }
+    })();
+    
+
+    vals.set('appKey', app.id);
+    for (const prop in appInfoObject) {
+      vals.set(prop, appInfoObject[prop]);
+    }
+    vals.set('urlRedirect', globalConfig.urlRedirect.default);
+    vals.set('templateName', templateName);
+    console.log("vals.get() ", vals.get());
+    /*
+    props.set(prop, appInfoObject[prop]);
+    props.set(doc.id, formElements[doc.id], maxLength);
+
+    // Strings to 'prop: value' objects so data to be merged has uniform format
+    // timezone 'tz' string defined by momentjs.com/timezone: https://github.com/moment/moment-timezone/blob/develop/data/packed/latest.json
+
+    let dataWebformId = toObject('webformId')(webformId);
+    // Reduce array emailTemplate.templateData, this returns an object that 
+    // is sort-ordered to matach the sheetHeader fields.
+    let templateDataSorted = emailTemplate.data().templateData.reduce((a, c) => {
+      templateData[c] ? a[c] = templateData[c] : a[c] = "";
+      return a
+    }, {});
+    // Values-only: merge objects in sort-order and return only values
+    // Data-row for sheet requires nested array of strings [ [ 'John Smith', etc ] ]
+    let sheetDataRow = [( Object.values({ ...createdDate, ...createdTime, 
+      ...dataWebformId, ...templateDataSorted }) )];
+*/
+    /** [End] Row Data: Sort & Merge ******************************************/
+
+
     // For serverTimestamp to work must first create new doc key then 'set' data
     const newKey = db.collection("formSubmission").doc();
     // update the new-key-record using 'set' which works for existing doc
@@ -251,7 +315,7 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
       templateData[c] ? a[c] = templateData[c] : a[c] = "";
       return a
     }, {});
-    // Values-only: merge objects in sort-order and return only values
+    // Merge objects in sort-order and return only values
     // Data-row for sheet requires nested array of strings [ [ 'John Smith', etc ] ]
     let sheetDataRow = [( Object.values({ ...createdDate, ...createdTime, 
       ...dataWebformId, ...templateDataSorted }) )];
