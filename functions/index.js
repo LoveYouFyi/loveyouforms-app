@@ -221,6 +221,10 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       }
     })();
     
+    let toObject2 = (string, val) => ({ [string]: val });
+    let arrayOfObjects = object => Object.keys(object).map(function(key) {
+      return {[key]: object[key]};
+    });
 
     vals.set('appKey', app.id);
     for (const prop in appInfoObject) {
@@ -229,6 +233,20 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     vals.set('urlRedirect', globalConfig.urlRedirect.default);
     vals.set('templateName', templateName);
     console.log("vals.get() ", vals.get());
+
+    let oAppInfo = arrayOfObjects(appInfoObject);
+    let oAppKey = toObject2('appKey', app.id);
+    let oUrlRedirect = toObject2('urlRedirect', globalConfig.urlRedirect.default);
+    let oTemplateName = toObject2('templateName', templateName);
+
+//    let oTemplateData = appInfoObject.reduce((a, c) => {
+      //templateData[c] ? a[c] = templateData[c] : a[c] = "";
+      //return a
+    //}, {});
+
+    let valsObjects = [ oAppKey, ...oAppInfo, oUrlRedirect, oTemplateName ];
+    console.log("valsObjects: ", valsObjects);
+
     /*
     props.set(prop, appInfoObject[prop]);
     props.set(doc.id, formElements[doc.id], maxLength);
