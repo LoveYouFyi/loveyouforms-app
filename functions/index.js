@@ -192,7 +192,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     /** [Start] Row Data: Sort & Merge ****************************************/
     const vals = (() => {
 
-      let props = {};
+      let props = { templateData: {} };
     
       let get = ({ ...key } = props) => ({
         data: {
@@ -215,6 +215,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     
       return {
         set: (propKey, value, maxLength) => {
+          console.log("setProps: $$$$$$$$$$$$$$$$$$$$$$$ ", propKey, value, maxLength);
           return props[propKey] = sanitize(value, maxLength);
         },
         get: () => get(),
@@ -238,6 +239,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     let oAppKey = toObject2('appKey', app.id);
     let oUrlRedirect = toObject2('urlRedirect', globalConfig.urlRedirect.default);
     let oTemplateName = toObject2('templateName', templateName);
+    let oFormElements = arrayOfObjects(formElements);
 
     console.log("formFields typeof $$$$$$$$$$$$$$$$$$$$$$$$ ", typeof formFields.docs);
     console.log("formFields.docs $$$$$$$$$$$$$$$$$$$$$$$$ ", formFields.docs);
@@ -247,19 +249,38 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       // templateData[c] ? a[c] = templateData[c] : a[c] = "";
       return a
     }, {});
-    console.log("tempDataObj $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", formFieldObject);
-    //    let templateDataObject = formFields.reduce((a, c) => {
-      //formElements[c] ? a[c] = formElement[c] : a[c] = "";
-      //return a
-    //}, {});
-    //console.log("templateDataObject: $$$$$$$$$$$$$$$$$$$ ", templateDataObject);
-//    let oTemplateData = appInfoObject.reduce((a, c) => {
-      //templateData[c] ? a[c] = templateData[c] : a[c] = "";
-      //return a
-    //}, {});
+//    console.log("formFieldObject $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", formFieldObject);
 
-    let valsObjects = [ oAppKey, ...oAppInfo, oUrlRedirect, oTemplateName ];
+    /*
+    formFields.docs.forEach(doc => {
+      let maxLength = doc.data().maxLength;
+      if (formElements.hasOwnProperty(doc.id)) {
+        vals.set(doc.id, formElements[doc.id], maxLength);
+      }
+    });
+    */
+    //let tempDocs = formFields.docs.forEach(doc => {
+      //let max = doc.maxLength;
+      //formElements[doc.id] ? 
+    //});
+    //console.log("tempDocs: $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", tempDocs);
+    let myFormElements = formElements;
+    console.log("myFormElements $$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", myFormElements);
+
+    let valsObjects = [ oAppKey, ...oAppInfo, oUrlRedirect, oTemplateName, ...oFormElements ];
     console.log("valsObjects: ", valsObjects);
+    console.log("vals.get() ", vals.get());
+
+    for (const doc of formFields.docs) {
+      let maxLength = doc.data().maxLength;
+      if (valsObjects.hasOwnProperty(doc.id)) {
+        vals.set(doc.id, valsObject[doc.id], maxLength);
+      }
+      if (templateDataWhitelist.includes(doc.id) && valsObjects[doc.id]) {
+        vals.set('templateData.' + [doc.id], valsObjects[doc.id], maxLength);
+      } 
+    }
+    console.log("vals.get() ", vals.get());
 
     /*
     props.set(prop, appInfoObject[prop]);
