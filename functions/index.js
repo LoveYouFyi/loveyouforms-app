@@ -28,7 +28,11 @@ const jwtClient = new google.auth.JWT({ // JWT Authentication (for google sheets
 
 // !SECTION
 
-// SECTION Logging and Errors
+// SECTION Helper Functions
+
+let toObject = string => val => ({ [string]: val });
+
+
 
 const logErrorInfo = error => ({
   Error: 'Description and source line:',
@@ -269,30 +273,30 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
     // Add/set row data to props object to match sort order of sheet header 
     // 1) Start with date, time, and, webformId for all template types
     // date/time: timezone string defined by momentjs.com/timezone: https://github.com/moment/moment-timezone/blob/develop/data/packed/latest.json
-    let fDate = moment(dateTime).tz(templateData.appTimeZone).format('L');
-    let fTime = moment(dateTime).tz(templateData.appTimeZone).format('h:mm A z');
+    let createdDate = toObject('createdDate')(moment(dateTime).tz(templateData.appTimeZone).format('L'));
+    let createdTime = toObject('createdTime')(moment(dateTime).tz(templateData.appTimeZone).format('h:mm A z'));
+    let dataWebformId = toObject('webformId')(webformId);
     // 2) Add templateData sorted elements with empty string values so the order 
     // of props in rowData will match sheetHeader order
 //    let fEmailTemplateData = emailTemplate.data().templateData.map(e => props.setRowData([e], ""));
-    let fTemplateData = emailTemplate.data().templateData.reduce((a, c) => {
-      a[c] = "";
-      if (templateData[c]) { a[c] = templateData[c] }
+    // object of string props/value pairs
+    let templateDataSorted = emailTemplate.data().templateData.reduce((a, c) => {
+      templateData[c] ? a[c] = templateData[c] : a[c] = "";
       return a
     }, {});
-    let rowData = object => [( Object.values(object) )];
+    // nested array with string values: [ [ 'John Smith', 'john@smith.com', etc ]]
+    let rowData = [( Object.values({ ...createdDate, ...createdTime, 
+      ...dataWebformId, ...templateDataSorted}) )];
+
     // 3) Update sort-ordered props with the formSubmission data values
-    console.log("fDate $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", fDate);
-    console.log("fTime $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", fTime);
-    console.log("webformId $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", webformId);
-    console.log("fTemplateData $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", fTemplateData);
-    console.log("rowData(fTemplateData) $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", rowData(fTemplateData));
+    console.log("objTemplateDataSorted $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", templateDataSorted);
+    console.log("rowData(fTemplateData) $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", rowData);
     
     /** [End] Row Data: Sorted ************************************************/
 
 
-
     /**
-    * Prepare to insert data-row in app-specific spreadsheet
+    * Prepare to insert data-row into app spreadsheet
     */
 
     // Get app spreadsheetId and sheetId (one spreadsheet with multiple sheets possible)
@@ -359,7 +363,8 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
     if (sheetNameExists) {
       // Insert into spreadsheet a blank row and the new data row
       await sheets.spreadsheets.batchUpdate(blankRowInsertAfterHeader(sheetId));
-      await sheets.spreadsheets.values.update(addRow(rangeData)(props.getRowDataValues()));
+//      await sheets.spreadsheets.values.update(addRow(rangeData)(props.getRowDataValues()));
+      await sheets.spreadsheets.values.update(addRow(rangeData)(rowData));
 
     } else {
       // Create new sheet, insert heder and new row data
