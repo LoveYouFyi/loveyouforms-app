@@ -49,7 +49,6 @@ const responseErrorBasic = string => ({
 // !SECTION
 
 // Terminate HTTP functions with res.redirect(), res.send(), or res.end().
-// Terminate a synchronous function with a return; statement.
 // https://firebase.google.com/docs/functions/terminate-functions
 
 // ANCHOR Form Handler
@@ -209,7 +208,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 });
 
 
-// ANCHOR - Firestore To Sheets [Nested email template data]
+// ANCHOR - Firestore To Sheets [New sheet, header, and data row]
 exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId}')
   .onCreate(async (snapshot, context) => {
 
@@ -367,7 +366,7 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
 
       // New Sheet Actions: add row header then row data
       await sheets.spreadsheets.values.update(addRow(rangeHeader)(sheetHeader));
-      return sheets.spreadsheets.values.update(addRow(rangeData)(sheetDataRow));
+      await sheets.spreadsheets.values.update(addRow(rangeData)(sheetDataRow));
 
     } // end 'else' add new sheet
 
