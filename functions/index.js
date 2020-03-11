@@ -239,6 +239,20 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     let oUrlRedirect = toObject2('urlRedirect', globalConfig.urlRedirect.default);
     let oTemplateName = toObject2('templateName', templateName);
 
+    console.log("formFields typeof $$$$$$$$$$$$$$$$$$$$$$$$ ", typeof formFields.docs);
+    console.log("formFields.docs $$$$$$$$$$$$$$$$$$$$$$$$ ", formFields.docs);
+
+    let formFieldObject = formFields.docs.reduce((a, doc) => {
+      a[doc.id] = doc.data();
+      // templateData[c] ? a[c] = templateData[c] : a[c] = "";
+      return a
+    }, {});
+    console.log("tempDataObj $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", formFieldObject);
+    //    let templateDataObject = formFields.reduce((a, c) => {
+      //formElements[c] ? a[c] = formElement[c] : a[c] = "";
+      //return a
+    //}, {});
+    //console.log("templateDataObject: $$$$$$$$$$$$$$$$$$$ ", templateDataObject);
 //    let oTemplateData = appInfoObject.reduce((a, c) => {
       //templateData[c] ? a[c] = templateData[c] : a[c] = "";
       //return a
