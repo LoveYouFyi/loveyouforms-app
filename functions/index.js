@@ -187,14 +187,14 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       }
     }
 
-    
+    console.log("props.get() $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", props.get()); 
 
     /** [Start] Row Data: Sort & Merge ****************************************/
     const vals = (() => {
 
       let props = { templateData: {} };
-    
-      let get = ({ ...key } = props) => ({
+
+      let get = ({ templateData, ...key } = props) => ({
         data: {
           appKey: key.appKey, 
           createdDateTime: FieldValue.serverTimestamp(), 
@@ -204,19 +204,22 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 //          webformId: key.templateData.webformId, 
           template: { 
             name: key.templateName, 
-            data: key.templateData
+            data: templateData
           }
         },
         urlRedirect: key.urlRedirect
       });
-    
+ 
       let sanitize = (value, maxLength) => 
         value.toString().trim().substr(0, maxLength);
     
       return {
         set: (propKey, value, maxLength) => {
-          console.log("setProps: $$$$$$$$$$$$$$$$$$$$$$$ ", propKey, value, maxLength);
-          return props[propKey] = sanitize(value, maxLength);
+          let valueSanitized = sanitize(value, maxLength);
+          props[propKey] = valueSanitized; // add each prop to props, then also...
+          if (templateDataWhitelist.includes(propKey)) {
+            props.templateData[propKey] = valueSanitized;
+          } 
         },
         get: () => get(),
       }
@@ -233,16 +236,18 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     }
     vals.set('urlRedirect', globalConfig.urlRedirect.default);
     vals.set('templateName', templateName);
-    console.log("vals.get() ", vals.get());
+
+    //   console.log("vals.get() ", vals.get());
 
     let oAppInfo = arrayOfObjects(appInfoObject);
     let oAppKey = toObject2('appKey', app.id);
     let oUrlRedirect = toObject2('urlRedirect', globalConfig.urlRedirect.default);
     let oTemplateName = toObject2('templateName', templateName);
     let oFormElements = arrayOfObjects(formElements);
+//    console.log("oFormElements $$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", oFormElements);
 
-    console.log("formFields typeof $$$$$$$$$$$$$$$$$$$$$$$$ ", typeof formFields.docs);
-    console.log("formFields.docs $$$$$$$$$$$$$$$$$$$$$$$$ ", formFields.docs);
+//    console.log("formFields typeof $$$$$$$$$$$$$$$$$$$$$$$$ ", typeof formFields.docs);
+//    console.log("formFields.docs $$$$$$$$$$$$$$$$$$$$$$$$ ", formFields.docs);
 
     let formFieldObject = formFields.docs.reduce((a, doc) => {
       a[doc.id] = doc.data();
@@ -265,20 +270,23 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     //});
     //console.log("tempDocs: $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", tempDocs);
     let myFormElements = formElements;
-    console.log("myFormElements $$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", myFormElements);
+//    console.log("myFormElements $$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", myFormElements);
+    console.log("templateDataWhitelist $$$$$$$$$$$$$$$$$$$$$$$ ", templateDataWhitelist);
 
     let valsObjects = [ oAppKey, ...oAppInfo, oUrlRedirect, oTemplateName, ...oFormElements ];
     console.log("valsObjects: ", valsObjects);
-    console.log("vals.get() ", vals.get());
-
+    let testThese = { ...formElements, ...appInfoObject, ...oAppKey, ...oUrlRedirect, ...oTemplateName }
+    console.log("testThese $$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", testThese);
     for (const doc of formFields.docs) {
       let maxLength = doc.data().maxLength;
-      if (valsObjects.hasOwnProperty(doc.id)) {
-        vals.set(doc.id, valsObject[doc.id], maxLength);
+      if (testThese[doc.id]) {
+//        console.log("testThese $$$$$$$$$$ ", doc.id, testThese[doc.id], maxLength);
+        vals.set(doc.id, testThese[doc.id], maxLength);
       }
-      if (templateDataWhitelist.includes(doc.id) && valsObjects[doc.id]) {
-        vals.set('templateData.' + [doc.id], valsObjects[doc.id], maxLength);
-      } 
+//      if (testThese[doc.id] && templateDataWhitelist.includes(doc.id)) {
+        //console.log("formElements $$$$$$$$$$$$$$$$$$", doc.id);
+        //vals.setTemplate(doc.id, testThese[doc.id], maxLength);
+      //}
     }
     console.log("vals.get() ", vals.get());
 
