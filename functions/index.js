@@ -123,31 +123,31 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
      *  Check if form submitted by authorized app or stop processing cloud function
      */
    
-    // App key validation: if does not exist stop processing otherwise get app info
     const app = await db.collection('app').doc(req.body.appKey).get();
+    // App key validation: if exists continue with cors validation
     if (app) {
       // FIXME SET: appKey, appUrl
       props.set('appKey', app.id);
       props.set('appUrl', app.data().appInfo.appUrl); // must set before cors check
+      // CORS validation: stop cloud function if CORS check does not pass
+      if (globalConfig.cors.bypass) {
+        // allow * so localhost (or any source) recieves response
+        res.set('Access-Control-Allow-Origin', '*');
+      } else {
+        // restrict to url requests that match the app
+        // FIXME GET: appUrl !!! FIXED !!!
+        res.set('Access-Control-Allow-Origin', app.data().appInfo.appUrl);
+        // end processing if url does not match (req.headers.origin = url)
+        if (req.headers.origin !== app.data().appInfo.appUrl) { 
+          console.info(new Error('Origin Url does not match app url.'));
+          return res.end();
+        } 
+      }
     } else {
       console.info(new Error('App Key does not exist.'));
       res.end();
     }
 
-    // CORS validation: stop cloud function if CORS check does not pass
-    if (globalConfig.cors.bypass) {
-      // allow * so localhost (or any source) recieves response
-      res.set('Access-Control-Allow-Origin', '*');
-    } else {
-      // restrict to url requests that match the app
-      // FIXME GET: appUrl
-      res.set('Access-Control-Allow-Origin', props.get().appUrl);
-      // end processing if url does not match (req.headers.origin = url)
-      if (req.headers.origin !== props.get().appUrl) { 
-        console.info(new Error('Origin Url does not match app url.'));
-        return res.end();
-      } 
-    }
 
     /**
      *  Continue with form processing since passed valid app checks
