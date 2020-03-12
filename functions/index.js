@@ -116,30 +116,10 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     // Whitelist template data contains props allowed to be added to email template
     let whitelistTemplateData = await db.collection('emailTemplate').doc(templateName).get();
 
-    let sanitize = (value, maxLength) => 
-      value.toString().trim().substr(0, maxLength);
-
-    let propsPrimed = formFields.docs.reduce((a, doc) => {
-      let maxLength = doc.data().maxLength;
-      if (props[doc.id]) {
-        let sanitized = sanitize(props[doc.id], maxLength);
-        a[doc.id] = sanitized;
-        if (whitelistTemplateData.data().templateData.includes(doc.id)) {
-          a.templateData[doc.id] = sanitized; 
-        } 
-      } 
-      return a
-    }, { templateData: {} });
-
-    console.log("gotVals $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", propsPrimed);
-    console.log("gotVals.templateData $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", propsPrimed.templateData);
-    
-    /**************************************************************************/
-
-    let propsPrime = (() => { 
+    let propsPrimed = (() => { 
       
-     let sanitizeMe = (value, maxLength) => 
-      value.toString().trim().substr(0, maxLength);
+      let sanitizeMe = (value, maxLength) => 
+        value.toString().trim().substr(0, maxLength);
  
       let getProps = formFields.docs.reduce((a, doc) => {
         let maxLength = doc.data().maxLength;
@@ -160,12 +140,10 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       }
     })();
 
-    console.log("propsPrime() $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", propsPrime.get());
-    console.log("propsPrime().templateData $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", propsPrime.get().templateData);
+    console.log("propsPrime() $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", propsPrimed.get());
+    console.log("propsPrime().templateData $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", propsPrimed.get().templateData);
 
-    /**************************************************************************/
-
-    let propsGet = ({ templateData, urlRedirect, ...key } = propsPrimed) => ({
+    let propsGet = ({ templateData, urlRedirect, ...key } = propsPrimed.get()) => ({
       data: {
         appKey: key.appKey, 
         createdDateTime: FieldValue.serverTimestamp(), 
