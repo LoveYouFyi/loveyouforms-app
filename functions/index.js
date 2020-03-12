@@ -109,7 +109,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       : globalConfig.urlRedirect.default;
 
     // formElements last to allow override of global props
-    let testThese = { appKey, ...appInfoObject, templateName, urlRedirect, ...formElements }
+    let props = { appKey, ...appInfoObject, templateName, urlRedirect, ...formElements }
 
     // formField contains maxLength values for data sanitize
     let formFields = await db.collection('formField').get();
@@ -119,10 +119,10 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     let sanitize = (value, maxLength) => 
       value.toString().trim().substr(0, maxLength);
 
-    let gotVals = formFields.docs.reduce((a, doc) => {
+    let propsPrimed = formFields.docs.reduce((a, doc) => {
       let maxLength = doc.data().maxLength;
-      if (testThese[doc.id]) {
-        let sanitized = sanitize(testThese[doc.id], maxLength);
+      if (props[doc.id]) {
+        let sanitized = sanitize(props[doc.id], maxLength);
         a[doc.id] = sanitized;
         if (whitelistTemplateData.data().templateData.includes(doc.id)) {
           a.templateData[doc.id] = sanitized; 
@@ -131,10 +131,46 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       return a
     }, { templateData: {} });
 
-    console.log("gotVals $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", gotVals);
-    console.log("gotVals.templateData $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", gotVals.templateData);
+    console.log("gotVals $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", propsPrimed);
+    console.log("gotVals.templateData $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", propsPrimed.templateData);
+    
+    /**************************************************************************/
 
-    let getGot = ({ templateData, urlRedirect, ...key } = gotVals) => ({
+    let sanitizeMe = (value, maxLength) => 
+      value.toString().trim().substr(0, maxLength);
+
+    let propsPrime = (() => { 
+      
+      let getProps = formFields.docs.reduce((a, doc) => {
+        let maxLength = doc.data().maxLength;
+        if (props[doc.id]) {
+          let sanitized = sanitizeMe(props[doc.id], maxLength);
+          a[doc.id] = sanitized;
+          if (whitelistTemplateData.data().templateData.includes(doc.id)) {
+            a.templateData[doc.id] = sanitized; 
+          } 
+        } 
+        return a
+      }, { templateData: {} });
+
+      return {
+        get: () => {
+          console.log("getProps $$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", getProps);
+          console.log("formFields.docs $$$$$$$$$$$$$$$$$ ", formFields.docs);
+          console.log("props $$$$$$$$$$$$$$$$$ ", props);
+          console.log("sanitizeMe $$$$$$$$$$$$$$$$$$$$$$$$$$ ", sanitizeMe);
+          console.log("whitelistTemplateData $$$$$$$$$$$$$$$$$ ", whitelistTemplateData);
+          return getProps;
+        }
+      }
+    })();
+
+    console.log("propsPrime() $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", propsPrime.get());
+//    console.log("propsPrime().templateData $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", propsPrime.get().templateData);
+
+    /**************************************************************************/
+
+    let propsGet = ({ templateData, urlRedirect, ...key } = propsPrimed) => ({
       data: {
         appKey: key.appKey, 
         createdDateTime: FieldValue.serverTimestamp(), 
@@ -149,14 +185,14 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       },
       urlRedirect: urlRedirect
     });
-    console.log("getGot().data $$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", getGot().data);
-    console.log("getGot().urlRedirect $$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", getGot().urlRedirect);
+    console.log("getGot().data $$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", propsGet().data);
+    console.log("getGot().urlRedirect $$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", propsGet().urlRedirect);
     
 
     // For serverTimestamp to work must first create new doc key then 'set' data
     const newKey = db.collection("formSubmission").doc();
     // update the new-key-record using 'set' which works for existing doc
-    newKey.set(getGot().data)
+    newKey.set(propsGet().data)
 
     /**
      * Response
@@ -166,7 +202,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       // return response (even if empty) so client can finish AJAX success
       data: {
         // FIXME GET: urlRedirect
-        redirect: getGot().urlRedirect
+        redirect: propsGet().urlRedirect
       }
     });
 
