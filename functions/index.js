@@ -352,7 +352,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     const newKey = db.collection("formSubmission").doc();
     // update the new-key-record using 'set' which works for existing doc
     // FIXME GET ALL: data
-    newKey.set(props.get().data)
+    newKey.set(getGot().data)
 
     /**
      * Response
@@ -362,7 +362,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       // return response (even if empty) so client can finish AJAX success
       data: {
         // FIXME GET: urlRedirect
-        redirect: props.get().urlRedirect
+        redirect: getGot().urlRedirect
       }
     });
 
