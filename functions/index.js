@@ -140,9 +140,6 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       }
     })();
 
-    console.log("propsPrime() $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", propsPrimed.get());
-    console.log("propsPrime().templateData $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", propsPrimed.get().templateData);
-
     let propsGet = ({ templateData, urlRedirect, ...key } = propsPrimed.get()) => ({
       data: {
         appKey: key.appKey, 
@@ -158,9 +155,6 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       },
       urlRedirect: urlRedirect
     });
-    console.log("getGot().data $$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", propsGet().data);
-    console.log("getGot().urlRedirect $$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", propsGet().urlRedirect);
-    
 
     // For serverTimestamp to work must first create new doc key then 'set' data
     const newKey = db.collection("formSubmission").doc();
