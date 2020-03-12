@@ -111,8 +111,8 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     let props = { appKey, ...appInfoObject, templateName, urlRedirect, ...formElements }
 
     /** [START] Data Validation & Prep ****************************************/
-    // formField contains maxLength values for props sanitize
-    let formFields = await db.collection('formField').get();
+    // field contains maxLength values for props sanitize
+    let fields = await db.collection('field').get();
     // Whitelist contains props allowed to be added to template
     let whitelistTemplateData = await db.collection('formTemplate').doc(templateName).get();
 
@@ -121,7 +121,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       let sanitize = (value, maxLength) => 
         value.toString().trim().substr(0, maxLength);
  
-      let getProps = formFields.docs.reduce((a, doc) => {
+      let getProps = fields.docs.reduce((a, doc) => {
         let maxLength = doc.data().maxLength;
 
         if (props[doc.id]) {
