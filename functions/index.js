@@ -65,7 +65,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 
 
     /**
-     *  Check if form submitted by authorized app or stop processing cloud function
+     *  If form not submitted by authorized app stop processing cloud function
      */
 
     const app = await db.collection('app').doc(req.body.appKey).get();
@@ -92,7 +92,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 
 
     /**
-     *  Continue with form processing since passed valid app checks
+     *  Continue processing form since passed valid app checks
      */
 
     let appKey = app.id;
@@ -108,23 +108,24 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       ? formElements.urlRedirect
       : globalConfig.urlRedirect.default;
 
-    // formElements last to allow override of global props
+    // Compile props and add formElements last to allow override of global props
     let props = { appKey, ...appInfoObject, templateName, urlRedirect, ...formElements }
 
-    // formField contains maxLength values for data sanitize
+    // Data validation and prep
+    // formField contains maxLength values for props sanitize
     let formFields = await db.collection('formField').get();
-    // Whitelist template data contains props allowed to be added to email template
+    // Whitelist contains props allowed to be added to template
     let whitelistTemplateData = await db.collection('emailTemplate').doc(templateName).get();
 
-    let propsPrimed = (() => { 
+    let propsPrime = (() => { 
       
-      let sanitizeMe = (value, maxLength) => 
+      let sanitize = (value, maxLength) => 
         value.toString().trim().substr(0, maxLength);
  
       let getProps = formFields.docs.reduce((a, doc) => {
         let maxLength = doc.data().maxLength;
         if (props[doc.id]) {
-          let sanitized = sanitizeMe(props[doc.id], maxLength);
+          let sanitized = sanitize(props[doc.id], maxLength);
           a[doc.id] = sanitized;
           if (whitelistTemplateData.data().templateData.includes(doc.id)) {
             a.templateData[doc.id] = sanitized; 
@@ -140,7 +141,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       }
     })();
 
-    let propsGet = ({ templateData, urlRedirect, ...key } = propsPrimed.get()) => ({
+    let propsGet = ({ templateData, urlRedirect, ...key } = propsPrime.get()) => ({
       data: {
         appKey: key.appKey, 
         createdDateTime: FieldValue.serverTimestamp(), 
