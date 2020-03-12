@@ -288,7 +288,26 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
         //vals.setTemplate(doc.id, testThese[doc.id], maxLength);
       //}
     }
+
     console.log("vals.get() ", vals.get());
+
+    let sanitize = (value, maxLength) => 
+      value.toString().trim().substr(0, maxLength);
+
+    let gotVals = formFields.docs.reduce((a, doc) => {
+      let maxLength = doc.data().maxLength;
+      if (testThese[doc.id]) {
+        let sanitized = sanitize(testThese[doc.id], maxLength);
+        a[doc.id] = sanitized;
+        if (templateDataWhitelist.includes(doc.id)) {
+          a.templateData[doc.id] = sanitized; 
+        } 
+      } 
+      return a
+    }, { templateData: {} });
+
+    console.log("gotVals $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", gotVals);
+    console.log("gotVals.templateData $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", gotVals.templateData);
 
     /*
     props.set(prop, appInfoObject[prop]);
