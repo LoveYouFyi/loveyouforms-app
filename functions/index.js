@@ -114,7 +114,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     // formField contains maxLength values for props sanitize
     let formFields = await db.collection('formField').get();
     // Whitelist contains props allowed to be added to template
-    let whitelistTemplateData = await db.collection('emailTemplate').doc(templateName).get();
+    let whitelistTemplateData = await db.collection('formTemplate').doc(templateName).get();
 
     let propsPrime = (() => { 
       
@@ -202,10 +202,10 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
     // Template: two sort-ordered arrays of strings
     // sheetHeader array is sorted according to desired sheets visual
     // templateData array is sorted to match the order of sheetHeader
-    let emailTemplate = await db.collection('emailTemplate').doc(templateName).get();
+    let formTemplate = await db.collection('formTemplate').doc(templateName).get();
 
     // Header fields for sheet requires nested array of strings [ [ 'Date', 'Time', etc ] ]
-    let sheetHeader = [( emailTemplate.data().sheetHeader )]; 
+    let sheetHeader = [( formTemplate.data().sheetHeader )]; 
 
     /** [START] Row Data: Sort & Merge ****************************************/
     // Strings to 'prop: value' objects so data to be merged has uniform format
@@ -213,9 +213,9 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
     const dateTime = createdDateTime.toDate(); // toDate() is firebase method
     let createdDate = moment(dateTime).tz(templateData.appTimeZone).format('L');
     let createdTime = moment(dateTime).tz(templateData.appTimeZone).format('h:mm A z');
-    // Reduce array emailTemplate.templateData, this returns an object that 
+    // Reduce array formTemplate.templateData, this returns an object that 
     // is sort-ordered to matach the sheetHeader fields.
-    let templateDataSorted = emailTemplate.data().templateData.reduce((a, c) => {
+    let templateDataSorted = formTemplate.data().templateData.reduce((a, c) => {
       templateData[c] ? a[c] = templateData[c] : a[c] = "";
       return a
     }, {});
