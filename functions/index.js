@@ -30,8 +30,6 @@ const jwtClient = new google.auth.JWT({ // JWT Authentication (for google sheets
 
 // SECTION Helper Functions
 
-let toObject = string => val => ({ [string]: val });
-
 const logErrorInfo = error => ({
   Error: 'Description and source line:',
   description: error,
@@ -153,21 +151,11 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     });
     console.log("getGot().data $$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", getGot().data);
     console.log("getGot().urlRedirect $$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", getGot().urlRedirect);
-    /*
-    // Strings to 'prop: value' objects so data to be merged has uniform format
-    // timezone 'tz' string defined by momentjs.com/timezone: https://github.com/moment/moment-timezone/blob/develop/data/packed/latest.json
-    // Reduce array emailTemplate.templateData, this returns an object that 
-    // is sort-ordered to matach the sheetHeader fields.
-    // Values-only: merge objects in sort-order and return only values
-    // Data-row for sheet requires nested array of strings [ [ 'John Smith', etc ] ]
-*/
-    /** [End] Row Data: Sort & Merge ******************************************/
-
+    
 
     // For serverTimestamp to work must first create new doc key then 'set' data
     const newKey = db.collection("formSubmission").doc();
     // update the new-key-record using 'set' which works for existing doc
-    // FIXME GET ALL: data
     newKey.set(getGot().data)
 
     /**
@@ -219,9 +207,8 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
     // Strings to 'prop: value' objects so data to be merged has uniform format
     // timezone 'tz' string defined by momentjs.com/timezone: https://github.com/moment/moment-timezone/blob/develop/data/packed/latest.json
     const dateTime = createdDateTime.toDate(); // toDate() is firebase method
-    let createdDate = { createdDate: (moment(dateTime).tz(templateData.appTimeZone).format('L')) };
-    let createdTime = { createdTime: (moment(dateTime).tz(templateData.appTimeZone).format('h:mm A z')) };
-    let dataWebformId = { webformId: webformId };
+    let createdDate = moment(dateTime).tz(templateData.appTimeZone).format('L');
+    let createdTime = moment(dateTime).tz(templateData.appTimeZone).format('h:mm A z');
     // Reduce array emailTemplate.templateData, this returns an object that 
     // is sort-ordered to matach the sheetHeader fields.
     let templateDataSorted = emailTemplate.data().templateData.reduce((a, c) => {
@@ -230,8 +217,8 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
     }, {});
     // Merge objects in sort-order and return only values
     // Data-row for sheet requires nested array of strings [ [ 'John Smith', etc ] ]
-    let sheetDataRow = [( Object.values({ ...createdDate, ...createdTime, 
-      ...dataWebformId, ...templateDataSorted }) )];
+    let sheetDataRow = [( Object.values({ createdDate, createdTime, 
+      webformId, ...templateDataSorted }) )];
     /** [End] Row Data: Sort & Merge ******************************************/
 
 
