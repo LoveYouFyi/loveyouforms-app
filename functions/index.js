@@ -136,11 +136,11 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     
     /**************************************************************************/
 
-    let sanitizeMe = (value, maxLength) => 
-      value.toString().trim().substr(0, maxLength);
-
     let propsPrime = (() => { 
       
+     let sanitizeMe = (value, maxLength) => 
+      value.toString().trim().substr(0, maxLength);
+ 
       let getProps = formFields.docs.reduce((a, doc) => {
         let maxLength = doc.data().maxLength;
         if (props[doc.id]) {
