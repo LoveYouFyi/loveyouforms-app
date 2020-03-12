@@ -123,13 +123,15 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
  
       let getProps = formFields.docs.reduce((a, doc) => {
         let maxLength = doc.data().maxLength;
+
         if (props[doc.id]) {
           let sanitized = sanitize(props[doc.id], maxLength);
           a[doc.id] = sanitized;
           if (whitelistTemplateData.data().templateData.includes(doc.id)) {
             a.templateData[doc.id] = sanitized; 
           } 
-        } 
+        }
+
         return a
       }, { templateData: {} });
 
