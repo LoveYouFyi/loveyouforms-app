@@ -309,6 +309,23 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     console.log("gotVals $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", gotVals);
     console.log("gotVals.templateData $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", gotVals.templateData);
 
+    let getGot = ({ templateData, urlRedirect, ...key } = gotVals) => ({
+      data: {
+        appKey: key.appKey, 
+        createdDateTime: FieldValue.serverTimestamp(), 
+        from: key.appFrom, 
+        toUids: [ key.appKey ], 
+        replyTo: templateData.email,
+        webformId: key.webformId, 
+        template: { 
+          name: key.templateName, 
+          data: templateData
+        }
+      },
+      urlRedirect: urlRedirect
+    });
+    console.log("getGot().data $$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", getGot().data);
+    console.log("getGot().urlRedirect $$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", getGot().urlRedirect);
     /*
     props.set(prop, appInfoObject[prop]);
     props.set(doc.id, formElements[doc.id], maxLength);
