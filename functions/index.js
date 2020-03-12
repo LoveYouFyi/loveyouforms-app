@@ -69,20 +69,17 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     /**
      *  Check if form submitted by authorized app or stop processing cloud function
      */
-   
+
     const app = await db.collection('app').doc(req.body.appKey).get();
+
     // App key validation: if exists continue with cors validation
     if (app) {
-      // FIXME SET: appKey, appUrl
-//      props.set('appKey', app.id);
-      //props.set('appUrl', app.data().appInfo.appUrl); // must set before cors check
       // CORS validation: stop cloud function if CORS check does not pass
       if (globalConfig.cors.bypass) {
         // allow * so localhost (or any source) recieves response
         res.set('Access-Control-Allow-Origin', '*');
       } else {
         // restrict to url requests that match the app
-        // FIXME GET: appUrl !!! FIXED !!!
         res.set('Access-Control-Allow-Origin', app.data().appInfo.appUrl);
         // end processing if url does not match (req.headers.origin = url)
         if (req.headers.origin !== app.data().appInfo.appUrl) { 
@@ -99,56 +96,28 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     /**
      *  Continue with form processing since passed valid app checks
      */
-  
-    // Url redirect: use global redirect by default unless overridden by form elements
-    // FIXME SET: urlRedirect
-//    props.set('urlRedirect', globalConfig.urlRedirect.default);
 
-    // Template name: global config unless form override
-    let templateName = globalConfig.defaultTemplate.name;
-    if (req.body.templateName) { templateName = req.body.templateName }
-    // FIXME SET: templateName
- //   props.set('templateName', templateName);
-
-    // Template data whitelist: template props allowed to be added to email template
-    let templateDataWhitelist = await db.collection('emailTemplate').doc(templateName).get();
-    templateDataWhitelist = templateDataWhitelist.data().templateData;
-//    props.setTemplateDataWhitelist(templateDataWhitelist); 
-
-    // App Info: set after template data whitelist or props will be excluded from template data
+    let appKey = app.id;
     let appInfoObject = app.data().appInfo;
-    // FIXME SET: appInfo props
- //   for (const prop in appInfoObject) {
-      //props.set(prop, appInfoObject[prop]);
-    //}
 
-    // Form Elements: Add submitted to props with maxLength values
     let { ...formElements } = req.body; 
-    // Collection formField contains maxLength values
-    let formFields = await db.collection('formField').get();
-    // FIXME SET: formElements
-//    for (const doc of formFields.docs) {
-      //let maxLength = doc.data().maxLength;
-      //if (formElements.hasOwnProperty(doc.id)) {
-        //props.set(doc.id, formElements[doc.id], maxLength);
-      //}
-    //}
 
- //   console.log("props.get() $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", props.get()); 
+    let templateName = formElements.templateName 
+      ? formElements.templateName
+      : globalConfig.defaultTemplate.name;
 
-    /** [Start] Row Data: Sort & Merge ****************************************/
-    
-    let toObject2 = (string, val) => ({ [string]: val });
-//    let arrayOfObjects = object => Object.keys(object).map(function(key) {
-      //return {[key]: object[key]};
-    //});
+    let urlRedirect = formElements.urlRedirect
+      ? formElements.urlRedirect
+      : globalConfig.urlRedirect.default;
 
-    let oAppKey = toObject2('appKey', app.id);
-    let oUrlRedirect = toObject2('urlRedirect', globalConfig.urlRedirect.default);
-    let oTemplateName = toObject2('templateName', templateName);
     // formElements last to allow override of global props
-    let testThese = { ...appInfoObject, ...oAppKey, ...oUrlRedirect, ...oTemplateName, ...formElements }
-    
+    let testThese = { appKey, ...appInfoObject, templateName, urlRedirect, ...formElements }
+
+    // formField contains maxLength values for data sanitize
+    let formFields = await db.collection('formField').get();
+    // Whitelist template data contains props allowed to be added to email template
+    let whitelistTemplateData = await db.collection('emailTemplate').doc(templateName).get();
+
     let sanitize = (value, maxLength) => 
       value.toString().trim().substr(0, maxLength);
 
@@ -157,7 +126,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       if (testThese[doc.id]) {
         let sanitized = sanitize(testThese[doc.id], maxLength);
         a[doc.id] = sanitized;
-        if (templateDataWhitelist.includes(doc.id)) {
+        if (whitelistTemplateData.data().templateData.includes(doc.id)) {
           a.templateData[doc.id] = sanitized; 
         } 
       } 
@@ -250,9 +219,9 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
     // Strings to 'prop: value' objects so data to be merged has uniform format
     // timezone 'tz' string defined by momentjs.com/timezone: https://github.com/moment/moment-timezone/blob/develop/data/packed/latest.json
     const dateTime = createdDateTime.toDate(); // toDate() is firebase method
-    let createdDate = toObject('createdDate')(moment(dateTime).tz(templateData.appTimeZone).format('L'));
-    let createdTime = toObject('createdTime')(moment(dateTime).tz(templateData.appTimeZone).format('h:mm A z'));
-    let dataWebformId = toObject('webformId')(webformId);
+    let createdDate = { createdDate: (moment(dateTime).tz(templateData.appTimeZone).format('L')) };
+    let createdTime = { createdTime: (moment(dateTime).tz(templateData.appTimeZone).format('h:mm A z')) };
+    let dataWebformId = { webformId: webformId };
     // Reduce array emailTemplate.templateData, this returns an object that 
     // is sort-ordered to matach the sheetHeader fields.
     let templateDataSorted = emailTemplate.data().templateData.reduce((a, c) => {
