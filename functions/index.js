@@ -102,17 +102,15 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     let { ...formElements } = req.body; 
 
     let templateName = formElements.templateName 
-      ? formElements.templateName
-      : globalConfig.defaultTemplate.name;
+      ? formElements.templateName : globalConfig.defaultTemplate.name;
 
     let urlRedirect = formElements.urlRedirect
-      ? formElements.urlRedirect
-      : globalConfig.urlRedirect.default;
+      ? formElements.urlRedirect : globalConfig.urlRedirect.default;
 
     // Compile props and add formElements last to allow override of global props
     let props = { appKey, ...appInfoObject, templateName, urlRedirect, ...formElements }
 
-    // Data validation and prep
+    /** [START] Data Validation & Prep ****************************************/
     // formField contains maxLength values for props sanitize
     let formFields = await db.collection('formField').get();
     // Whitelist contains props allowed to be added to template
@@ -141,6 +139,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
         }
       }
     })();
+    /** [END] Data Validation & Prep ******************************************/
 
     let propsGet = ({ templateData, urlRedirect, ...key } = propsPrime.get()) => ({
       data: {
@@ -208,7 +207,7 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
     // Header fields for sheet requires nested array of strings [ [ 'Date', 'Time', etc ] ]
     let sheetHeader = [( emailTemplate.data().sheetHeader )]; 
 
-    /** [Start] Row Data: Sort & Merge ****************************************/
+    /** [START] Row Data: Sort & Merge ****************************************/
     // Strings to 'prop: value' objects so data to be merged has uniform format
     // timezone 'tz' string defined by momentjs.com/timezone: https://github.com/moment/moment-timezone/blob/develop/data/packed/latest.json
     const dateTime = createdDateTime.toDate(); // toDate() is firebase method
@@ -224,7 +223,7 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
     // Data-row for sheet requires nested array of strings [ [ 'John Smith', etc ] ]
     let sheetDataRow = [( Object.values({ createdDate, createdTime, 
       webformId, ...templateDataSorted }) )];
-    /** [End] Row Data: Sort & Merge ******************************************/
+    /** [END] Row Data: Sort & Merge ******************************************/
 
 
     /**
