@@ -155,18 +155,13 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 
       return {
         get: () => {
-          console.log("getProps $$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", getProps);
-          console.log("formFields.docs $$$$$$$$$$$$$$$$$ ", formFields.docs);
-          console.log("props $$$$$$$$$$$$$$$$$ ", props);
-          console.log("sanitizeMe $$$$$$$$$$$$$$$$$$$$$$$$$$ ", sanitizeMe);
-          console.log("whitelistTemplateData $$$$$$$$$$$$$$$$$ ", whitelistTemplateData);
           return getProps;
         }
       }
     })();
 
     console.log("propsPrime() $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", propsPrime.get());
-//    console.log("propsPrime().templateData $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", propsPrime.get().templateData);
+    console.log("propsPrime().templateData $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", propsPrime.get().templateData);
 
     /**************************************************************************/
 
