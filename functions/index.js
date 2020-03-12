@@ -65,7 +65,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 
 
     /**
-     *  If form not submitted by authorized app stop processing cloud function
+     *  If form not submitted by authorized app then stop processing cloud function
      */
 
     const app = await db.collection('app').doc(req.body.appKey).get();
@@ -92,7 +92,8 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 
 
     /**
-     *  Continue processing form since passed valid app checks
+     * Compile fields (app and form props) labeled 'props' because they are handled 
+     * as object entries; sanitize; add to structured object; submit to databasea
      */
 
     let appKey = app.id;
