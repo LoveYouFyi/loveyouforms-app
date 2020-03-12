@@ -4,13 +4,13 @@
 const functions = require('firebase-functions');
 // Firebase Admin SDK to access the Firebase/Firestore Realtime Database.
 const admin = require('firebase-admin');
-// [**** CREDENTIALS START ****]
+/** [START] CREDENTIALS ****/
 const serviceAccount = require('./service-account.json'); // download from firebase console
 admin.initializeApp({ // initialize firebase admin with credentials
   credential: admin.credential.cert(serviceAccount), // So functions can connect to database
   databaseURL: 'https://loveyou-forms.firebaseio.com' // Needed if using FireBase database (not FireStore)
 });
-// [**** CREDENTIALS STOP ****]
+/** [END] CREDENTIALS ****/
 const db = admin.firestore(); // FireStore database reference
 // Timestamps: required for adding server-timestamps to any database docs
 const FieldValue = require('firebase-admin').firestore.FieldValue; // Timestamp here
@@ -171,7 +171,6 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     return res.status(200).send({
       // return response (even if empty) so client can finish AJAX success
       data: {
-        // FIXME GET: urlRedirect
         redirect: propsGet().urlRedirect
       }
     });
