@@ -177,8 +177,8 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
   
   let dataRow = {}; // sorted data to be converted to array for submit to sheet
   let dataRowForSheet; // data row as array to submit to sheet
-  let emailTemplateName;
-  let emailTemplateData;
+  let formTemplateName;
+  let formTemplateData;
   let appKeySubmitted; // use in submit data
   let spreadsheetId;
   let sheetId;
@@ -193,8 +193,8 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
     let { appKey, createdDateTime, template: { data: { ...rest }, 
       name: templateName  }, webformId } = snapshot.data(); 
     // For building sort-ordered object that is turned into sheet data-row
-    emailTemplateName = templateName;
-    emailTemplateData = rest;
+    formTemplateName = templateName;
+    formTemplateData = rest;
     // appkey to query 'spreadsheet' object info
     appKeySubmitted = appKey;
     // date/time: timezone string defined by momentjs.com/timezone: https://github.com/moment/moment-timezone/blob/develop/data/packed/latest.json
@@ -206,14 +206,14 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
     dataRow.webformId = webformId;
 
     // Template arrays for sort-ordered data-row and header fields
-    let emailTemplateDoc = await db.collection('emailTemplate').doc(emailTemplateName).get();
+    let formTemplateDoc = await db.collection('formTemplate').doc(formTemplateName).get();
     // data-row fields: sort ordered with empty string values
-    emailTemplateDoc.data().templateData.map(field => dataRow[field] = ""); // add prop name + empty string value
+    formTemplateDoc.data().templateData.map(field => dataRow[field] = ""); // add prop name + empty string value
     // header fields for sheet
-    sheetHeader = [( emailTemplateDoc.data().sheetHeader )]; // sheets requires array within an array
+    sheetHeader = [( formTemplateDoc.data().sheetHeader )]; // sheets requires array within an array
 
     // Update sort-ordered props with data values
-    Object.assign(dataRow, emailTemplateData);
+    Object.assign(dataRow, formTemplateData);
     // Object to array because sheets data must be as array
     dataRow = Object.values(dataRow);
     // Sheets Row Data to add as array nested in array: [[ date, time, ... ]]
@@ -223,17 +223,17 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
     * Prepare to insert data-row in app-specific spreadsheet
     */
 
-    // Get app spreadsheetId and sheetId based on formSubmission emailTemplate
+    // Get app spreadsheetId and sheetId based on formSubmission formTemplate
     let appDoc = await db.collection('app').doc(appKeySubmitted).get();
     spreadsheetId = appDoc.data().spreadsheet.id;
-    sheetId = appDoc.data().spreadsheet.sheetId[emailTemplateName];
+    sheetId = appDoc.data().spreadsheet.sheetId[formTemplateName];
 
     // Authorize with google sheets
     await jwtClient.authorize();
 
     // Row: Add to sheet (header or data)
-    const rangeHeader =  `${emailTemplateName}!A1`; // e.g. "contactDefault!A2"
-    const rangeData =  `${emailTemplateName}!A2`; // e.g. "contactDefault!A2"
+    const rangeHeader =  `${formTemplateName}!A1`; // e.g. "contactDefault!A2"
+    const rangeData =  `${formTemplateName}!A2`; // e.g. "contactDefault!A2"
 
     const addRow = range => values => ({
       auth: jwtClient,
@@ -279,7 +279,7 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
     let sheetDetails = await sheets.spreadsheets.get(sheetObjectRequest);
     let sheetNameExists = sheetDetails.data.sheets.find(sheet => {
       // if sheet name exists returns sheet 'properties' object, else is undefined
-      return sheet.properties.title === emailTemplateName;
+      return sheet.properties.title === formTemplateName;
     });
 
     // If sheet name exists, insert data
@@ -300,7 +300,7 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
             {
               "addSheet": {
                 "properties": {
-                  "title": emailTemplateName,
+                  "title": formTemplateName,
                   "index": 0,
                   "gridProperties": {
                     "rowCount": 1000,
@@ -327,7 +327,7 @@ exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId
 
       // Add new sheetId to app spreadsheet info
       db.collection('app').doc(appKeySubmitted).update({
-          ['spreadsheet.sheetId.' + emailTemplateName]: newSheetId
+          ['spreadsheet.sheetId.' + formTemplateName]: newSheetId
       });
 
       // New Sheet Actions: add rows for header, then data
