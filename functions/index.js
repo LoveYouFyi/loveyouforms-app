@@ -55,60 +55,7 @@ const responseErrorBasic = string => ({
 exports.formHandler = functions.https.onRequest(async (req, res) => {
 
   try {
-
-    const props = (() => {
-
-      let props = { appKey: '', appFrom: '', appUrl: '', email: '', 
-        webformId: '', templateName: '', templateData: {}, urlRedirect: '' }
-      
-      let getProps = ({ appKey, appFrom, appUrl, email, webformId, 
-        templateName, templateData, urlRedirect  } = props) => ({
-        data: {
-          appKey, 
-          createdDateTime: FieldValue.serverTimestamp(), 
-          from: appFrom, 
-          toUids: [ appKey ], 
-          replyTo: email,
-          webformId, 
-          template: { 
-            name: templateName, 
-            data: templateData
-          }
-        },
-        appUrl,
-        urlRedirect
-      });
-   
-      let templateDataWhitelist = [];
-
-      let sanitizeValue = (value, maxLength) => 
-        value.toString().trim().substr(0, maxLength);
     
-      let setProp = (propKey, value, maxLength) => {
-        let valueSanitized = sanitizeValue(value, maxLength);
-        props[propKey] = valueSanitized; // add each prop to props, then also...
-        if (templateDataWhitelist.includes(propKey)) {
-          props.templateData[propKey] = valueSanitized;
-        } 
-      }
-
-      let setTemplateDataWhitelist = array => {
-        templateDataWhitelist = array;
-      }
-
-      return {
-        setTemplateDataWhitelist: (array) => {
-          setTemplateDataWhitelist(array)
-        },
-        getTemplateDataWhitelist: () => templateDataWhitelist, // fyi only - not used
-        set: (propKey, value, maxLength) => {
-          return setProp(propKey, value, maxLength);
-        },
-        get: () => getProps(),
-      }
-    })();
-
-
     /**
      * Global config
      */
@@ -127,8 +74,8 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     // App key validation: if exists continue with cors validation
     if (app) {
       // FIXME SET: appKey, appUrl
-      props.set('appKey', app.id);
-      props.set('appUrl', app.data().appInfo.appUrl); // must set before cors check
+//      props.set('appKey', app.id);
+      //props.set('appUrl', app.data().appInfo.appUrl); // must set before cors check
       // CORS validation: stop cloud function if CORS check does not pass
       if (globalConfig.cors.bypass) {
         // allow * so localhost (or any source) recieves response
@@ -155,142 +102,53 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
   
     // Url redirect: use global redirect by default unless overridden by form elements
     // FIXME SET: urlRedirect
-    props.set('urlRedirect', globalConfig.urlRedirect.default);
+//    props.set('urlRedirect', globalConfig.urlRedirect.default);
 
     // Template name: global config unless form override
     let templateName = globalConfig.defaultTemplate.name;
     if (req.body.templateName) { templateName = req.body.templateName }
     // FIXME SET: templateName
-    props.set('templateName', templateName);
+ //   props.set('templateName', templateName);
 
     // Template data whitelist: template props allowed to be added to email template
     let templateDataWhitelist = await db.collection('emailTemplate').doc(templateName).get();
     templateDataWhitelist = templateDataWhitelist.data().templateData;
-    props.setTemplateDataWhitelist(templateDataWhitelist); 
+//    props.setTemplateDataWhitelist(templateDataWhitelist); 
 
     // App Info: set after template data whitelist or props will be excluded from template data
     let appInfoObject = app.data().appInfo;
     // FIXME SET: appInfo props
-    for (const prop in appInfoObject) {
-      props.set(prop, appInfoObject[prop]);
-    }
+ //   for (const prop in appInfoObject) {
+      //props.set(prop, appInfoObject[prop]);
+    //}
 
     // Form Elements: Add submitted to props with maxLength values
     let { ...formElements } = req.body; 
     // Collection formField contains maxLength values
     let formFields = await db.collection('formField').get();
     // FIXME SET: formElements
-    for (const doc of formFields.docs) {
-      let maxLength = doc.data().maxLength;
-      if (formElements.hasOwnProperty(doc.id)) {
-        props.set(doc.id, formElements[doc.id], maxLength);
-      }
-    }
+//    for (const doc of formFields.docs) {
+      //let maxLength = doc.data().maxLength;
+      //if (formElements.hasOwnProperty(doc.id)) {
+        //props.set(doc.id, formElements[doc.id], maxLength);
+      //}
+    //}
 
-    console.log("props.get() $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", props.get()); 
+ //   console.log("props.get() $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", props.get()); 
 
     /** [Start] Row Data: Sort & Merge ****************************************/
-    const vals = (() => {
-
-      let props = { templateData: {} };
-
-      let get = ({ templateData, ...key } = props) => ({
-        data: {
-          appKey: key.appKey, 
-          createdDateTime: FieldValue.serverTimestamp(), 
-          from: key.appFrom, 
-          toUids: [ key.appKey ], 
-//          replyTo: key.templateData.email,
-//          webformId: key.templateData.webformId, 
-          template: { 
-            name: key.templateName, 
-            data: templateData
-          }
-        },
-        urlRedirect: key.urlRedirect
-      });
- 
-      let sanitize = (value, maxLength) => 
-        value.toString().trim().substr(0, maxLength);
-    
-      return {
-        set: (propKey, value, maxLength) => {
-          let valueSanitized = sanitize(value, maxLength);
-          props[propKey] = valueSanitized; // add each prop to props, then also...
-          if (templateDataWhitelist.includes(propKey)) {
-            props.templateData[propKey] = valueSanitized;
-          } 
-        },
-        get: () => get(),
-      }
-    })();
     
     let toObject2 = (string, val) => ({ [string]: val });
-    let arrayOfObjects = object => Object.keys(object).map(function(key) {
-      return {[key]: object[key]};
-    });
+//    let arrayOfObjects = object => Object.keys(object).map(function(key) {
+      //return {[key]: object[key]};
+    //});
 
-    vals.set('appKey', app.id);
-    for (const prop in appInfoObject) {
-      vals.set(prop, appInfoObject[prop]);
-    }
-    vals.set('urlRedirect', globalConfig.urlRedirect.default);
-    vals.set('templateName', templateName);
-
-    //   console.log("vals.get() ", vals.get());
-
-    let oAppInfo = arrayOfObjects(appInfoObject);
     let oAppKey = toObject2('appKey', app.id);
     let oUrlRedirect = toObject2('urlRedirect', globalConfig.urlRedirect.default);
     let oTemplateName = toObject2('templateName', templateName);
-    let oFormElements = arrayOfObjects(formElements);
-//    console.log("oFormElements $$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", oFormElements);
-
-//    console.log("formFields typeof $$$$$$$$$$$$$$$$$$$$$$$$ ", typeof formFields.docs);
-//    console.log("formFields.docs $$$$$$$$$$$$$$$$$$$$$$$$ ", formFields.docs);
-
-    let formFieldObject = formFields.docs.reduce((a, doc) => {
-      a[doc.id] = doc.data();
-      // templateData[c] ? a[c] = templateData[c] : a[c] = "";
-      return a
-    }, {});
-//    console.log("formFieldObject $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", formFieldObject);
-
-    /*
-    formFields.docs.forEach(doc => {
-      let maxLength = doc.data().maxLength;
-      if (formElements.hasOwnProperty(doc.id)) {
-        vals.set(doc.id, formElements[doc.id], maxLength);
-      }
-    });
-    */
-    //let tempDocs = formFields.docs.forEach(doc => {
-      //let max = doc.maxLength;
-      //formElements[doc.id] ? 
-    //});
-    //console.log("tempDocs: $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", tempDocs);
-    let myFormElements = formElements;
-//    console.log("myFormElements $$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", myFormElements);
-    console.log("templateDataWhitelist $$$$$$$$$$$$$$$$$$$$$$$ ", templateDataWhitelist);
-
-    let valsObjects = [ oAppKey, ...oAppInfo, oUrlRedirect, oTemplateName, ...oFormElements ];
-    console.log("valsObjects: ", valsObjects);
-    let testThese = { ...formElements, ...appInfoObject, ...oAppKey, ...oUrlRedirect, ...oTemplateName }
-    console.log("testThese $$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", testThese);
-    for (const doc of formFields.docs) {
-      let maxLength = doc.data().maxLength;
-      if (testThese[doc.id]) {
-//        console.log("testThese $$$$$$$$$$ ", doc.id, testThese[doc.id], maxLength);
-        vals.set(doc.id, testThese[doc.id], maxLength);
-      }
-//      if (testThese[doc.id] && templateDataWhitelist.includes(doc.id)) {
-        //console.log("formElements $$$$$$$$$$$$$$$$$$", doc.id);
-        //vals.setTemplate(doc.id, testThese[doc.id], maxLength);
-      //}
-    }
-
-    console.log("vals.get() ", vals.get());
-
+    // formElements last to allow override of global props
+    let testThese = { ...appInfoObject, ...oAppKey, ...oUrlRedirect, ...oTemplateName, ...formElements }
+    
     let sanitize = (value, maxLength) => 
       value.toString().trim().substr(0, maxLength);
 
@@ -327,23 +185,12 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     console.log("getGot().data $$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", getGot().data);
     console.log("getGot().urlRedirect $$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", getGot().urlRedirect);
     /*
-    props.set(prop, appInfoObject[prop]);
-    props.set(doc.id, formElements[doc.id], maxLength);
-
     // Strings to 'prop: value' objects so data to be merged has uniform format
     // timezone 'tz' string defined by momentjs.com/timezone: https://github.com/moment/moment-timezone/blob/develop/data/packed/latest.json
-
-    let dataWebformId = toObject('webformId')(webformId);
     // Reduce array emailTemplate.templateData, this returns an object that 
     // is sort-ordered to matach the sheetHeader fields.
-    let templateDataSorted = emailTemplate.data().templateData.reduce((a, c) => {
-      templateData[c] ? a[c] = templateData[c] : a[c] = "";
-      return a
-    }, {});
     // Values-only: merge objects in sort-order and return only values
     // Data-row for sheet requires nested array of strings [ [ 'John Smith', etc ] ]
-    let sheetDataRow = [( Object.values({ ...createdDate, ...createdTime, 
-      ...dataWebformId, ...templateDataSorted }) )];
 */
     /** [End] Row Data: Sort & Merge ******************************************/
 
