@@ -68,16 +68,16 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
      *  If form not submitted by authorized app then stop processing cloud function
      */
 
-    console.log("req.method $$$$$$$$$$$ ", req.method);
-    console.log("typeof req.body $$$$$$$$$$$$$$$$$ ", typeof req.body);
-    console.log("req.body $$$$$$$$$$$$$$$$$ ", req.body);
-    console.log("req.body keys $$$$$$$$$$$$$$$$$ ", Object.keys(req.body));
-
-    let json = JSON.parse(req.body);
-    console.log("JSON.parse(json)", typeof json, json);
-    console.log("get data from JSON parsed ", json.radioTimeframe);
+//    console.log("req.method $$$$$$$$$$$ ", req.method);
+    //console.log("typeof req.body $$$$$$$$$$$$$$$$$ ", typeof req.body);
+    //console.log("req.body $$$$$$$$$$$$$$$$$ ", req.body);
     
-    const app = await db.collection('app').doc(req.body.appKey).get();
+    let reqBody = JSON.parse(req.body);
+
+    console.log("typeof reqbody, reqbody $$$$$$$$$$$$$$$$ ", typeof reqBody, reqBody);
+    //console.log("reqbody $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", reqBody);
+   
+    const app = await db.collection('app').doc(reqBody.appKey.value).get();
 
     // App key validation: if exists continue with cors validation
     if (app) {
@@ -108,18 +108,20 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     let appKey = app.id;
     let appInfoObject = app.data().appInfo;
 
-    let { ...formElements } = req.body; 
-    console.log("formElements $$$$$$$$$$$$$$$$$ ", formElements);
-    console.log("req.body.email $$$$$$$$$$$$$$$$$ ", req.body.email);
-    let templateName = formElements.templateName 
-      ? formElements.templateName : globalConfig.defaultTemplate.name;
+    let { ...form } = reqBody;
 
-    let urlRedirect = formElements.urlRedirect
-      ? formElements.urlRedirect : globalConfig.urlRedirect.default;
+//    console.log("formElements $$$$$$$$$$$$$$$$$ ", form);
+    //console.log("reqbody.email $$$$$$$$$$$$$$$$$ ", reqBody.email);
+
+    let templateName = form.templateName.value
+      ? form.templateName.value : globalConfig.defaultTemplate.name;
+
+    let urlRedirect = form.urlRedirect.value
+      ? form.urlRedirect.value : globalConfig.urlRedirect.default;
 
     // Compile props and add formElements last to allow override of global props
-    let props = { appKey, ...appInfoObject, templateName, urlRedirect, ...formElements }
-    console.log("formElements.email $$$$$$$$$$$$$$$$$ ", formElements.email);
+    let props = { appKey, ...appInfoObject, templateName, urlRedirect, ...form }
+    console.log("props $$$$$$$$$$$$$$$$$ ", props);
     /** [START] Data Validation & Prep ****************************************/
     // field contains maxLength values for props sanitize
     let fields = await db.collection('field').get();
@@ -137,7 +139,12 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
         // if form-submitted 'props' found in 'fields' add to object {}
         if (props[doc.id]) {
           // sanitize prop
-          let sanitized = sanitize(props[doc.id], maxLength);
+          let sanitized;
+          if (appInfoObject.hasOwnProperty(doc.id)) {
+           sanitized = sanitize(props[doc.id], maxLength);
+          } else {
+            sanitized = sanitize(props[doc.id].value, maxLength);
+          }
           // add to object {}
           a[doc.id] = sanitized;
           // if 'prop' in templateData whitelist, add to object templateData 
