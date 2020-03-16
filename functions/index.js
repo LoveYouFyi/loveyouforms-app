@@ -120,11 +120,19 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       ? form.urlRedirect.value : globalConfig.urlRedirect.default;
 
     // Compile props and add formElements last to allow override of global props
-    let props = { appKey, ...appInfoObject, templateName, urlRedirect, ...form }
+    let props = { appKey, ...appInfoObject, templateName, urlRedirect, ...form };
     console.log("props $$$$$$$$$$$$$$$$$ ", props);
     /** [START] Data Validation & Prep ****************************************/
     // field contains maxLength values for props sanitize
     let fields = await db.collection('field').get();
+    console.log("fields $$$$$$$$$$$$$$$$$ ", fields);
+
+    let fieldsMaxLength = fields.docs.reduce((a, doc) => {
+      console.log("fieldsMaxLength value $$$$$$$$$$$$$$$$$ ", doc);
+      a[doc.id] = doc.data().maxLength;
+      return a;
+    }, {});
+    console.log("fieldsMaxLength $$$$$$$$$$$$$$$$$$$$$ ", fieldsMaxLength);
     // Whitelist contains props allowed to be added to formSubmission template.data
     let whitelistTemplateData = await db.collection('formTemplate').doc(templateName).get();
 
@@ -134,25 +142,33 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
         value.toString().trim().substr(0, maxLength);
 
       // compare database fields with form-submitted props and build object
-      let getProps = fields.docs.reduce((a, doc) => {
-        let maxLength = doc.data().maxLength;
+      //let getProps = fields.docs.reduce((a, doc) => {
+      let getProps = Object.entries(props).reduce((a, [key, val]) => {
         // if form-submitted 'props' found in 'fields' add to object {}
-        if (props[doc.id]) {
-          // sanitize prop
-          let sanitized;
-          if (appInfoObject.hasOwnProperty(doc.id)) {
-           sanitized = sanitize(props[doc.id], maxLength);
-          } else {
-            sanitized = sanitize(props[doc.id].value, maxLength);
-          }
-          // add to object {}
-          a[doc.id] = sanitized;
-          // if 'prop' in templateData whitelist, add to object templateData 
-          if (whitelistTemplateData.data().templateData.includes(doc.id)) {
-            // add to object {} prop: templateData object
-            a.templateData[doc.id] = sanitized; 
-          } 
+        console.log("Key Type $$$$$$$$$$$$$$$$$$$$$$$$$ ", key, key.type);
+        let maxLength;
+        let type = key.type
+        if (fieldsMaxLength[key]) {
+          maxLength = fieldsMaxLength[key];
+        } else if (globalConfig.field[type].maxLength) {
+          maxLength = fieldsMaxLength[key];
+
         }
+        console.log("Max Length $$$$$$$$$$$$$$$$ ", maxLength);
+        // sanitize prop
+        let sanitized;
+        if (appInfoObject.hasOwnProperty(prop.id)) {
+          sanitized = sanitize(prop.value, maxLength);
+        } else {
+          sanitized = sanitize(prop.value, maxLength);
+        }
+        // add to object {}
+        a[prop.id] = sanitized;
+        // if 'prop' in templateData whitelist, add to object templateData 
+        if (whitelistTemplateData.data().templateData.includes(prop.id)) {
+          // add to object {} prop: templateData object
+          a.templateData[prop.id] = sanitized; 
+        } 
 
         return a
       }, { templateData: {} });
