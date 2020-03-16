@@ -113,7 +113,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     /** [START] Data Validation & Prep ****************************************/
     // field contains maxLength values for props sanitize
     let fields = await db.collection('field').get();
-    // Whitelist contains props allowed to be added to template
+    // Whitelist contains props allowed to be added to formSubmission template.data
     let whitelistTemplateData = await db.collection('formTemplate').doc(templateName).get();
 
     let propsPrime = (() => { 
