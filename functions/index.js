@@ -123,11 +123,15 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
  
       let getProps = fields.docs.reduce((a, doc) => {
         let maxLength = doc.data().maxLength;
-
+        // if form-submitted 'props' found in 'fields' add to object {}
         if (props[doc.id]) {
+          // sanitize prop
           let sanitized = sanitize(props[doc.id], maxLength);
+          // add to object {}
           a[doc.id] = sanitized;
+          // if 'prop' in templateData whitelist, add to object templateData 
           if (whitelistTemplateData.data().templateData.includes(doc.id)) {
+            // add to object {} prop: templateData object
             a.templateData[doc.id] = sanitized; 
           } 
         }
