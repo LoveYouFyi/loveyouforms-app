@@ -49,6 +49,7 @@ const responseErrorBasic = string => ({
 // Terminate HTTP functions with res.redirect(), res.send(), or res.end().
 // https://firebase.google.com/docs/functions/terminate-functions
 
+
 // ANCHOR Form Handler
 exports.formHandler = functions.https.onRequest(async (req, res) => {
 
@@ -63,11 +64,19 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       return object;
     }, {});
 
-
     /**
      *  If form not submitted by authorized app then stop processing cloud function
      */
 
+    console.log("req.method $$$$$$$$$$$ ", req.method);
+    console.log("typeof req.body $$$$$$$$$$$$$$$$$ ", typeof req.body);
+    console.log("req.body $$$$$$$$$$$$$$$$$ ", req.body);
+    console.log("req.body keys $$$$$$$$$$$$$$$$$ ", Object.keys(req.body));
+
+    let json = JSON.parse(req.body);
+    console.log("JSON.parse(json)", typeof json, json);
+    console.log("get data from JSON parsed ", json.radioTimeframe);
+    
     const app = await db.collection('app').doc(req.body.appKey).get();
 
     // App key validation: if exists continue with cors validation
@@ -100,7 +109,8 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     let appInfoObject = app.data().appInfo;
 
     let { ...formElements } = req.body; 
-
+    console.log("formElements $$$$$$$$$$$$$$$$$ ", formElements);
+    console.log("req.body.email $$$$$$$$$$$$$$$$$ ", req.body.email);
     let templateName = formElements.templateName 
       ? formElements.templateName : globalConfig.defaultTemplate.name;
 
@@ -109,7 +119,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 
     // Compile props and add formElements last to allow override of global props
     let props = { appKey, ...appInfoObject, templateName, urlRedirect, ...formElements }
-
+    console.log("formElements.email $$$$$$$$$$$$$$$$$ ", formElements.email);
     /** [START] Data Validation & Prep ****************************************/
     // field contains maxLength values for props sanitize
     let fields = await db.collection('field').get();
@@ -120,7 +130,8 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       
       let sanitize = (value, maxLength) => 
         value.toString().trim().substr(0, maxLength);
- 
+
+      // compare database fields with form-submitted props and build object
       let getProps = fields.docs.reduce((a, doc) => {
         let maxLength = doc.data().maxLength;
         // if form-submitted 'props' found in 'fields' add to object {}
