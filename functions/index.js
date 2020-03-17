@@ -38,12 +38,6 @@ const logErrorInfo = error => ({
   info: (new Error()),
 });
 
-const responseErrorBasic = string => ({
-  message: {
-    error: string
-  }
-});
-
 // !SECTION
 
 // Terminate HTTP functions with res.redirect(), res.send(), or res.end().
@@ -52,18 +46,8 @@ const responseErrorBasic = string => ({
 
 // ANCHOR Form Handler
 exports.formHandler = functions.https.onRequest(async (req, res) => {
-  /**
-   * Global config
-   */
-  /*
-  const globals = await db.collection('global').get();
-  const globalConfig = globals.docs.reduce((object, doc) => { 
-    object[doc.id] = doc.data();
-    return object;
-  }, {});
-  */
-
-  let globalConfig = {};
+  
+  let globalMessages;
 
   try {
 
@@ -79,7 +63,6 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     if (app) {
       const globalCors = await db.collection('global').doc('cors').get();
       // CORS validation: stop cloud function if CORS check does not pass
-      console.log("globalCors.bypass $$$$$$$$$$$$$$$$$$$$$$$$$ ", globalCors.data().bypass);
       if (globalCors.data().bypass) {
         // allow * so localhost (or any source) recieves response
         res.set('Access-Control-Allow-Origin', '*');
@@ -92,18 +75,23 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
           return res.end();
         }
       }
-      const globals = await db.collection('global').get();
-      globalConfig = globals.docs.reduce((object, doc) => { 
-        object[doc.id] = doc.data();
-        return object;
-      }, {});
-
-      console.log("globalConfig $$$$$$$$$$$$$$$$$$$$$$ ", globalConfig);
     } else {
       console.info(new Error('App Key does not exist.'));
       res.end();
     }
 
+    /**
+     * Global config
+     */
+
+    const globals = await db.collection('global').get();
+
+    const globalConfig = globals.docs.reduce((object, doc) => { 
+      object[doc.id] = doc.data();
+      return object;
+    }, {});
+
+    globalMessages = globalConfig.message;
 
     /**
      * Compile fields (app and form props) labeled 'props' because they are handled 
@@ -116,10 +104,10 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     let { ...form } = reqBody;
 
     let templateName = form.templateName
-      ? form.templateName : globalConfig().fieldDefault.templateName;
+      ? form.templateName : globalConfig.fieldDefault.templateName;
 
     let urlRedirect = form.urlRedirect 
-      ? form.urlRedirect : globalConfig().fieldDefault.urlRedirect;
+      ? form.urlRedirect : globalConfig.fieldDefault.urlRedirect;
 
     // Consolidate props (order-matters) last-in overwrites previous 
     let props = { appKey, templateName, urlRedirect, ...form, ...appInfoObject };
@@ -150,8 +138,8 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
           if (fieldsMaxLength[prop]) { 
             maxLength = fieldsMaxLength[prop];
             sanitized = sanitize(data.value, maxLength);
-          } else if (!fieldsMaxLength[prop] && globalConfig().fieldDefault.typeMaxLength[data.type]) {
-            maxLength = globalConfig().fieldDefault.typeMaxLength[data.type];
+          } else if (!fieldsMaxLength[prop] && globalConfig.fieldDefault.typeMaxLength[data.type]) {
+            maxLength = globalConfig.fieldDefault.typeMaxLength[data.type];
             sanitized = sanitize(data.value, maxLength);
           }
         }
@@ -198,7 +186,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     /**
      * Response
      */
-
+     
     return res.status(200).send({
       // return response (even if empty) so client can finish AJAX success
       data: {
@@ -210,10 +198,9 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 
     console.error(logErrorInfo(error));
 
-    // responseErrorBasic('Error: Application error.')
     return res.status(500).send({
       message: {
-        error: globalConfig().messageDefault.error
+        error: globalMessages.error
       }
     });
 
