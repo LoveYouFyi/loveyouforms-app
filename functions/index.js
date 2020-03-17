@@ -106,23 +106,29 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
      */
 
     let appKey = app.id;
-    let appInfoObject = app.data().appInfo;
+    let configObject = app.data().appInfo;
 
     let { ...form } = reqBody;
 
-//    console.log("formElements $$$$$$$$$$$$$$$$$ ", form);
-    //console.log("reqbody.email $$$$$$$$$$$$$$$$$ ", reqBody.email);
+    console.log("formElements $$$$$$$$$$$$$$$$$ ", form);
+//    console.log("reqbody.email $$$$$$$$$$$$$$$$$ ", reqBody.email);
 
-    let templateName = form.templateName.value
+    let templateName = form.templateName
       ? form.templateName.value : globalConfig.defaultTemplate.name;
 
-    let urlRedirect = form.urlRedirect.value
-      ? form.urlRedirect.value : globalConfig.urlRedirect.default;
+    let urlRedirect;
+    if (form.urlRedirect) {
+      urlRedirect = form.urlRedirect.value;
+    } else {
+      configObject.urlRedirect = globalConfig.urlRedirect.default; // if from global, add to config object since global props do not have same type/value structure as form elements
+    }
 
     // Compile props: ...form then ...appInfoObject last to override globals and
     // prevent form from overwriting appInfoObject
-    let props = { appKey, templateName, urlRedirect, ...form, ...appInfoObject };
+    let props = { appKey, templateName, urlRedirect, ...form, ...configObject };
     console.log("props $$$$$$$$$$$$$$$$$ ", props);
+
+    console.log("templateName, urlRedirect $$$$$$$$$$$$$$$$$ ", templateName, urlRedirect);
     /** [START] Data Validation & Prep ****************************************/
     // field contains maxLength values for props sanitize
     let fields = await db.collection('field').get();
@@ -142,11 +148,12 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       // compare database fields with form-submitted props and build object
       let getProps = Object.entries(props).reduce((a, [prop, data]) => {
         let sanitized, maxLength;
-        if (appInfoObject.hasOwnProperty(prop)) {
+        if (configObject.hasOwnProperty(prop)) {
           sanitized = data;
         } else {
+          console.log("reduce prop data $$$$$$$$$$$$$$$$$$$$ ", prop, data);
           // if form-submitted 'props' found in 'fields' add to object {}
-          if (fieldsMaxLength[prop]) {
+          if (prop !== undefined && fieldsMaxLength[prop]) { // !!prop -if not undefined due to form vs global prop
             maxLength = fieldsMaxLength[prop];
             sanitized = sanitize(data.value, maxLength);
           } else if (!fieldsMaxLength[prop] && globalConfig.field[data.type].maxLength) {
