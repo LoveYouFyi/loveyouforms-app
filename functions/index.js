@@ -123,7 +123,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     // Whitelist contains props allowed to be added to formSubmission template.data
     let whitelistTemplateData = await db.collection('formTemplate').doc(templateName.value).get();
 
-    let propsPrime = (() => { 
+    let propsPrep = (() => { 
       
       let sanitize = (value, maxLength) => 
         value.toString().trim().substr(0, maxLength);
@@ -162,7 +162,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     })();
     /** [END] Data Validation & Prep ******************************************/
 
-    let propsGet = ({ templateData, urlRedirect, ...key } = propsPrime.get()) => ({
+    let propsGet = ({ templateData, urlRedirect, ...key } = propsPrep.get()) => ({
       data: {
         appKey: key.appKey, 
         createdDateTime: FieldValue.serverTimestamp(), 
@@ -186,11 +186,12 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     /**
      * Response
      */
-     
+ 
+    // return response object (even if empty) so client can finish AJAX success
     return res.status(200).send({
-      // return response (even if empty) so client can finish AJAX success
       data: {
-        redirect: propsGet().urlRedirect
+        redirect: propsGet().urlRedirect,
+        message: globalMessages.success
       }
     });
 
@@ -199,8 +200,8 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     console.error(logErrorInfo(error));
 
     return res.status(500).send({
-      message: {
-        error: globalMessages.error
+      error: {
+        message: globalMessages.error
       }
     });
 
