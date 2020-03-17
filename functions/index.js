@@ -119,16 +119,14 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     let urlRedirect = form.urlRedirect.value
       ? form.urlRedirect.value : globalConfig.urlRedirect.default;
 
-    // Compile props and add formElements last to allow override of global props
-    let props = { appKey, ...appInfoObject, templateName, urlRedirect, ...form };
+    // Compile props: ...form then ...appInfoObject last to override globals and
+    // prevent form from overwriting appInfoObject
+    let props = { appKey, templateName, urlRedirect, ...form, ...appInfoObject };
     console.log("props $$$$$$$$$$$$$$$$$ ", props);
     /** [START] Data Validation & Prep ****************************************/
     // field contains maxLength values for props sanitize
     let fields = await db.collection('field').get();
-    console.log("fields $$$$$$$$$$$$$$$$$ ", fields);
-
     let fieldsMaxLength = fields.docs.reduce((a, doc) => {
-      console.log("fieldsMaxLength value $$$$$$$$$$$$$$$$$ ", doc);
       a[doc.id] = doc.data().maxLength;
       return a;
     }, {});
@@ -142,32 +140,28 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
         value.toString().trim().substr(0, maxLength);
 
       // compare database fields with form-submitted props and build object
-      //let getProps = fields.docs.reduce((a, doc) => {
-      let getProps = Object.entries(props).reduce((a, [key, val]) => {
-        // if form-submitted 'props' found in 'fields' add to object {}
-        console.log("Key Type $$$$$$$$$$$$$$$$$$$$$$$$$ ", key, key.type);
-        let maxLength;
-        let type = key.type
-        if (fieldsMaxLength[key]) {
-          maxLength = fieldsMaxLength[key];
-        } else if (globalConfig.field[type].maxLength) {
-          maxLength = fieldsMaxLength[key];
-
-        }
-        console.log("Max Length $$$$$$$$$$$$$$$$ ", maxLength);
-        // sanitize prop
-        let sanitized;
-        if (appInfoObject.hasOwnProperty(prop.id)) {
-          sanitized = sanitize(prop.value, maxLength);
+      let getProps = Object.entries(props).reduce((a, [prop, data]) => {
+        let sanitized, maxLength;
+        if (appInfoObject.hasOwnProperty(prop)) {
+          sanitized = data;
         } else {
-          sanitized = sanitize(prop.value, maxLength);
+          // if form-submitted 'props' found in 'fields' add to object {}
+          if (fieldsMaxLength[prop]) {
+            maxLength = fieldsMaxLength[prop];
+            sanitized = sanitize(data.value, maxLength);
+          } else if (!fieldsMaxLength[prop] && globalConfig.field[data.type].maxLength) {
+            console.log("Prop Data, Type, Value $$$$$$$$$$$$$$$$$$$$$$$$$ ", prop, data.type, data.value);
+            console.log("GLOBAL data type maxLength ?????????????????????? ", globalConfig.field[data.type].maxLength);
+            maxLength = globalConfig.field[data.type].maxLength;
+            sanitized = sanitize(data.value, maxLength);
+          }
         }
         // add to object {}
-        a[prop.id] = sanitized;
+        a[prop] = sanitized;
         // if 'prop' in templateData whitelist, add to object templateData 
-        if (whitelistTemplateData.data().templateData.includes(prop.id)) {
+        if (whitelistTemplateData.data().templateData.includes(prop)) {
           // add to object {} prop: templateData object
-          a.templateData[prop.id] = sanitized; 
+          a.templateData[prop] = sanitized; 
         } 
 
         return a
