@@ -104,16 +104,16 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     let { ...form } = reqBody;
 
     let templateName = form.templateName
-      ? form.templateName : globalConfig.field.templateName;
+      ? form.templateName : globalConfig.fieldDefault.templateName;
 
     let urlRedirect = form.urlRedirect 
-      ? form.urlRedirect : globalConfig.field.urlRedirect;
+      ? form.urlRedirect : globalConfig.fieldDefault.urlRedirect;
 
     // Consolidate props (order-matters) last-in overwrites previous 
     let props = { appKey, templateName, urlRedirect, ...form, ...appInfoObject };
 
     /** [START] Data Validation & Prep ****************************************/
-    // field contains maxLength values for props sanitize
+    // field may contain maxLength values to override defaults in global.fieldDefault.typeMaxLength
     let fields = await db.collection('field').get();
     let fieldsMaxLength = fields.docs.reduce((a, doc) => {
       a[doc.id] = doc.data().maxLength;
@@ -138,8 +138,8 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
           if (fieldsMaxLength[prop]) { 
             maxLength = fieldsMaxLength[prop];
             sanitized = sanitize(data.value, maxLength);
-          } else if (!fieldsMaxLength[prop] && globalConfig.field.typeMaxLength[data.type]) {
-            maxLength = globalConfig.field.typeMaxLength[data.type];
+          } else if (!fieldsMaxLength[prop] && globalConfig.fieldDefault.typeMaxLength[data.type]) {
+            maxLength = globalConfig.fieldDefault.typeMaxLength[data.type];
             sanitized = sanitize(data.value, maxLength);
           }
         }
