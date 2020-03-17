@@ -55,11 +55,15 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
   /**
    * Global config
    */
+  /*
   const globals = await db.collection('global').get();
   const globalConfig = globals.docs.reduce((object, doc) => { 
     object[doc.id] = doc.data();
     return object;
   }, {});
+  */
+
+  let globalConfig = {};
 
   try {
 
@@ -73,8 +77,10 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 
     // App key validation: if exists continue with cors validation
     if (app) {
+      const globalCors = await db.collection('global').doc('cors').get();
       // CORS validation: stop cloud function if CORS check does not pass
-      if (globalConfig.cors.bypass) {
+      console.log("globalCors.bypass $$$$$$$$$$$$$$$$$$$$$$$$$ ", globalCors.data().bypass);
+      if (globalCors.data().bypass) {
         // allow * so localhost (or any source) recieves response
         res.set('Access-Control-Allow-Origin', '*');
       } else {
@@ -84,8 +90,15 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
         if (req.headers.origin !== app.data().appInfo.appUrl) { 
           console.info(new Error('Origin Url does not match app url.'));
           return res.end();
-        } 
+        }
       }
+      const globals = await db.collection('global').get();
+      globalConfig = globals.docs.reduce((object, doc) => { 
+        object[doc.id] = doc.data();
+        return object;
+      }, {});
+
+      console.log("globalConfig $$$$$$$$$$$$$$$$$$$$$$ ", globalConfig);
     } else {
       console.info(new Error('App Key does not exist.'));
       res.end();
@@ -103,10 +116,10 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     let { ...form } = reqBody;
 
     let templateName = form.templateName
-      ? form.templateName : globalConfig.fieldDefault.templateName;
+      ? form.templateName : globalConfig().fieldDefault.templateName;
 
     let urlRedirect = form.urlRedirect 
-      ? form.urlRedirect : globalConfig.fieldDefault.urlRedirect;
+      ? form.urlRedirect : globalConfig().fieldDefault.urlRedirect;
 
     // Consolidate props (order-matters) last-in overwrites previous 
     let props = { appKey, templateName, urlRedirect, ...form, ...appInfoObject };
@@ -137,8 +150,8 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
           if (fieldsMaxLength[prop]) { 
             maxLength = fieldsMaxLength[prop];
             sanitized = sanitize(data.value, maxLength);
-          } else if (!fieldsMaxLength[prop] && globalConfig.fieldDefault.typeMaxLength[data.type]) {
-            maxLength = globalConfig.fieldDefault.typeMaxLength[data.type];
+          } else if (!fieldsMaxLength[prop] && globalConfig().fieldDefault.typeMaxLength[data.type]) {
+            maxLength = globalConfig().fieldDefault.typeMaxLength[data.type];
             sanitized = sanitize(data.value, maxLength);
           }
         }
@@ -178,7 +191,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     });
 
     // For serverTimestamp to work must first create new doc key then 'set' data
-//    const newKey = db.collection("formSubmission").doc();
+    const newKey = db.collection("formSubmission").doc();
     // update the new-key-record using 'set' which works for existing doc
     newKey.set(propsGet().data)
 
@@ -200,7 +213,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     // responseErrorBasic('Error: Application error.')
     return res.status(500).send({
       message: {
-        error: globalConfig.messageDefault.error
+        error: globalConfig().messageDefault.error
       }
     });
 
