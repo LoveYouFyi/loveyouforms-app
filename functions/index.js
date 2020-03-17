@@ -67,16 +67,9 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     /**
      *  If form not submitted by authorized app then stop processing cloud function
      */
-
-//    console.log("req.method $$$$$$$$$$$ ", req.method);
-    //console.log("typeof req.body $$$$$$$$$$$$$$$$$ ", typeof req.body);
-    //console.log("req.body $$$$$$$$$$$$$$$$$ ", req.body);
     
-    let reqBody = JSON.parse(req.body);
+    let reqBody = JSON.parse(req.body); // ajax sent as json-string, so must parse
 
-    console.log("typeof reqbody, reqbody $$$$$$$$$$$$$$$$ ", typeof reqBody, reqBody);
-    //console.log("reqbody $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", reqBody);
-   
     const app = await db.collection('app').doc(reqBody.appKey.value).get();
 
     // App key validation: if exists continue with cors validation
@@ -107,24 +100,18 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 
     let appKey = app.id;
     let appInfoObject = app.data().appInfo;
-    console.log("configObject $$$$$$$$$$$$$$$$$$$$$$$$$$$ ", appInfoObject);
+    
     let { ...form } = reqBody;
 
-    console.log("formElements $$$$$$$$$$$$$$$$$ ", form);
-    
-    // if from global, add to config object since global props do not have same type/value structure as form elements
     let templateName = form.templateName
       ? form.templateName : globalConfig.field.templateName;
 
     let urlRedirect = form.urlRedirect 
       ? form.urlRedirect : globalConfig.field.urlRedirect;
 
-    // Compile props: ...form then ...appInfoObject last to override globals and
-    // prevent form from overwriting appInfoObject
+    // Consolidate props (order-matters) last-in overwrites previous 
     let props = { appKey, templateName, urlRedirect, ...form, ...appInfoObject };
-    console.log("props $$$$$$$$$$$$$$$$$ ", props);
 
-    console.log("templateName, urlRedirect $$$$$$$$$$$$$$$$$ ", templateName, urlRedirect);
     /** [START] Data Validation & Prep ****************************************/
     // field contains maxLength values for props sanitize
     let fields = await db.collection('field').get();
@@ -132,7 +119,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       a[doc.id] = doc.data().maxLength;
       return a;
     }, {});
-    console.log("fieldsMaxLength $$$$$$$$$$$$$$$$$$$$$ ", fieldsMaxLength);
+
     // Whitelist contains props allowed to be added to formSubmission template.data
     let whitelistTemplateData = await db.collection('formTemplate').doc(templateName.value).get();
 
@@ -147,14 +134,11 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
         if (appInfoObject.hasOwnProperty(prop)) {
           sanitized = data;
         } else {
-          console.log("reduce prop data $$$$$$$$$$$$$$$$$$$$ ", prop, data);
           // form prop will be undefined if form does not include element, so using global config
           if (fieldsMaxLength[prop]) { 
             maxLength = fieldsMaxLength[prop];
             sanitized = sanitize(data.value, maxLength);
           } else if (!fieldsMaxLength[prop] && globalConfig.field.typeMaxLength[data.type]) {
-            console.log("Prop Data, Type, Value $$$$$$$$$$$$$$$$$$$$$$$$$ ", prop, data.type, data.value);
-            console.log("GLOBAL data type maxLength ?????????????????????? ", globalConfig.field.typeMaxLength[data.type]);
             maxLength = globalConfig.field.typeMaxLength[data.type];
             sanitized = sanitize(data.value, maxLength);
           }
