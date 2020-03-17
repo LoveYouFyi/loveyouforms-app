@@ -52,17 +52,16 @@ const responseErrorBasic = string => ({
 
 // ANCHOR Form Handler
 exports.formHandler = functions.https.onRequest(async (req, res) => {
+  /**
+   * Global config
+   */
+  const globals = await db.collection('global').get();
+  const globalConfig = globals.docs.reduce((object, doc) => { 
+    object[doc.id] = doc.data();
+    return object;
+  }, {});
 
   try {
-    
-    /**
-     * Global config
-     */
-    const globals = await db.collection('global').get();
-    const globalConfig = globals.docs.reduce((object, doc) => { 
-      object[doc.id] = doc.data();
-      return object;
-    }, {});
 
     /**
      *  If form not submitted by authorized app then stop processing cloud function
@@ -179,7 +178,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     });
 
     // For serverTimestamp to work must first create new doc key then 'set' data
-    const newKey = db.collection("formSubmission").doc();
+//    const newKey = db.collection("formSubmission").doc();
     // update the new-key-record using 'set' which works for existing doc
     newKey.set(propsGet().data)
 
@@ -198,7 +197,12 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 
     console.error(logErrorInfo(error));
 
-    return res.status(500).send(responseErrorBasic('Error: Application error.'));
+    // responseErrorBasic('Error: Application error.')
+    return res.status(500).send({
+      message: {
+        error: globalConfig.messageDefault.error
+      }
+    });
 
   } // end catch
 
