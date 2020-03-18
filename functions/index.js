@@ -120,7 +120,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       return a;
     }, {});
 
-    // Whitelist contains props allowed to be added to formSubmission template.data
+    // Whitelist for adding props to formSubmission entry's template.data for 'trigger email' extension
     let whitelistTemplateData = await db.collection('formTemplate').doc(templateName.value).get();
 
     let propsPrep = (() => { 
