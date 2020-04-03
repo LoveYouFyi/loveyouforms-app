@@ -1,4 +1,4 @@
-# loveyouforms
+# Love You Forms
 
 ## A JavaScript cloud app to manage form submissions for one site or 1,000
 
