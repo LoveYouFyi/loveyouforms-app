@@ -49,7 +49,7 @@ const logErrorInfo = error => ({
 // ANCHOR Form Handler
 exports.formHandler = functions.https.onRequest(async (req, res) => {
   
-  let globalMessages;
+  let globalApp;
 
   try {
 
@@ -63,7 +63,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 
     // App key validation: if exists continue with cors validation
     if (app) {
-      const globalApp = await db.collection('global').doc('app').get();
+      globalApp = await db.collection('global').doc('app').get();
       // CORS validation: stop cloud function if CORS check does not pass
       if (globalApp.data().corsBypass || app.data().corsBypass) {
         // allow * so localhost (or any source) recieves response
@@ -74,34 +74,33 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
         // end processing if url does not match (req.headers.origin = url)
         if (req.headers.origin !== app.data().appInfo.appUrl) { 
           console.info(new Error('Origin Url does not match app url.'));
+          // no error response sent because submit not from approved app
           return res.end();
         }
       }
-      // prevent form submit if global or app restricts with false
+      // end processing if formSubmit disabled
       if (!globalApp.data().formSubmit || !app.data().formSubmit) {
-        console.log("!globalApp.data().formSubmit $$$$$$$$$$$$$$$ ", !globalApp.data().formSubmit);
-        console.log("!app.data().formSubmit $$$$$$$$$$$$$$$ ", !app.data().formSubmit);
-        console.info(new Error('Form submit disabled.'));
-        //res.set('Form submit disabled');
-        return res.end();
+        console.info(new Error(`Form submit disabled for app "${app.data().appInfo.appName}"`));
+        throw (globalApp.data().message.error.text);
+//        res.end();
       }
     } else {
       console.info(new Error('App Key does not exist.'));
-      return res.end();
+      // no error response sent because submit not from approved app
+      res.end();
     }
 
     /**
      * Global config
      */
 
-    const globals = await db.collection('global').get();
+    const  globalFieldDefault = await db.collection('global').doc('fieldDefault').get();
+//    const globals = await db.collection('global').get();
 
     const globalConfig = globals.docs.reduce((object, doc) => { 
       object[doc.id] = doc.data();
       return object;
     }, {});
-
-    globalMessages = globalConfig.message;
 
     /**
      * Compile fields (app and form props) labeled 'props' because they are handled 
@@ -114,10 +113,10 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     let { ...form } = reqBody;
 
     let templateName = form.templateName
-      ? form.templateName : globalConfig.fieldDefault.templateName;
+      ? form.templateName : globalFieldDefault.templateName;
 
     let urlRedirect = form.urlRedirect 
-      ? form.urlRedirect : globalConfig.fieldDefault.urlRedirect;
+      ? form.urlRedirect : globalFieldDefault.urlRedirect;
 
     // Consolidate props (order-matters) last-in overwrites previous 
     let props = { appKey, templateName, urlRedirect, ...form, ...appInfoObject };
@@ -148,8 +147,8 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
           if (fieldsMaxLength[prop]) { 
             maxLength = fieldsMaxLength[prop];
             sanitized = sanitize(data.value, maxLength);
-          } else if (!fieldsMaxLength[prop] && globalConfig.fieldDefault.typeMaxLength[data.type]) {
-            maxLength = globalConfig.fieldDefault.typeMaxLength[data.type];
+          } else if (!fieldsMaxLength[prop] && globalFieldDefault.typeMaxLength[data.type]) {
+            maxLength = globalFieldDefault.typeMaxLength[data.type];
             sanitized = sanitize(data.value, maxLength);
           }
         }
@@ -201,17 +200,20 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     return res.status(200).send({
       data: {
         redirect: propsGet().urlRedirect,
-        message: globalMessages.success
+        message: globalApp.message.success
       }
     });
 
   } catch(error) {
-
+    console.log("error 1 $$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", error);
+    //console.log("error 2 $$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", globalApp.message.error);
+    console.log("logErrorInfo(error) $$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", logErrorInfo(error));
+    
     console.error(logErrorInfo(error));
 
     return res.status(500).send({
       error: {
-        message: globalMessages.error
+        message: globalApp.message.error
       }
     });
 
