@@ -49,7 +49,7 @@ const logErrorInfo = error => ({
 // ANCHOR Form Handler
 exports.formHandler = functions.https.onRequest(async (req, res) => {
   
-  let globalApp;
+  let messages;
 
   try {
 
@@ -62,10 +62,16 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     const appRef = await db.collection('app').doc(reqBody.appKey.value).get();
     const app = appRef.data();
 
-    // App key validation: if exists continue with cors validation
+    // App key: if exists continue with global and app condition checks
     if (app) {
       const globalAppRef = await db.collection('global').doc('app').get();
-      globalApp = globalAppRef.data();
+      const globalApp = globalAppRef.data();
+      // set messages to globalApp or app-specific
+      if (app.condition.messageGlobal || app.condition.messageGlobal == null) {
+        messages = globalApp.message;
+      } else {
+        messages = app.message;
+      }
       // CORS validation: stop cloud function if CORS check does not pass
       // global boolean 0/1, if set to 2 bypass global & use app-specific boolean
       if (!globalApp.condition.corsBypass
@@ -204,7 +210,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     return res.status(200).send({
       data: {
         redirect: propsGet().urlRedirect,
-        message: globalApp.message.success
+        message: messages.success
       }
     });
 
@@ -214,7 +220,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 
     return res.status(500).send({
       error: {
-        message: globalApp.message.error
+        message: messages.error
       }
     });
 
