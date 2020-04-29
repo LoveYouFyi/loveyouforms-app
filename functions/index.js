@@ -65,7 +65,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     if (app) {
       const globalCors = await db.collection('global').doc('cors').get();
       // CORS validation: stop cloud function if CORS check does not pass
-      if (globalCors.data().bypass) {
+      if (globalCors.data().bypass || app.data().corsBypass) {
         // allow * so localhost (or any source) recieves response
         res.set('Access-Control-Allow-Origin', '*');
       } else {
