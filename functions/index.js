@@ -63,9 +63,9 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 
     // App key validation: if exists continue with cors validation
     if (app) {
-      const globalCors = await db.collection('global').doc('cors').get();
+      const globalApp = await db.collection('global').doc('app').get();
       // CORS validation: stop cloud function if CORS check does not pass
-      if (globalCors.data().bypass || app.data().corsBypass) {
+      if (globalApp.data().corsBypass || app.data().corsBypass) {
         // allow * so localhost (or any source) recieves response
         res.set('Access-Control-Allow-Origin', '*');
       } else {
@@ -77,9 +77,17 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
           return res.end();
         }
       }
+      // prevent form submit if global or app restricts with false
+      if (!globalApp.data().formSubmit || !app.data().formSubmit) {
+        console.log("!globalApp.data().formSubmit $$$$$$$$$$$$$$$ ", !globalApp.data().formSubmit);
+        console.log("!app.data().formSubmit $$$$$$$$$$$$$$$ ", !app.data().formSubmit);
+        console.info(new Error('Form submit disabled.'));
+        //res.set('Form submit disabled');
+        return res.end();
+      }
     } else {
       console.info(new Error('App Key does not exist.'));
-      res.end();
+      return res.end();
     }
 
     /**
@@ -122,7 +130,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       return a;
     }, {});
 
-    // Whitelist for adding props to formSubmission entry's template.data for 'trigger email' extension
+    // Whitelist for adding props to formSubmit entry's template.data for 'trigger email' extension
     let whitelistTemplateData = await db.collection('formTemplate').doc(templateName.value).get();
 
     let propsPrep = (() => { 
@@ -181,7 +189,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     });
 
     // For serverTimestamp to work must first create new doc key then 'set' data
-    const newKey = db.collection("formSubmission").doc();
+    const newKey = db.collection("formSubmit").doc();
     // update the new-key-record using 'set' which works for existing doc
     newKey.set(propsGet().data)
 
@@ -213,7 +221,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 
 
 // ANCHOR - Firestore To Sheets [New sheet, header, and data row]
-exports.firestoreToSheets = functions.firestore.document('formSubmission/{formId}')
+exports.firestoreToSheets = functions.firestore.document('formSubmit/{formId}')
   .onCreate(async (snapshot, context) => {
 
   try {
