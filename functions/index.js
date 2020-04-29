@@ -57,88 +57,87 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
      *  If form not submitted by authorized app then stop processing cloud function
      */
     
-    let reqBody = JSON.parse(req.body); // ajax sent as json-string, so must parse
+    const reqBody = JSON.parse(req.body); // ajax sent as json-string, so must parse
 
-    const app = await db.collection('app').doc(reqBody.appKey.value).get();
+    const appRef = await db.collection('app').doc(reqBody.appKey.value).get();
+    const app = appRef.data();
 
     // App key validation: if exists continue with cors validation
     if (app) {
-      globalApp = await db.collection('global').doc('app').get();
+      const globalAppRef = await db.collection('global').doc('app').get();
+      globalApp = globalAppRef.data();
+
       // CORS validation: stop cloud function if CORS check does not pass
-      if (globalApp.data().corsBypass || app.data().corsBypass) {
+      if (globalApp.corsBypass || app.corsBypass) {
         // allow * so localhost (or any source) recieves response
         res.set('Access-Control-Allow-Origin', '*');
       } else {
         // restrict to url requests that match the app
-        res.set('Access-Control-Allow-Origin', app.data().appInfo.appUrl);
+        res.set('Access-Control-Allow-Origin', app.appInfo.appUrl);
         // end processing if url does not match (req.headers.origin = url)
-        if (req.headers.origin !== app.data().appInfo.appUrl) { 
+        if (req.headers.origin !== app.appInfo.appUrl) { 
           console.info(new Error('Origin Url does not match app url.'));
           // no error response sent because submit not from approved app
           return res.end();
         }
       }
       // end processing if formSubmit disabled
-      if (!globalApp.data().formSubmit || !app.data().formSubmit) {
-        console.info(new Error(`Form submit disabled for app "${app.data().appInfo.appName}"`));
-        throw (globalApp.data().message.error.text);
-//        res.end();
+      if (!globalApp.formSubmit || !app.formSubmit) {
+        console.info(new Error(`Form submit disabled for app "${app.appInfo.appName}"`));
+        // return error response because submit is from approved app
+        throw (globalApp.message.error.text);
       }
     } else {
       console.info(new Error('App Key does not exist.'));
       // no error response sent because submit not from approved app
-      res.end();
+      return res.end();
     }
 
     /**
-     * Global config
+     * Global Field Default
      */
 
-    const  globalFieldDefault = await db.collection('global').doc('fieldDefault').get();
-//    const globals = await db.collection('global').get();
-
-    const globalConfig = globals.docs.reduce((object, doc) => { 
-      object[doc.id] = doc.data();
-      return object;
-    }, {});
+    const globalFieldDefaultRef = await db.collection('global').doc('fieldDefault').get();
+    const globalFieldDefault = globalFieldDefaultRef.data();
 
     /**
      * Compile fields (app and form props) labeled 'props' because they are handled 
      * as object entries; sanitize; add to structured object; submit to databasea
      */
 
-    let appKey = app.id;
-    let appInfoObject = app.data().appInfo;
+    const appKey = app.id;
+    const appInfoObject = app.appInfo;
     
-    let { ...form } = reqBody;
+    const { ...form } = reqBody;
 
-    let templateName = form.templateName
+    const templateName = form.templateName
       ? form.templateName : globalFieldDefault.templateName;
 
-    let urlRedirect = form.urlRedirect 
+    const urlRedirect = form.urlRedirect 
       ? form.urlRedirect : globalFieldDefault.urlRedirect;
 
     // Consolidate props (order-matters) last-in overwrites previous 
-    let props = { appKey, templateName, urlRedirect, ...form, ...appInfoObject };
+    const props = { appKey, templateName, urlRedirect, ...form, ...appInfoObject };
 
-    /** [START] Data Validation & Prep ****************************************/
+    /** [START] Data Validation & Set Props ***********************************/
     // field may contain maxLength values to override defaults in global.fieldDefault.typeMaxLength
-    let fields = await db.collection('field').get();
-    let fieldsMaxLength = fields.docs.reduce((a, doc) => {
+    const fields = await db.collection('field').get();
+    const fieldsMaxLength = fields.docs.reduce((a, doc) => {
       a[doc.id] = doc.data().maxLength;
       return a;
     }, {});
 
     // Whitelist for adding props to formSubmit entry's template.data for 'trigger email' extension
-    let whitelistTemplateData = await db.collection('formTemplate').doc(templateName.value).get();
+    const whitelistTemplateDataRef = await db.collection('formTemplate').doc(templateName.value).get();
+    const whitelistTemplateData = whitelistTemplateDataRef.data();
 
-    let propsPrep = (() => { 
+    const propsSet = (() => { 
       
-      let sanitize = (value, maxLength) => 
+      const sanitize = (value, maxLength) => 
         value.toString().trim().substr(0, maxLength);
 
       // compare database fields with form-submitted props and build object
-      let getProps = Object.entries(props).reduce((a, [prop, data]) => {
+      const getProps = Object.entries(props).reduce((a, [prop, data]) => {
         let sanitized, maxLength;
         if (appInfoObject.hasOwnProperty(prop)) {
           sanitized = data;
@@ -155,7 +154,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
         // add to object {}
         a[prop] = sanitized;
         // if 'prop' in templateData whitelist, add to object templateData 
-        if (whitelistTemplateData.data().templateData.includes(prop)) {
+        if (whitelistTemplateData.templateData.includes(prop)) {
           // add to object {} prop: templateData object
           a.templateData[prop] = sanitized; 
         } 
@@ -169,9 +168,9 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
         }
       }
     })();
-    /** [END] Data Validation & Prep ******************************************/
+    /** [END] Data Validation & Set Props *************************************/
 
-    let propsGet = ({ templateData, urlRedirect, ...key } = propsPrep.get()) => ({
+    const propsGet = ({ templateData, urlRedirect, ...key } = propsSet.get()) => ({
       data: {
         appKey: key.appKey, 
         createdDateTime: FieldValue.serverTimestamp(), 
@@ -188,9 +187,9 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     });
 
     // For serverTimestamp to work must first create new doc key then 'set' data
-    const newKey = db.collection("formSubmit").doc();
+    const newKeyRef = db.collection("formSubmit").doc();
     // update the new-key-record using 'set' which works for existing doc
-    newKey.set(propsGet().data)
+    newKeyRef.set(propsGet().data)
 
     /**
      * Response
@@ -205,9 +204,6 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     });
 
   } catch(error) {
-    console.log("error 1 $$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", error);
-    //console.log("error 2 $$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", globalApp.message.error);
-    console.log("logErrorInfo(error) $$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", logErrorInfo(error));
     
     console.error(logErrorInfo(error));
 
@@ -233,32 +229,33 @@ exports.firestoreToSheets = functions.firestore.document('formSubmit/{formId}')
     */
 
     // Form Submission: values from Snapshot.data()
-    let { appKey, createdDateTime, template: { data: { ...templateData }, 
+    const { appKey, createdDateTime, template: { data: { ...templateData }, 
       name: templateName  }, webformId } = snapshot.data();
 
     // Template: two sort-ordered arrays of strings
     // sheetHeader array is sorted according to desired sheets visual
     // templateData array is sorted to match the order of sheetHeader
-    let formTemplate = await db.collection('formTemplate').doc(templateName).get();
+    const formTemplateRef = await db.collection('formTemplate').doc(templateName).get();
+    const formTemplate = formTemplateRef.data();
 
     // Header fields for sheet requires nested array of strings [ [ 'Date', 'Time', etc ] ]
-    let sheetHeader = [( formTemplate.data().sheetHeader )]; 
+    const sheetHeader = [( formTemplate.sheetHeader )]; 
 
     /** [START] Row Data: Sort & Merge ****************************************/
     // Strings to 'prop: value' objects so data to be merged has uniform format
     // timezone 'tz' string defined by momentjs.com/timezone: https://github.com/moment/moment-timezone/blob/develop/data/packed/latest.json
     const dateTime = createdDateTime.toDate(); // toDate() is firebase method
-    let createdDate = moment(dateTime).tz(templateData.appTimeZone).format('L');
-    let createdTime = moment(dateTime).tz(templateData.appTimeZone).format('h:mm A z');
+    const createdDate = moment(dateTime).tz(templateData.appTimeZone).format('L');
+    const createdTime = moment(dateTime).tz(templateData.appTimeZone).format('h:mm A z');
     // Reduce array formTemplate.templateData, this returns an object that 
     // is sort-ordered to matach the sheetHeader fields.
-    let templateDataSorted = formTemplate.data().templateData.reduce((a, c) => {
+    const templateDataSorted = formTemplate.templateData.reduce((a, c) => {
       templateData[c] ? a[c] = templateData[c] : a[c] = "";
       return a
     }, {});
     // Merge objects in sort-order and return only values
     // Data-row for sheet requires nested array of strings [ [ 'John Smith', etc ] ]
-    let sheetDataRow = [( Object.values({ createdDate, createdTime, 
+    const sheetDataRow = [( Object.values({ createdDate, createdTime, 
       webformId, ...templateDataSorted }) )];
     /** [END] Row Data: Sort & Merge ******************************************/
 
@@ -268,9 +265,9 @@ exports.firestoreToSheets = functions.firestore.document('formSubmit/{formId}')
     */
 
     // Get app spreadsheetId and sheetId (one spreadsheet with multiple sheets possible)
-    let app = await db.collection('app').doc(appKey).get();
-    let spreadsheetId = app.data().spreadsheet.id; // one spreadsheet per app
-    let sheetId = app.data().spreadsheet.sheetId[templateName]; // multiple possible sheets
+    const app = await db.collection('app').doc(appKey).get();
+    const spreadsheetId = app.spreadsheet.id; // one spreadsheet per app
+    const sheetId = app.spreadsheet.sheetId[templateName]; // multiple possible sheets
 
     // Authorize with google sheets
     await jwtClient.authorize();
@@ -320,8 +317,8 @@ exports.firestoreToSheets = functions.firestore.document('formSubmit/{formId}')
       spreadsheetId: spreadsheetId,
       includeGridData: false
     });
-    let sheetDetails = await sheets.spreadsheets.get(sheetObjectRequest());
-    let sheetNameExists = sheetDetails.data.sheets.find(sheet => {
+    const sheetDetails = await sheets.spreadsheets.get(sheetObjectRequest());
+    const sheetNameExists = sheetDetails.data.sheets.find(sheet => {
       // if sheet name exists returns sheet 'properties' object, else is undefined
       return sheet.properties.title === templateName;
     });
@@ -364,17 +361,17 @@ exports.firestoreToSheets = functions.firestore.document('formSubmit/{formId}')
       // newSheet returns 'data' object with properties:
       //   prop: spreadsheetId
       //   prop: replies[0].addSheet.properties (sheetId, title, index, sheetType, gridProperties { rowCount, columnCount }
-      let newSheet = await sheets.spreadsheets.batchUpdate(addSheet());
+      const newSheet = await sheets.spreadsheets.batchUpdate(addSheet());
       // Map 'replies' array to get sheetId
-      let newSheetId = sheet => {
-        let newSheet = {};
+      const newSheetId = sheet => {
+        const newSheet = {};
         sheet.data.replies.map(reply => newSheet.addSheet = reply.addSheet);
         return newSheet.addSheet.properties.sheetId;
       };
 
       // Add new sheetId to app spreadsheet info
       db.collection('app').doc(appKey).update({
-          ['spreadsheet.sheetId.' + templateName]: newSheetId(newSheet)
+        ['spreadsheet.sheetId.' + templateName]: newSheetId(newSheet)
       });
 
       // New Sheet Actions: add row header then row data
