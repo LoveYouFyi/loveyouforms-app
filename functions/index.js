@@ -66,12 +66,12 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     if (app) {
       const globalAppRef = await db.collection('global').doc('app').get();
       globalApp = globalAppRef.data();
-
+      
       // CORS validation: stop cloud function if CORS check does not pass
-      if (globalApp.corsBypass || app.corsBypass) {
-        // allow * so localhost (or any source) recieves response
-        res.set('Access-Control-Allow-Origin', '*');
-      } else {
+      // global boolean 0/1, if set to 2 bypass global & use app-specific boolean
+      if (!globalApp.condition.corsBypass
+          || (globalApp.condition.corsBypass === 2 && !app.corsBypass)
+        ) {
         // restrict to url requests that match the app
         res.set('Access-Control-Allow-Origin', app.appInfo.appUrl);
         // end processing if url does not match (req.headers.origin = url)
@@ -80,9 +80,15 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
           // no error response sent because submit not from approved app
           return res.end();
         }
+      } else {
+        // allow * so localhost (or any source) recieves response
+        res.set('Access-Control-Allow-Origin', '*');
       }
-      // end processing if formSubmit disabled
-      if (!globalApp.formSubmit || !app.formSubmit) {
+      // Form Submit validation: stop cloud function if formSubmit disabled
+      // global boolean 0/1, if set to 2 bypass global & use app-specific boolean
+      if (!globalApp.condition.formSubmit
+          || (globalApp.condition.formSubmit === 2 && !app.formSubmit)
+        ) {
         console.info(new Error(`Form submit disabled for app "${app.appInfo.appName}"`));
         // return error response because submit is from approved app
         throw (globalApp.message.error.text);
