@@ -1,0 +1,151 @@
+{
+  "app":{
+     "APP_EXAMPLE_iYDpFm4leFH10duGDGoETPKqznzX5XJzczUETkG2eqKlbWLlLXLk":{
+        "condition":{
+           "messageGlobal":false,
+           "corsBypass":true,
+           "formSubmit":true
+        },
+        "appInfo":{
+           "appUrl":"https://mywebsite.com",
+           "appName":"My Website",
+           "appTimeZone":"America/New_York",
+           "appFrom":"My Website <info@mywebsite.com>"
+        },
+        "message":{
+           "error":{
+              "text":"Error: Sorry, please try again or contact us by phone.",
+              "timeout":0
+           },
+           "success":{
+              "text":"Message Received!",
+              "timeout":4000
+           }
+        },
+        "spreadsheet":{
+          "Notes": "See instructions for updating with your Google Sheets info",
+          "sheetId":{
+              "contactDefault":1000000000
+           },
+           "id":"My-Long-Alpha-Numeric-Spreadsheet-Id"
+        },
+        "email":"myemail@gmail.com"
+     }
+  },
+  "field":{
+     "phone":{
+        "maxLength":64
+     },
+     "urlRedirect":{
+        "maxLength":1280
+     }
+  },
+  "formSubmit":{
+     "diliberatelyEmpty":{
+       "deleteDocument":"The 'formSubmit' collection is where form submissions will be saved. This document was included so the formSubmit collection would be created. Feel free to delete this DOCUMENT named 'deliberatelyEmpty' but do not delete the 'formSubmit' COLLECTION"
+    }
+  },
+  "formTemplate":{
+     "contactAlt":{
+        "templateData":[
+           "name",
+           "phone",
+           "email",
+           "message",
+           "appName",
+           "appUrl",
+           "appTimeZone"
+        ],
+        "sheetHeader":[
+           "Date",
+           "Time",
+           "Webform_Id",
+           "Name",
+           "Phone",
+           "Email",
+           "Message",
+           "App_Name",
+           "App_Url",
+           "Time_Zone"
+        ],
+        "html":"<p>Inquiry {{#if appName}} for {{ appName }} {{/if}} {{#if appUrl}} from {{ appUrl }} {{/if}}</p> <h3 style=\"display: inline;\">Name...</h3> &nbsp;&nbsp;<span>{{ name }}</span><br>   <h3 style=\"display: inline;\">Phone...</h3> &nbsp;&nbsp;<span>{{ phone }}</span><br>   <h3 style=\"display: inline;\">E-mail...</h3> &nbsp;&nbsp;<span>{{ email }}</span><br>   <h3 style=\"display: inline;\">Message...</h3> {{ message }}",
+        "subject":"[CONTACT] Inquiry for {{ appName }}"
+     },
+     "contactDefault":{
+        "subject":"[CONTACT] Inquiry for {{ appName }}",
+        "templateData":[
+           "name",
+           "phone",
+           "email",
+           "message",
+           "appName",
+           "appUrl",
+           "appTimeZone",
+           "budget",
+           "timeframe"
+        ],
+        "sheetHeader":[
+           "Date",
+           "Time",
+           "Webform_Id",
+           "Name",
+           "Phone",
+           "Email",
+           "Message",
+           "App_Name",
+           "App_Url",
+           "Time_Zone",
+           "Budget",
+           "Timeframe"
+        ],
+        "html":"<p>Inquiry {{#if appName}} for {{ appName }} {{/if}} {{#if appUrl}} from {{ appUrl }} {{/if}}</p> <h3 style=\"display: inline;\">Name...</h3> &nbsp;&nbsp;<span>{{ name }}</span><br>   <h3 style=\"display: inline;\">Phone...</h3> &nbsp;&nbsp;<span>{{ phone }}</span><br>   <h3 style=\"display: inline;\">E-mail...</h3> &nbsp;&nbsp;<span>{{ email }}</span><br>   <h3 style=\"display: inline;\">Message...</h3> {{ message }}"
+     }
+  },
+  "global":{
+     "app":{
+        "condition":{
+           "formSubmit":2,
+           "_Note":"Global conditions use 0 for false or 1 for true.  To bypass globals and use app-specific conditions set global condition to 2.",
+           "corsBypass":2
+        },
+        "message":{
+           "success":{
+              "timeout":4000,
+              "text":"GLOBAL Message Received!"
+           },
+           "error":{
+              "text":"GLOBAL Error: Sorry, please try again or contact us by phone.",
+              "timeout":0
+           }
+        }
+     },
+     "fieldDefault":{
+        "urlRedirect":{
+           "type":"hidden",
+           "value":"/message-received"
+        },
+        "templateName":{
+           "value":"contactDefault",
+           "type":"hidden"
+        },
+        "typeMaxLength":{
+           "textarea":1280,
+           "hidden":256,
+           "radio":256,
+           "email":256,
+           "select":256,
+           "text":256
+        }
+     }
+  },
+  "usage_and_setup_reference":{
+     "Time Zones":{
+        "Eastern Standard Time":"America/New_York",
+        "1 Note":"Used in collection 'app' -> doc -> appInfo -> appTimeZone",
+        "moment.js reference":"https://github.com/moment/moment-timezone/blob/develop/data/packed/latest.json",
+        "Mountain Standard Time":"America/Denver",
+        "Pacific Standard Time":"America/Los_Angeles",
+        "Central Standard Time":"America/Chicago"
+     }
+  }
+}
