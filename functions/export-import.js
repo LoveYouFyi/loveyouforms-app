@@ -1,8 +1,8 @@
 // Firebase Admin SDK to access the Firebase/Firestore Realtime Database.
 const admin = require('firebase-admin');
 // Firebase admin credentials
-//const serviceAccount = require('./service-account.json'); // download from firebase console
-const serviceAccount = require('./service-account-love-you-forms.json'); // download from firebase console
+const serviceAccount = require('./service-account.json'); // download from firebase console
+//const serviceAccount = require('./service-account-love-you-forms.json'); // download from firebase console
 admin.initializeApp({ // initialize firebase admin with credentials
   credential: admin.credential.cert(serviceAccount), // So functions can connect to database
   databaseURL: 'https://loveyou-forms.firebaseio.com' // Needed if using FireBase database (not FireStore)
@@ -46,6 +46,14 @@ module.exports.firestoreExport = function () {
 module.exports.firestoreImport = function () {
   // The array of date, location and reference fields are optional
   firestoreService.restore('import-starter-database.json', {
+    // for importing collections with refKey
+    // refs: ['refKey', 'formSubmit'],
+  });
+}
+
+module.exports.importCollection = function () {
+  // The array of date, location and reference fields are optional
+  firestoreService.restore('import-collection.json', {
     // for importing collections with refKey
     // refs: ['refKey', 'formSubmit'],
   });

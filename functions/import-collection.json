@@ -1,0 +1,15 @@
+{
+  "formField":{
+     "phone":{
+        "maxLength":64
+     },
+     "urlRedirect":{
+        "maxLength":1280
+     }
+  },
+  "submitForm":{
+     "diliberatelyEmpty":{
+       "deleteDocument":"The 'formSubmit' collection is where form submissions will be saved. This document was included so the formSubmit collection would be created. Feel free to delete this DOCUMENT named 'deliberatelyEmpty' but do not delete the 'formSubmit' COLLECTION"
+    }
+  }
+}

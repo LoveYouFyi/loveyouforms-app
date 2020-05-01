@@ -8,6 +8,7 @@
   "scripts": {
     "exportData": "node -e 'require(\"./export-import\").firestoreExport()'",
     "importData": "node -e 'require(\"./export-import\").firestoreImport()'",
+    "importCollection": "node -e 'require(\"./export-import\").importCollection()'",
     "serve": "firebase serve --only functions",
     "shell": "firebase functions:shell",
     "start": "npm run shell",

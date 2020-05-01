@@ -276,7 +276,8 @@ exports.firestoreToSheets = functions.firestore.document('formSubmit/{formId}')
     */
 
     // Get app spreadsheetId and sheetId (one spreadsheet with multiple sheets possible)
-    const app = await db.collection('app').doc(appKey).get();
+    const appRef = await db.collection('app').doc(appKey).get();
+    const app = appRef.data();
     const spreadsheetId = app.spreadsheet.id; // one spreadsheet per app
     const sheetId = app.spreadsheet.sheetId[templateName]; // multiple possible sheets
 
