@@ -45,7 +45,7 @@ module.exports.firestoreExport = function () {
 
 module.exports.firestoreImport = function () {
   // The array of date, location and reference fields are optional
-  firestoreService.restore('import-this.json', {
+  firestoreService.restore('import-starter-database.json', {
     // for importing collections with refKey
     // refs: ['refKey', 'formSubmit'],
   });
