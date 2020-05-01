@@ -132,7 +132,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 
     /** [START] Data Validation & Set Props ***********************************/
     // field may contain maxLength values to override defaults in global.fieldDefault.typeMaxLength
-    const fields = await db.collection('field').get();
+    const fields = await db.collection('formField').get();
     const fieldsMaxLength = fields.docs.reduce((a, doc) => {
       a[doc.id] = doc.data().maxLength;
       return a;
