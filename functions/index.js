@@ -105,17 +105,16 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       return res.end();
     }
 
-    /**
-     * Global Field Default
-     */
-
-    const globalFieldDefaultRef = await db.collection('global').doc('fieldDefault').get();
-    const globalFieldDefault = globalFieldDefaultRef.data();
 
     /**
-     * Compile fields (app and form props) labeled 'props' because they are handled 
+     * Fields/Props
+     * Compile fields (app props & form fields) labeled 'props' because they are handled 
      * as object entries; sanitize; add to structured object; submit to databasea
      */
+    
+    // Global Field Defaults
+    const globalFieldDefaultRef = await db.collection('global').doc('fieldDefault').get();
+    const globalFieldDefault = globalFieldDefaultRef.data();
 
     const appKey = app.id;
     const appInfoObject = app.appInfo;
