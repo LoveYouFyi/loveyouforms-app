@@ -54,7 +54,8 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
   try {
 
     /**
-     *  If form not submitted by authorized app then stop processing cloud function
+     *  Check if Authorized App and if Form submit disabled:
+     *  Stop processing if form not submitted by authorized app, or submit disabled
      */
     
     const reqBody = JSON.parse(req.body); // ajax sent as json-string, so must parse
@@ -132,8 +133,8 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 
     /** [START] Data Validation & Set Props ***********************************/
     // field may contain maxLength values to override defaults in global.fieldDefault.typeMaxLength
-    const fields = await db.collection('formField').get();
-    const fieldsMaxLength = fields.docs.reduce((a, doc) => {
+    const fieldsRef = await db.collection('formField').get();
+    const fieldsMaxLength = fieldsRef.docs.reduce((a, doc) => {
       a[doc.id] = doc.data().maxLength;
       return a;
     }, {});
