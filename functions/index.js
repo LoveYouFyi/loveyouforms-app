@@ -89,10 +89,10 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
         // allow * so localhost (or any source) recieves response
         res.set('Access-Control-Allow-Origin', '*');
       }
-      // Form Submit Enabled/Disabled: stop cloud function if formSubmit disabled
+      // Form Submit Enabled/Disabled: stop cloud function if submitForm disabled
       // global boolean 0/1, if set to 2 bypass global & use app-specific boolean
-      if (!globalApp.condition.formSubmit
-          || (globalApp.condition.formSubmit === 2 && !app.condition.formSubmit)
+      if (!globalApp.condition.submitForm
+          || (globalApp.condition.submitForm === 2 && !app.condition.submitForm)
         ) {
         console.info(new Error(`Form submit disabled for app "${app.appInfo.appName}"`));
         // return error response because submit is from approved app
@@ -138,7 +138,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       return a;
     }, {});
 
-    // Whitelist for adding props to formSubmit entry's template.data for 'trigger email' extension
+    // Whitelist for adding props to submitForm entry's template.data for 'trigger email' extension
     const whitelistTemplateDataRef = await db.collection('formTemplate').doc(templateName.value).get();
     const whitelistTemplateData = whitelistTemplateDataRef.data();
 
@@ -198,7 +198,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     });
 
     // For serverTimestamp to work must first create new doc key then 'set' data
-    const newKeyRef = db.collection("formSubmit").doc();
+    const newKeyRef = db.collection('submitForm').doc();
     // update the new-key-record using 'set' which works for existing doc
     newKeyRef.set(propsGet().data)
 
@@ -230,7 +230,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 
 
 // ANCHOR - Firestore To Sheets [New sheet, header, and data row]
-exports.firestoreToSheets = functions.firestore.document('formSubmit/{formId}')
+exports.firestoreToSheets = functions.firestore.document('submitForm/{formId}')
   .onCreate(async (snapshot, context) => {
 
   try {
@@ -402,7 +402,7 @@ exports.firestoreToSheets = functions.firestore.document('formSubmit/{formId}')
 
 
 // ANCHOR Firebase to Sheets [Basic 2 Column List]
-exports.firebaseToSheets = functions.database.ref("/Form")
+exports.firebaseToSheets = functions.database.ref('/Form')
   .onUpdate(async change => {
 
   let data = change.after.val();
