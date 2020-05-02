@@ -118,8 +118,9 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 
     const appKey = app.id;
     const appInfoObject = app.appInfo;
-    
-    const { ...form } = reqBody;
+
+    const { ...form } = reqBody; // destructure reqBody json object
+    console.log("form #################################### ", form);
 
     const templateName = form.templateName
       ? form.templateName : globalFieldDefault.templateName;
@@ -130,20 +131,41 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     // Consolidate props (order-matters) last-in overwrites previous 
     const props = { appKey, templateName, urlRedirect, ...form, ...appInfoObject };
 
+    console.log("Object.keys(form) #################################### ", Object.keys(form));
+    const docKeys = Object.keys(form);
+//    const get = await db.getAll(...getKeys);
+//    console.log("get #################################### ", get);
+    // Return array of formField docs
+    const gotDocs = async () => {
+      let docs = [];
+      for (const doc of docKeys) {
+        const field = await db.collection('formField').doc(doc).get();
+        if (field) {
+          docs.push({ id: doc, ...field.data() });
+        }
+      }
+      return docs;
+    }
+    const [ ...allDocs ] = await gotDocs(); 
+    console.log("allDocs 999999999999999999999999999999999999999 ", allDocs);
     /** [START] Data Validation & Set Props ***********************************/
     // field may contain maxLength values to override defaults in global.fieldDefault.typeMaxLength
     const fieldsRef = await db.collection('formField').get();
-    const fieldsMaxLength = fieldsRef.docs.reduce((a, doc) => {
-      a[doc.id] = doc.data().maxLength;
+//    console.log("fieldsRef ############################## ", fieldsRef);
+    const fieldsMaxLength = allDocs.reduce((a, doc) => {
+      if (doc.maxLength !== null) {
+        a[doc.id] = doc.maxLength;
+      } 
       return a;
     }, {});
+    console.log("fieldsMaxLength ############################## ", fieldsMaxLength);
 
     // Whitelist for adding props to submitForm entry's template.data for 'trigger email' extension
     const whitelistTemplateDataRef = await db.collection('formTemplate').doc(templateName.value).get();
     const whitelistTemplateData = whitelistTemplateDataRef.data();
 
     const propsSet = (() => { 
-      
+
       const sanitize = (value, maxLength) => 
         value.toString().trim().substr(0, maxLength);
 
