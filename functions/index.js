@@ -30,7 +30,7 @@ const jwtClient = new google.auth.JWT({ // JWT Authentication (for google sheets
 
 // !SECTION
 
-// SECTION Helper Functions
+// SECTION Utility Functions
 
 const logErrorInfo = error => ({
   Error: 'Description and source line:',
@@ -133,8 +133,18 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 
     console.log("Object.keys(form) #################################### ", Object.keys(form));
     const docKeys = Object.keys(form);
-//    const get = await db.getAll(...getKeys);
-//    console.log("get #################################### ", get);
+
+    let docRefs = docKeys.map(id => db.collection('formField').doc(id));
+    
+    let gotDocsAll = await db.getAll(...docRefs).then(docs => {
+      return docs.map(doc => {
+        console.log("things Doc data $$$$$$$$$$$$$$$$ ", doc.data());
+        return doc.data();
+      });
+    });
+    console.log("gotDocsAll ####################################### ", gotDocsAll);
+
+
     // Return array of formField docs
     const gotDocs = async () => {
       let docs = [];
