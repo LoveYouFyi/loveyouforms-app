@@ -131,26 +131,21 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     // Consolidate props (order-matters) last-in overwrites previous 
     const props = { appKey, templateName, urlRedirect, ...form, ...appInfoObject };
 
-    const docKeys = Object.keys(form);
-    console.log("docKeys #################################### ", docKeys);
-
-    let docRefs = docKeys.map(id => db.collection('formField').doc(id));
-
-    let getAllDocs = await db.getAll(...docRefs);
-    let allDocs =  getAllDocs.reduce((a, doc) => {
-      if (doc.data()) {
-        const info = { id: doc.id, ...doc.data() };
-        a.push(info);
-      }
+    // Return array of query doc refs for firestore .getAll()
+    const formFieldDocsRefs = Object.keys(form).map(id => 
+      db.collection('formFieldName').doc(id));
+    // Retrieve selected docs using array of query doc refs
+    const formFieldDocsGetAll = await db.getAll(...formFieldDocsRefs);
+    // Return array of docs that exist and have data
+    const formFieldDocs =  formFieldDocsGetAll.reduce((a, doc) => {
+      doc.data() && a.push({ id: doc.id, ...doc.data() }); // if doc.data() exists -> push
       return a;
     }, []);
-    console.log("allDocs ####################################### ", allDocs);
+    console.log("formFieldsDocs ####################################### ", formFieldDocs);
 
     /** [START] Data Validation & Set Props ***********************************/
     // field may contain maxLength values to override defaults in global.fieldDefault.typeMaxLength
-//    const fieldsRef = await db.collection('formField').get();
-//    console.log("fieldsRef ############################## ", fieldsRef);
-    const fieldsMaxLength = allDocs.reduce((a, doc) => {
+    const fieldsMaxLength = formFieldDocs.reduce((a, doc) => {
       if (doc.maxLength) {
         a[doc.id] = doc.maxLength;
       } 
