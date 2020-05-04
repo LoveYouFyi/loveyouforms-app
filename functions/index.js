@@ -137,13 +137,18 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     let docRefs = docKeys.map(id => db.collection('formField').doc(id));
     
     let gotDocsAll = await db.getAll(...docRefs).then(docs => {
-      return docs.map(doc => {
+      return docs.reduce((a, doc) => {
+        console.log("things Doc id $$$$$$$$$$$$$$$$ ", doc.id);
         console.log("things Doc data $$$$$$$$$$$$$$$$ ", doc.data());
-        return doc.data();
-      });
+        if (doc.data()) {
+          let info = doc.data();
+          info.id = doc.id;
+          a.push(info);
+        }
+        return a;
+      }, []);
     });
     console.log("gotDocsAll ####################################### ", gotDocsAll);
-
 
     // Return array of formField docs
     const gotDocs = async () => {
