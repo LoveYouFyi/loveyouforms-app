@@ -131,44 +131,27 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     // Consolidate props (order-matters) last-in overwrites previous 
     const props = { appKey, templateName, urlRedirect, ...form, ...appInfoObject };
 
-    console.log("Object.keys(form) #################################### ", Object.keys(form));
     const docKeys = Object.keys(form);
+    console.log("docKeys #################################### ", docKeys);
 
     let docRefs = docKeys.map(id => db.collection('formField').doc(id));
-    
-    let gotDocsAll = await db.getAll(...docRefs).then(docs => {
-      return docs.reduce((a, doc) => {
-        console.log("things Doc id $$$$$$$$$$$$$$$$ ", doc.id);
-        console.log("things Doc data $$$$$$$$$$$$$$$$ ", doc.data());
-        if (doc.data()) {
-          let info = doc.data();
-          info.id = doc.id;
-          a.push(info);
-        }
-        return a;
-      }, []);
-    });
-    console.log("gotDocsAll ####################################### ", gotDocsAll);
 
-    // Return array of formField docs
-    const gotDocs = async () => {
-      let docs = [];
-      for (const doc of docKeys) {
-        const field = await db.collection('formField').doc(doc).get();
-        if (field) {
-          docs.push({ id: doc, ...field.data() });
-        }
+    let getAllDocs = await db.getAll(...docRefs);
+    let allDocs =  getAllDocs.reduce((a, doc) => {
+      if (doc.data()) {
+        const info = { id: doc.id, ...doc.data() };
+        a.push(info);
       }
-      return docs;
-    }
-    const [ ...allDocs ] = await gotDocs(); 
-    console.log("allDocs 999999999999999999999999999999999999999 ", allDocs);
+      return a;
+    }, []);
+    console.log("allDocs ####################################### ", allDocs);
+
     /** [START] Data Validation & Set Props ***********************************/
     // field may contain maxLength values to override defaults in global.fieldDefault.typeMaxLength
-    const fieldsRef = await db.collection('formField').get();
+//    const fieldsRef = await db.collection('formField').get();
 //    console.log("fieldsRef ############################## ", fieldsRef);
     const fieldsMaxLength = allDocs.reduce((a, doc) => {
-      if (doc.maxLength !== null) {
+      if (doc.maxLength) {
         a[doc.id] = doc.maxLength;
       } 
       return a;
