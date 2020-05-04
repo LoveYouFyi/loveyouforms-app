@@ -111,14 +111,30 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
      * Compile fields (app props & form fields) labeled 'props' because they are handled 
      * as object entries; sanitize; add to structured object; submit to databasea
      */
-    
-    // Global Field Defaults
-    const globalFieldDefaultRef = await db.collection('global').doc('fieldDefault').get();
-    const globalFieldDefault = globalFieldDefaultRef.data();
 
     const appKey = app.id;
     const appInfoObject = app.appInfo;
 
+    // Dynamic Default Form Fields
+    // 1) query array global.formFieldName.defaultFields
+    // 2) if array not empty -> .getAll() array fields from formFieldName
+
+    // Global Field Defaults
+    const globalFieldDefaultRef = await db.collection('global').doc('fieldDefault').get();
+    const globalFieldDefault = globalFieldDefaultRef.data();
+    console.log("globalFieldDefault #################################### ", globalFieldDefault);
+
+    const globalFormFieldNameDefaultsRef = await db.collection('global').doc('formFieldName').get();
+    const globalFormFieldNameDefaults = globalFormFieldNameDefaultsRef.data().defaults;
+    const ffRefs = globalFormFieldNameDefaults.map(id => 
+      db.collection('formFieldName').doc(id));
+    const globalFormFieldsGetAll = await db.getAll(...ffRefs);
+    const globalFormFields =  globalFormFieldsGetAll.reduce((a, doc) => {
+      a[doc.id] = doc.data();
+      return a;
+    }, {});
+    console.log("globalFormFields ####################################### ", globalFormFields);
+//    const [ ...items ] = globalFormFields;
     const { ...form } = reqBody; // destructure reqBody json object
     console.log("form #################################### ", form);
 
@@ -129,8 +145,9 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       ? form.urlRedirect : globalFieldDefault.urlRedirect;
 
     // Consolidate props (order-matters) last-in overwrites previous 
-    const props = { appKey, templateName, urlRedirect, ...form, ...appInfoObject };
-
+//    const props = { appKey, templateName, urlRedirect, ...form, ...appInfoObject };
+    const props = { appKey, ...globalFormFields, ...form, ...appInfoObject };
+    console.log("props $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", props);
     // Return array of query doc refs for firestore .getAll()
     const formFieldDocsRefs = Object.keys(form).map(id => 
       db.collection('formFieldName').doc(id));
@@ -154,7 +171,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     console.log("fieldsMaxLength ############################## ", fieldsMaxLength);
 
     // Whitelist for adding props to submitForm entry's template.data for 'trigger email' extension
-    const whitelistTemplateDataRef = await db.collection('formTemplate').doc(templateName.value).get();
+    const whitelistTemplateDataRef = await db.collection('formTemplate').doc(props.templateName.value).get();
     const whitelistTemplateData = whitelistTemplateDataRef.data();
 
     const propsSet = (() => { 
