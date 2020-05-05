@@ -120,36 +120,35 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     // 2) if array not empty -> .getAll() array fields from formFieldName
 
     // Global Field Defaults
-    const globalFieldDefaultRef = await db.collection('global').doc('fieldDefault').get();
-    const globalFieldDefault = globalFieldDefaultRef.data();
-    console.log("globalFieldDefault #################################### ", globalFieldDefault);
-
     const globalFormFieldNameDefaultsRef = await db.collection('global').doc('formFieldName').get();
     const globalFormFieldNameDefaults = globalFormFieldNameDefaultsRef.data().defaults;
-    const ffRefs = globalFormFieldNameDefaults.map(id => 
+    const formFieldNameGlobalsRefs = globalFormFieldNameDefaults.map(id => 
       db.collection('formFieldName').doc(id));
-    const globalFormFieldsGetAll = await db.getAll(...ffRefs);
-    const globalFormFields =  globalFormFieldsGetAll.reduce((a, doc) => {
+    const formFieldNameGlobalsGetAll = await db.getAll(...formFieldNameGlobalsRefs);
+    const formFieldNameGlobals = formFieldNameGlobalsGetAll.reduce((a, doc) => {
       a[doc.id] = doc.data();
       return a;
     }, {});
-    console.log("globalFormFields ####################################### ", globalFormFields);
-//    const [ ...items ] = globalFormFields;
+
     const { ...form } = reqBody; // destructure reqBody json object
     console.log("form #################################### ", form);
 
-    const templateName = form.templateName
-      ? form.templateName : globalFieldDefault.templateName;
-
-    const urlRedirect = form.urlRedirect 
-      ? form.urlRedirect : globalFieldDefault.urlRedirect;
-
     // Consolidate props (order-matters) last-in overwrites previous 
-//    const props = { appKey, templateName, urlRedirect, ...form, ...appInfoObject };
-    const props = { appKey, ...globalFormFields, ...form, ...appInfoObject };
+    const props = { appKey, ...formFieldNameGlobals, ...form, ...appInfoObject };
     console.log("props $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", props);
+    
+    // Unique Prop Types
+    const propsFields = { ...formFieldNameGlobals, ...form }
+    const uniqueFieldTypes = Object.entries(propsFields).reduce((a, [key, value]) => {
+      if (!a.includes(value['type']) && typeof value['type'] !== 'undefined' ) { 
+        a.push(value['type']); 
+      }
+      return a;
+    }, []);
+    console.log("uniqueType $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", uniqueFieldTypes); 
+
     // Return array of query doc refs for firestore .getAll()
-    const formFieldDocsRefs = Object.keys(form).map(id => 
+    const formFieldDocsRefs = Object.keys(props).map(id => 
       db.collection('formFieldName').doc(id));
     // Retrieve selected docs using array of query doc refs
     const formFieldDocsGetAll = await db.getAll(...formFieldDocsRefs);
