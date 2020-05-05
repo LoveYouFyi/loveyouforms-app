@@ -140,8 +140,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     console.log("props $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", props);
     
     // formFieldType: get all relevant field types
-//    const propsFormFields = { ...formFieldNameGlobals, ...form };
-//    console.log("propsFormFields ###################################### ", propsFormFields);
+    // Return: Array = OKAY!
     const propsFormFieldTypes = Object.entries(props).reduce((a, [key, value]) => {
       if (!a.includes(value['type']) && typeof value['type'] !== 'undefined' ) { 
         a.push(value['type']); 
@@ -150,6 +149,9 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     }, []);
     console.log("propsFormFieldTypes $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", propsFormFieldTypes); 
 
+    //
+    // Return Object: PENDING
+    //
     // Return array of query doc refs for firestore .getAll()
     const formFieldTypeRefs = propsFormFieldTypes.map(type => 
       db.collection('formFieldType').doc(type));
@@ -157,11 +159,14 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     const formFieldTypeGetAll = await db.getAll(...formFieldTypeRefs);
     // Return array of docs that exist and have data
     const formFieldTypes =  formFieldTypeGetAll.reduce((a, doc) => {
-      doc.data() && a.push({ id: doc.id, ...doc.data() }); // if doc.data() exists -> push
+      doc.data() && (a[doc.id] = doc.data()); // if doc.data() exists -> push
       return a;
-    }, []);
+    }, {});
     console.log("formFieldTypes ####################################### ", formFieldTypes);
  
+    //
+    // Return Object: PENDING
+    //
     // Return array of query doc refs for firestore .getAll()
     const formFieldNameRefs = Object.keys(props).map(id => 
       db.collection('formFieldName').doc(id));
@@ -169,65 +174,85 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     const formFieldNameGetAll = await db.getAll(...formFieldNameRefs);
     // Return array of docs that exist and have data
     const formFieldNames =  formFieldNameGetAll.reduce((a, doc) => {
-      doc.data() && a.push({ id: doc.id, ...doc.data() }); // if doc.data() exists -> push
+      doc.data() && (a[doc.id] = doc.data()); // if doc.data() exists -> push
       return a;
-    }, []);
+    }, {});
     console.log("formFieldNames ####################################### ", formFieldNames);
 
-    /** [START] Data Validation & Set Props ***********************************/
+    //
+    // Return Object: PENDING -> props object with only KEYS and Number indicating Max Length
+    //
+    // MaxLength Compile
+    const formFieldsMaxLength = Object.entries(props).reduce((a, [key, value]) => {
+      // apply maxLength by formFieldType
+      if (formFieldTypes.hasOwnProperty(value.type) && formFieldTypes[value.type].maxLength) {
+        a[key] = formFieldTypes[value.type].maxLength;
+      } 
+      // apply maxLength by formFieldName (if exists it overwrites formFieldType)
+      if (formFieldNames.hasOwnProperty(key) && formFieldNames[key].maxLength) {
+        a[key] = formFieldNames[key].maxLength;
+      } 
+      return a;
+    }, {});
+    console.log("formFieldsMaxLength ############################## ", formFieldsMaxLength);
+    /* 
     // field may contain maxLength values to override defaults in global.fieldDefault.typeMaxLength
-    const fieldsMaxLength = formFieldTypes.reduce((a, doc) => {
+    const formFieldsMaxLength = formFieldTypes.reduce((a, doc) => {
       if (doc.maxLength) {
         a[doc.id] = doc.maxLength;
       } 
       return a;
     }, {});
-    console.log("fieldsMaxLength ############################## ", fieldsMaxLength);
-
+    console.log("fieldsMaxLength ############################## ", formFieldsMaxLength);
+    */
+    /** [START] Data Validation & Set Props ***********************************/
+    console.log("props 2 $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", props);
+    console.log("props.templateName.value $$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", props.templateName.value);
     // Whitelist for adding props to submitForm entry's template.data for 'trigger email' extension
     const whitelistTemplateDataRef = await db.collection('formTemplate').doc(props.templateName.value).get();
     const whitelistTemplateData = whitelistTemplateDataRef.data();
 
     const propsSet = (() => { 
 
-      const sanitize = (value, maxLength) => 
+      const sanitizeMaxLength = (value, maxLength) => 
         value.toString().trim().substr(0, maxLength);
 
       // compare database fields with form-submitted props and build object
-      const getProps = Object.entries(props).reduce((a, [prop, data]) => {
+      const setProps = Object.entries(props).reduce((a, [prop, data]) => {
+        // Sanitize [start]
         let sanitized, maxLength;
         if (appInfoObject.hasOwnProperty(prop)) {
           sanitized = data;
-        } else {
+        } else if (formFieldsMaxLength[prop]) {
           // form prop will be undefined if form does not include element, so using global config
-          if (fieldsMaxLength[prop]) { 
-            maxLength = fieldsMaxLength[prop];
-            sanitized = sanitize(data.value, maxLength);
-          } else if (!fieldsMaxLength[prop] && globalFieldDefault.typeMaxLength[data.type]) {
-            maxLength = globalFieldDefault.typeMaxLength[data.type];
-            sanitized = sanitize(data.value, maxLength);
-          }
+          maxLength = formFieldsMaxLength[prop];
+          sanitized = sanitizeMaxLength(data.value, maxLength);
+        } else {
+          throw error(`Form field "type" for ${prop, data} does not yet have a 
+            sanitization check, discontinue use of this field type until this 
+            has been resolved`);
         }
+        // Sanitize [end]
         // add to object {}
         a[prop] = sanitized;
-        // if 'prop' in templateData whitelist, add to object templateData 
+        // Whitelist check [START] -> if 'prop' in whitelist, add to object templateData 
         if (whitelistTemplateData.templateData.includes(prop)) {
-          // add to object {} prop: templateData object
+          // add to object {} property 'templateData' object
           a.templateData[prop] = sanitized; 
         } 
-
+        // Whitelist check [END]
         return a
       }, { templateData: {} });
 
       return {
-        get: () => {
-          return getProps;
+        set: () => {
+          return setProps;
         }
       }
     })();
     /** [END] Data Validation & Set Props *************************************/
 
-    const propsGet = ({ templateData, urlRedirect, ...key } = propsSet.get()) => ({
+    const propsGet = ({ templateData, urlRedirect, ...key } = propsSet.set()) => ({
       data: {
         appKey: key.appKey, 
         createdDateTime: FieldValue.serverTimestamp(), 
