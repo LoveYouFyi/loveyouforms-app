@@ -115,10 +115,6 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     const appKey = app.id;
     const appInfoObject = app.appInfo;
 
-    // Dynamic Default Form Fields
-    // 1) query array global.formFieldName.defaultFields
-    // 2) if array not empty -> .getAll() array fields from formFieldName
-
     // Global Field Defaults
     const globalFormFieldNameDefaultsRef = await db.collection('global').doc('formFieldName').get();
     const globalFormFieldNameDefaults = globalFormFieldNameDefaultsRef.data().defaults;
@@ -140,7 +136,6 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     console.log("props $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", props);
     
     // formFieldType: get all relevant field types
-    // Return: Array = OKAY!
     const propsFormFieldTypes = Object.entries(props).reduce((a, [key, value]) => {
       if (!a.includes(value['type']) && typeof value['type'] !== 'undefined' ) { 
         a.push(value['type']); 
@@ -157,7 +152,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       db.collection('formFieldType').doc(type));
     // Retrieve selected docs using array of query doc refs
     const formFieldTypeGetAll = await db.getAll(...formFieldTypeRefs);
-    // Return array of docs that exist and have data
+    // Return {} with props containing formFieldTypes
     const formFieldTypes =  formFieldTypeGetAll.reduce((a, doc) => {
       doc.data() && (a[doc.id] = doc.data()); // if doc.data() exists -> push
       return a;
@@ -172,7 +167,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       db.collection('formFieldName').doc(id));
     // Retrieve selected docs using array of query doc refs
     const formFieldNameGetAll = await db.getAll(...formFieldNameRefs);
-    // Return array of docs that exist and have data
+    // Return {} with props containing formFieldTypes
     const formFieldNames =  formFieldNameGetAll.reduce((a, doc) => {
       doc.data() && (a[doc.id] = doc.data()); // if doc.data() exists -> push
       return a;
@@ -195,19 +190,8 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       return a;
     }, {});
     console.log("formFieldsMaxLength ############################## ", formFieldsMaxLength);
-    /* 
-    // field may contain maxLength values to override defaults in global.fieldDefault.typeMaxLength
-    const formFieldsMaxLength = formFieldTypes.reduce((a, doc) => {
-      if (doc.maxLength) {
-        a[doc.id] = doc.maxLength;
-      } 
-      return a;
-    }, {});
-    console.log("fieldsMaxLength ############################## ", formFieldsMaxLength);
-    */
+    
     /** [START] Data Validation & Set Props ***********************************/
-    console.log("props 2 $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", props);
-    console.log("props.templateName.value $$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", props.templateName.value);
     // Whitelist for adding props to submitForm entry's template.data for 'trigger email' extension
     const whitelistTemplateDataRef = await db.collection('formTemplate').doc(props.templateName.value).get();
     const whitelistTemplateData = whitelistTemplateDataRef.data();
@@ -219,7 +203,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 
       // compare database fields with form-submitted props and build object
       const setProps = Object.entries(props).reduce((a, [prop, data]) => {
-        // Sanitize [start]
+        // Sanitize [START]
         let sanitized, maxLength;
         if (appInfoObject.hasOwnProperty(prop)) {
           sanitized = data;
@@ -232,7 +216,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
             sanitization check, discontinue use of this field type until this 
             has been resolved`);
         }
-        // Sanitize [end]
+        // Sanitize [END]
         // add to object {}
         a[prop] = sanitized;
         // Whitelist check [START] -> if 'prop' in whitelist, add to object templateData 
