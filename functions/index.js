@@ -129,39 +129,54 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       a[doc.id] = doc.data();
       return a;
     }, {});
+    console.log("formFieldNameGlobals $$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", formFieldNameGlobals);
 
     const { ...form } = reqBody; // destructure reqBody json object
     console.log("form #################################### ", form);
 
     // Consolidate props (order-matters) last-in overwrites previous 
+    // since ...form does not contain maxLength it gets erased from ...formFieldNameGlobals
     const props = { appKey, ...formFieldNameGlobals, ...form, ...appInfoObject };
     console.log("props $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", props);
     
-    // Unique Prop Types
-    const propsFields = { ...formFieldNameGlobals, ...form }
-    const uniqueFieldTypes = Object.entries(propsFields).reduce((a, [key, value]) => {
+    // formFieldType: get all relevant field types
+//    const propsFormFields = { ...formFieldNameGlobals, ...form };
+//    console.log("propsFormFields ###################################### ", propsFormFields);
+    const propsFormFieldTypes = Object.entries(props).reduce((a, [key, value]) => {
       if (!a.includes(value['type']) && typeof value['type'] !== 'undefined' ) { 
         a.push(value['type']); 
       }
       return a;
     }, []);
-    console.log("uniqueType $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", uniqueFieldTypes); 
+    console.log("propsFormFieldTypes $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", propsFormFieldTypes); 
 
     // Return array of query doc refs for firestore .getAll()
-    const formFieldDocsRefs = Object.keys(props).map(id => 
-      db.collection('formFieldName').doc(id));
+    const formFieldTypeRefs = propsFormFieldTypes.map(type => 
+      db.collection('formFieldType').doc(type));
     // Retrieve selected docs using array of query doc refs
-    const formFieldDocsGetAll = await db.getAll(...formFieldDocsRefs);
+    const formFieldTypeGetAll = await db.getAll(...formFieldTypeRefs);
     // Return array of docs that exist and have data
-    const formFieldDocs =  formFieldDocsGetAll.reduce((a, doc) => {
+    const formFieldTypes =  formFieldTypeGetAll.reduce((a, doc) => {
       doc.data() && a.push({ id: doc.id, ...doc.data() }); // if doc.data() exists -> push
       return a;
     }, []);
-    console.log("formFieldsDocs ####################################### ", formFieldDocs);
+    console.log("formFieldTypes ####################################### ", formFieldTypes);
+ 
+    // Return array of query doc refs for firestore .getAll()
+    const formFieldNameRefs = Object.keys(props).map(id => 
+      db.collection('formFieldName').doc(id));
+    // Retrieve selected docs using array of query doc refs
+    const formFieldNameGetAll = await db.getAll(...formFieldNameRefs);
+    // Return array of docs that exist and have data
+    const formFieldNames =  formFieldNameGetAll.reduce((a, doc) => {
+      doc.data() && a.push({ id: doc.id, ...doc.data() }); // if doc.data() exists -> push
+      return a;
+    }, []);
+    console.log("formFieldNames ####################################### ", formFieldNames);
 
     /** [START] Data Validation & Set Props ***********************************/
     // field may contain maxLength values to override defaults in global.fieldDefault.typeMaxLength
-    const fieldsMaxLength = formFieldDocs.reduce((a, doc) => {
+    const fieldsMaxLength = formFieldTypes.reduce((a, doc) => {
       if (doc.maxLength) {
         a[doc.id] = doc.maxLength;
       } 
