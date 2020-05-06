@@ -144,7 +144,6 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     //   formTemplate/*/fields ---> SEE below formTemplateFields (array)
     //   requiredFormFieldNames ---> SEE below (array)
     //
-    // Step 1 -> Consolidate
 
     const formFieldNameRequiredRef = await db.collection('formFieldName').where('required', '==', true).get();
     const formFieldNameRequired = formFieldNameRequiredRef.docs.reduce((a, doc) => {
@@ -177,7 +176,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 
 
     // formFieldType: get all relevant field types
-    const propsFormFieldTypes = Object.entries(props).reduce((a, [key, value]) => {
+    const propsFormFieldTypes = Object.entries(newProps).reduce((a, [key, value]) => {
       if (!a.includes(value['type']) && typeof value['type'] !== 'undefined' ) { 
         a.push(value['type']); 
       }
@@ -204,7 +203,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     // Return Object: PENDING
     //
     // Return array of query doc refs for firestore .getAll()
-    const formFieldNameRefs = Object.keys(props).map(id => 
+    const formFieldNameRefs = Object.keys(newProps).map(id => 
       db.collection('formFieldName').doc(id));
     // Retrieve selected docs using array of query doc refs
     const formFieldNameGetAll = await db.getAll(...formFieldNameRefs);
@@ -219,7 +218,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     // Return Object: PENDING -> props object with only KEYS and Number indicating Max Length
     //
     // MaxLength Compile
-    const formFieldsMaxLengths = Object.entries(props).reduce((a, [key, value]) => {
+    const formFieldsMaxLengths = Object.entries(newProps).reduce((a, [key, value]) => {
       // set maxLength by formFieldType
       if (formFieldTypes.hasOwnProperty(value.type) && formFieldTypes[value.type].maxLength) {
         a[key] = formFieldTypes[value.type].maxLength;
@@ -239,7 +238,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
         value.toString().trim().substr(0, maxLength);
 
       // compare database fields with form-submitted props and build object
-      const setProps = Object.entries(props).reduce((a, [prop, data]) => {
+      const setProps = Object.entries(newProps).reduce((a, [prop, data]) => {
         // Sanitize [START]
         let sanitized, maxLength;
         if (appInfo.hasOwnProperty(prop)) {
