@@ -168,7 +168,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     // Retrieve selected docs using array of query doc refs
     const formFieldNameGetAll = await db.getAll(...formFieldNameRefs);
     // Return {} with props containing formFieldTypes
-    const formFieldNames =  formFieldNameGetAll.reduce((a, doc) => {
+    const formFieldNames = formFieldNameGetAll.reduce((a, doc) => {
       doc.data() && (a[doc.id] = doc.data()); // if doc.data() exists -> push
       return a;
     }, {});
@@ -179,11 +179,11 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     //
     // MaxLength Compile
     const formFieldsMaxLength = Object.entries(props).reduce((a, [key, value]) => {
-      // apply maxLength by formFieldType
+      // set maxLength by formFieldType
       if (formFieldTypes.hasOwnProperty(value.type) && formFieldTypes[value.type].maxLength) {
         a[key] = formFieldTypes[value.type].maxLength;
       } 
-      // apply maxLength by formFieldName (if exists it overwrites formFieldType)
+      // set maxLength by formFieldName (if exists it overwrites formFieldType)
       if (formFieldNames.hasOwnProperty(key) && formFieldNames[key].maxLength) {
         a[key] = formFieldNames[key].maxLength;
       } 
@@ -236,14 +236,13 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     })();
     /** [END] Data Validation & Set Props *************************************/
 
-    const propsGet = ({ templateData, urlRedirect, ...key } = propsSet.set()) => ({
+    const propsGet = ({ templateData, urlRedirect = false, ...key } = propsSet.set()) => ({
       data: {
         appKey: key.appKey, 
         createdDateTime: FieldValue.serverTimestamp(), 
         from: key.appFrom, 
         toUids: [ key.appKey ], 
         replyTo: templateData.email,
-//        webformId: key.webformId, 
         template: { 
           name: key.templateName, 
           data: templateData
@@ -329,7 +328,6 @@ exports.firestoreToSheets = functions.firestore.document('submitForm/{formId}')
       Object.values({ 
         createdDate,
         createdTime, 
-//        webformId, 
         ...templateDataSorted 
       })
     )];
