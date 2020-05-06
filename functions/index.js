@@ -220,7 +220,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
         // add to object {}
         a[prop] = sanitized;
         // Whitelist check [START] -> if 'prop' in whitelist, add to object templateData 
-        if (whitelistTemplateData.templateData.includes(prop)) {
+        if (whitelistTemplateData.templateField.includes(prop)) {
           // add to object {} property 'templateData' object
           a.templateData[prop] = sanitized; 
         } 
@@ -314,15 +314,21 @@ exports.firestoreToSheets = functions.firestore.document('submitForm/{formId}')
     const createdDate = moment(dateTime).tz(templateData.appTimeZone).format('L');
     const createdTime = moment(dateTime).tz(templateData.appTimeZone).format('h:mm A z');
     // Reduce array formTemplate.templateData, this returns an object that 
-    // is sort-ordered to matach the sheetHeader fields.
-    const templateDataSorted = formTemplate.templateData.reduce((a, c) => {
-      templateData[c] ? a[c] = templateData[c] : a[c] = "";
+    // is sort-ordered to match database sheetHeader fields of array.
+    const templateDataSorted = formTemplate.templateField.reduce((a, fieldName) => {
+      templateData[fieldName] ? a[fieldName] = templateData[fieldName] : a[fieldName] = "";
       return a
     }, {});
     // Merge objects in sort-order and return only values
     // Data-row for sheet requires nested array of strings [ [ 'John Smith', etc ] ]
-    const sheetDataRow = [( Object.values({ createdDate, createdTime, 
-      webformId, ...templateDataSorted }) )];
+    const sheetDataRow = [(
+      Object.values({ 
+        createdDate,
+        createdTime, 
+        webformId, 
+        ...templateDataSorted 
+      })
+    )];
     /** [END] Row Data: Sort & Merge ******************************************/
 
 
