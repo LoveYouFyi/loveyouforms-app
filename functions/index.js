@@ -141,8 +141,14 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     // Fields Allowed
     //   app/*/appInfo ---> SEE above appInfoObject
     //   formTemplate/*/templateField ---> SEE below whitelistTemplateData
-    //   templateName ---> need to hardcode this field
-    //   urlRedirect ---> need to hardcode this field
+    //   formFieldName ---> 'required: true' ---> currently templateName + urlRedirect
+    // .where requires creating firestore index
+    const requiredFormFieldNamesRef = await db.collection('formFieldName').where('required', '==', true).get();
+    const requiredFormFieldNames = requiredFormFieldNamesRef.docs.reduce((a, doc) => {
+      a.push(doc.id);
+      return a;
+    }, []);
+    console.log("requiredFormFieldNames ####################################### ", requiredFormFieldNames);
 
     // Consolidate props (order-matters) last-in overwrites previous 
     // since ...form does not contain maxLength it gets erased from ...formFieldNameGlobals
