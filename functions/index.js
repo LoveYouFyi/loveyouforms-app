@@ -127,8 +127,8 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     }, {});
     console.log("formFieldNameGlobals $$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", formFieldNameGlobals);
 
-    const { ...form } = reqBody; // destructure reqBody json object
-    console.log("form #################################### ", form);
+    const { ...formResults } = reqBody; // destructure reqBody json object
+    console.log("form #################################### ", formResults);
 
     // Allowed Fields
     //
@@ -151,7 +151,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     }, []);
     console.log("requiredFormFieldNames ####################################### ", requiredFormFieldNames);
 
-    const formProps = { ...formFieldNameGlobals, ...form };
+    const formProps = { ...formFieldNameGlobals, ...formResults };
 
     // Whitelist for adding props to submitForm entry's template.data for 'trigger email' extension
     const formTemplateRef = await db.collection('formTemplate').doc(formProps.templateName.value).get();
