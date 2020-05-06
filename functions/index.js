@@ -113,7 +113,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
      */
 
     const appKey = app.id;
-    const appInfoObject = app.appInfo;
+    const appInfo = app.appInfo;
 
     // Global Field Defaults
     const globalFormFieldNameDefaultsRef = await db.collection('global').doc('formFieldName').get();
@@ -139,6 +139,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     //    included in database actions
     //
     // Fields Allowed
+    //   appKey
     //   app/*/appInfo ---> SEE above appInfoObject
     //   formTemplate/*/templateField ---> SEE below whitelistTemplateData
     //   formFieldName ---> 'required: true' ---> currently templateName + urlRedirect
@@ -150,9 +151,16 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     }, []);
     console.log("requiredFormFieldNames ####################################### ", requiredFormFieldNames);
 
+    const formProps = { ...formFieldNameGlobals, ...form };
+
+    // Whitelist for adding props to submitForm entry's template.data for 'trigger email' extension
+    const formTemplateRef = await db.collection('formTemplate').doc(formProps.templateName.value).get();
+    const formTemplateFields = formTemplateRef.data().fields;
+    console.log("formTemplateFields ####################################### ", formTemplateFields);
+
     // Consolidate props (order-matters) last-in overwrites previous 
     // since ...form does not contain maxLength it gets erased from ...formFieldNameGlobals
-    const props = { appKey, ...formFieldNameGlobals, ...form, ...appInfoObject };
+    const props = { appKey, ...formProps, ...appInfo };
     console.log("props $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", props);
     
     // formFieldType: get all relevant field types
@@ -212,10 +220,6 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     console.log("formFieldsMaxLengths ############################## ", formFieldsMaxLengths);
     
     /** [START] Data Validation & Set Props ***********************************/
-    // Whitelist for adding props to submitForm entry's template.data for 'trigger email' extension
-    const whitelistTemplateDataRef = await db.collection('formTemplate').doc(props.templateName.value).get();
-    const whitelistTemplateData = whitelistTemplateDataRef.data();
-
     const propsSet = (() => { 
 
       const sanitizeMaxLength = (value, maxLength) => 
@@ -225,7 +229,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       const setProps = Object.entries(props).reduce((a, [prop, data]) => {
         // Sanitize [START]
         let sanitized, maxLength;
-        if (appInfoObject.hasOwnProperty(prop)) {
+        if (appInfo.hasOwnProperty(prop)) {
           sanitized = data;
         } else if (formFieldsMaxLengths[prop]) {
           // form prop will be undefined if form does not include element, so using global config
@@ -240,7 +244,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
         // add to object {}
         a[prop] = sanitized;
         // Whitelist check [START] -> if 'prop' in whitelist, add to object templateData 
-        if (whitelistTemplateData.templateField.includes(prop)) {
+        if (formTemplateFields.includes(prop)) {
           // add to object {} property 'templateData' object
           a.templateData[prop] = sanitized; 
         } 
@@ -338,7 +342,7 @@ exports.firestoreToSheets = functions.firestore.document('submitForm/{formId}')
     const createdTime = moment(dateTime).tz(app.appInfo.appTimeZone).format('h:mm A z');
     // Reduce array formTemplate.templateData, this returns an object that 
     // is sort-ordered to match database sheetHeader fields of array.
-    const templateDataSorted = formTemplate.templateField.reduce((a, fieldName) => {
+    const templateDataSorted = formTemplate.fields.reduce((a, fieldName) => {
       templateData[fieldName] ? a[fieldName] = templateData[fieldName] : a[fieldName] = "";
       return a
     }, {});
