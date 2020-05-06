@@ -338,13 +338,13 @@ exports.firestoreToSheets = functions.firestore.document('submitForm/{formId}')
     const app = appRef.data();
  
     // Template: two sort-ordered arrays of strings
-    // sheetHeader array is sorted according to desired sheets visual
-    // templateData array is sorted to match the order of sheetHeader
+    // headerRowSheet array is sorted according to desired sheets visual
+    // templateData array is sorted to match the order of headerRowSheet
     const formTemplateRef = await db.collection('formTemplate').doc(templateName).get();
     const formTemplate = formTemplateRef.data();
 
     // Header fields for sheet requires nested array of strings [ [ 'Date', 'Time', etc ] ]
-    const sheetHeader = [( formTemplate.sheetHeader )]; 
+    const headerRowSheet = [( formTemplate.headerRowSheet )]; 
 
     /** [START] Row Data: Sort & Merge ****************************************/
     // Strings to 'prop: value' objects so data to be merged has uniform format
@@ -353,7 +353,7 @@ exports.firestoreToSheets = functions.firestore.document('submitForm/{formId}')
     const createdDate = moment(dateTime).tz(app.appInfo.appTimeZone).format('L');
     const createdTime = moment(dateTime).tz(app.appInfo.appTimeZone).format('h:mm A z');
     // Reduce array formTemplate.templateData, this returns an object that 
-    // is sort-ordered to match database sheetHeader fields of array.
+    // is sort-ordered to match database headerRowSheet fields of array.
     const templateDataSorted = formTemplate.fields.reduce((a, fieldName) => {
       templateData[fieldName] ? a[fieldName] = templateData[fieldName] : a[fieldName] = "";
       return a
@@ -484,7 +484,7 @@ exports.firestoreToSheets = functions.firestore.document('submitForm/{formId}')
       });
 
       // New Sheet Actions: add row header then row data
-      await sheets.spreadsheets.values.update(addRow(rangeHeader)(sheetHeader));
+      await sheets.spreadsheets.values.update(addRow(rangeHeader)(headerRowSheet));
       await sheets.spreadsheets.values.update(addRow(rangeData)(sheetDataRow));
 
     } // end 'else' add new sheet
