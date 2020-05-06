@@ -130,6 +130,20 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     const { ...form } = reqBody; // destructure reqBody json object
     console.log("form #################################### ", form);
 
+    // Allowed Fields
+    //
+    // Remove from 'form' any fields not expected to interact with database because:
+    // 1) prevents errors due to querying docs (formFieldName) using disallowed
+    //    database values; e.g. if html <input> had name="__anything__"
+    // 2) only fields expected to be found in or saved to the database will be 
+    //    included in database actions
+    //
+    // Fields Allowed
+    //   app/*/appInfo ---> SEE above appInfoObject
+    //   formTemplate/*/templateField ---> SEE below whitelistTemplateData
+    //   templateName ---> need to hardcode this field
+    //   urlRedirect ---> need to hardcode this field
+
     // Consolidate props (order-matters) last-in overwrites previous 
     // since ...form does not contain maxLength it gets erased from ...formFieldNameGlobals
     const props = { appKey, ...formFieldNameGlobals, ...form, ...appInfoObject };
@@ -178,7 +192,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     // Return Object: PENDING -> props object with only KEYS and Number indicating Max Length
     //
     // MaxLength Compile
-    const formFieldsMaxLength = Object.entries(props).reduce((a, [key, value]) => {
+    const formFieldsMaxLengths = Object.entries(props).reduce((a, [key, value]) => {
       // set maxLength by formFieldType
       if (formFieldTypes.hasOwnProperty(value.type) && formFieldTypes[value.type].maxLength) {
         a[key] = formFieldTypes[value.type].maxLength;
@@ -189,7 +203,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       } 
       return a;
     }, {});
-    console.log("formFieldsMaxLength ############################## ", formFieldsMaxLength);
+    console.log("formFieldsMaxLengths ############################## ", formFieldsMaxLengths);
     
     /** [START] Data Validation & Set Props ***********************************/
     // Whitelist for adding props to submitForm entry's template.data for 'trigger email' extension
@@ -207,9 +221,9 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
         let sanitized, maxLength;
         if (appInfoObject.hasOwnProperty(prop)) {
           sanitized = data;
-        } else if (formFieldsMaxLength[prop]) {
+        } else if (formFieldsMaxLengths[prop]) {
           // form prop will be undefined if form does not include element, so using global config
-          maxLength = formFieldsMaxLength[prop];
+          maxLength = formFieldsMaxLengths[prop];
           sanitized = sanitizeMaxLength(data.value, maxLength);
         } else {
           throw error(`Form field "type" for ${prop, data} does not yet have a 
