@@ -309,7 +309,7 @@ exports.firestoreToSheets = functions.firestore.document('submitForm/{formId}')
 
     // Form Submission: values from Snapshot.data()
     const { appKey, createdDateTime, template: { data: { ...templateData }, 
-      name: templateName  }, webformId } = snapshot.data();
+      name: templateName  } } = snapshot.data();
 
     // App Doc
     const appRef = await db.collection('app').doc(appKey).get();
