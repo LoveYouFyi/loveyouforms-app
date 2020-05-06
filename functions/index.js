@@ -243,7 +243,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
         from: key.appFrom, 
         toUids: [ key.appKey ], 
         replyTo: templateData.email,
-        webformId: key.webformId, 
+//        webformId: key.webformId, 
         template: { 
           name: key.templateName, 
           data: templateData
@@ -298,6 +298,10 @@ exports.firestoreToSheets = functions.firestore.document('submitForm/{formId}')
     const { appKey, createdDateTime, template: { data: { ...templateData }, 
       name: templateName  }, webformId } = snapshot.data();
 
+    // App Doc
+    const appRef = await db.collection('app').doc(appKey).get();
+    const app = appRef.data();
+ 
     // Template: two sort-ordered arrays of strings
     // sheetHeader array is sorted according to desired sheets visual
     // templateData array is sorted to match the order of sheetHeader
@@ -311,8 +315,8 @@ exports.firestoreToSheets = functions.firestore.document('submitForm/{formId}')
     // Strings to 'prop: value' objects so data to be merged has uniform format
     // timezone 'tz' string defined by momentjs.com/timezone: https://github.com/moment/moment-timezone/blob/develop/data/packed/latest.json
     const dateTime = createdDateTime.toDate(); // toDate() is firebase method
-    const createdDate = moment(dateTime).tz(templateData.appTimeZone).format('L');
-    const createdTime = moment(dateTime).tz(templateData.appTimeZone).format('h:mm A z');
+    const createdDate = moment(dateTime).tz(app.appInfo.appTimeZone).format('L');
+    const createdTime = moment(dateTime).tz(app.appInfo.appTimeZone).format('h:mm A z');
     // Reduce array formTemplate.templateData, this returns an object that 
     // is sort-ordered to match database sheetHeader fields of array.
     const templateDataSorted = formTemplate.templateField.reduce((a, fieldName) => {
@@ -325,7 +329,7 @@ exports.firestoreToSheets = functions.firestore.document('submitForm/{formId}')
       Object.values({ 
         createdDate,
         createdTime, 
-        webformId, 
+//        webformId, 
         ...templateDataSorted 
       })
     )];
@@ -337,8 +341,6 @@ exports.firestoreToSheets = functions.firestore.document('submitForm/{formId}')
     */
 
     // Get app spreadsheetId and sheetId (one spreadsheet with multiple sheets possible)
-    const appRef = await db.collection('app').doc(appKey).get();
-    const app = appRef.data();
     const spreadsheetId = app.spreadsheet.id; // one spreadsheet per app
     const sheetId = app.spreadsheet.sheetId[templateName]; // multiple possible sheets
 
