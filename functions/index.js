@@ -143,6 +143,8 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     //   app/*/appInfo ---> SEE above appInfo (object)
     //   formTemplate/*/fields ---> SEE below formTemplateFields (array)
     //   requiredFormFieldNames ---> SEE below (array)
+    //
+    // Step 1 -> Consolidate
 
     const formFieldNameRequiredRef = await db.collection('formFieldName').where('required', '==', true).get();
     const formFieldNameRequired = formFieldNameRequiredRef.docs.reduce((a, doc) => {
@@ -162,7 +164,18 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     // since ...form does not contain maxLength it gets erased from ...formFieldNameGlobals
     const props = { appKey, ...formProps, ...appInfo };
     console.log("props $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", props);
-    
+   
+    const allowed = [ 'appKey', ...formFieldNameRequired, ...formTemplateFields, ...Object.keys(appInfo) ];
+
+    const newProps = Object.entries(props).reduce((a, [key, value]) => {
+      if (allowed.includes(key)) {
+        a[key] = value; 
+      } 
+      return a;
+    }, {});
+    console.log("newProps ############################## ", newProps);
+
+
     // formFieldType: get all relevant field types
     const propsFormFieldTypes = Object.entries(props).reduce((a, [key, value]) => {
       if (!a.includes(value['type']) && typeof value['type'] !== 'undefined' ) { 
