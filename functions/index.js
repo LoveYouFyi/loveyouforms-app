@@ -140,16 +140,16 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     //
     // Fields Allowed
     //   appKey
-    //   app/*/appInfo ---> SEE above appInfoObject
-    //   formTemplate/*/templateField ---> SEE below whitelistTemplateData
-    //   formFieldName ---> 'required: true' ---> currently templateName + urlRedirect
-    // .where requires creating firestore index
-    const requiredFormFieldNamesRef = await db.collection('formFieldName').where('required', '==', true).get();
-    const requiredFormFieldNames = requiredFormFieldNamesRef.docs.reduce((a, doc) => {
+    //   app/*/appInfo ---> SEE above appInfo (object)
+    //   formTemplate/*/fields ---> SEE below formTemplateFields (array)
+    //   requiredFormFieldNames ---> SEE below (array)
+
+    const formFieldNameRequiredRef = await db.collection('formFieldName').where('required', '==', true).get();
+    const formFieldNameRequired = formFieldNameRequiredRef.docs.reduce((a, doc) => {
       a.push(doc.id);
       return a;
     }, []);
-    console.log("requiredFormFieldNames ####################################### ", requiredFormFieldNames);
+    console.log("formFieldNameRequired ####################################### ", formFieldNameRequired);
 
     const formProps = { ...formFieldNameGlobals, ...formResults };
 
