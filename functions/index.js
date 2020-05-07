@@ -130,21 +130,29 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     const { ...formResults } = reqBody; // destructure reqBody json object
     console.log("form #################################### ", formResults);
 
+    // Form results as props, first apply globals, then results to override globals if found in both
+    const formProps = { ...formFieldNameGlobals, ...formResults };
+
+    // Props consolidate (order-matters) last-in overwrites previous 
+    const props = { appKey, ...formProps, ...appInfo };
+    console.log("props $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", props);
+
     // Allowed Fields
     //
-    // Remove from 'form' any fields not expected to interact with database because:
+    // Remove from 'formResults' any fields not expected to interact with database because:
     // 1) prevents errors due to querying docs (formFieldName) using disallowed
     //    database values; e.g. if html <input> had name="__anything__"
+    //    see firebase doc limits: https://firebase.google.com/docs/firestore/quotas#limits
     // 2) only fields expected to be found in or saved to the database will be 
     //    included in database actions
     //
     // Fields Allowed
-    //   appKey
-    //   app/*/appInfo ---> SEE above appInfo (object)
-    //   formTemplate/*/fields ---> SEE below formTemplateFields (array)
-    //   requiredFormFieldNames ---> SEE below (array)
-    //
+    //   'appKey'
+    //   app/*/appInfo ---> above appInfo (object)
+    //   formTemplate/*/fields ---> below formTemplateFields (array)
+    //   formFieldNames/*/'required' ---> below requiredFormFieldNames (array)
 
+    // Fields required for cloud functions to work
     const formFieldNameRequiredRef = await db.collection('formFieldName').where('required', '==', true).get();
     const formFieldNameRequired = formFieldNameRequiredRef.docs.reduce((a, doc) => {
       a.push(doc.id);
@@ -152,17 +160,10 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     }, []);
     console.log("formFieldNameRequired ####################################### ", formFieldNameRequired);
 
-    const formProps = { ...formFieldNameGlobals, ...formResults };
-
-    // Whitelist for adding props to submitForm entry's template.data for 'trigger email' extension
+    // Form template fields whitelist to add props to submitForm docs template.data used by 'trigger email' extension
     const formTemplateRef = await db.collection('formTemplate').doc(formProps.templateName.value).get();
     const formTemplateFields = formTemplateRef.data().fields;
     console.log("formTemplateFields ####################################### ", formTemplateFields);
-
-    // Consolidate props (order-matters) last-in overwrites previous 
-    // since ...form does not contain maxLength it gets erased from ...formFieldNameGlobals
-    const props = { appKey, ...formProps, ...appInfo };
-    console.log("props $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", props);
    
     const allowed = [ 'appKey', ...formFieldNameRequired, ...formTemplateFields, ...Object.keys(appInfo) ];
 
@@ -173,7 +174,6 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       return a;
     }, {});
     console.log("newProps ############################## ", newProps);
-
 
     // formFieldType: get all relevant field types
     const propsFormFieldTypes = Object.entries(newProps).reduce((a, [key, value]) => {
