@@ -1,6 +1,6 @@
-// Cloud Functions for Firebase SDK to create Cloud Functions and setup triggers.
+// FIREBASE FUNCTIONS SDK: to create Cloud Functions and setup triggers ////////
 const functions = require('firebase-functions');
-// Firebase Admin SDK to access the Firebase/Firestore Realtime Database.
+// FIREBASE ADMIN SDK: to access the firestore (or firebase) database //////////
 const admin = require('firebase-admin');
 // DATABASE CREDENTIALS ////////////////////////////////////////////////////////
 const serviceAccount = require('./service-account.json'); // download from firebase console
@@ -13,7 +13,7 @@ const db = admin.firestore(); // FireStore database reference
 const FieldValue = require('firebase-admin').firestore.FieldValue; // Timestamp here
 const timestampSettings = { timestampsInSnapshots: true}; // Define timestamp settings
 db.settings(timestampSettings); // Apply timestamp settings to database settingsA
-// FUNCTION SUPPORT: for firestoreToSheets (Google Sheets) /////////////////////
+// FUNCTION SUPPORT: for Firestore-to-Sheets function (Google Sheets) //////////
 const moment = require('moment-timezone'); // Timestamp formats and timezones
 const { google } = require('googleapis');
 const sheets = google.sheets('v4'); // Google Sheets
