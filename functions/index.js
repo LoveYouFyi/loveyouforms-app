@@ -4,29 +4,26 @@
 const functions = require('firebase-functions');
 // Firebase Admin SDK to access the Firebase/Firestore Realtime Database.
 const admin = require('firebase-admin');
-/** [START] DATABASE CREDENTIALS ****/
+// DATABASE CREDENTIALS ////////////////////////////////////////////////////////
 const serviceAccount = require('./service-account.json'); // download from firebase console
 admin.initializeApp({ // initialize firebase admin with credentials
   credential: admin.credential.cert(serviceAccount), // So functions can connect to database
   databaseURL: 'https://loveyou-forms.firebaseio.com' // Needed if using FireBase database (not FireStore)
 });
-/** [END] DATABASE CREDENTIALS ****/
 const db = admin.firestore(); // FireStore database reference
-// Timestamps: required for adding server-timestamps to any database docs
+// TIMESTAMPS: for adding server-timestamps to database docs ///////////////////
 const FieldValue = require('firebase-admin').firestore.FieldValue; // Timestamp here
 const timestampSettings = { timestampsInSnapshots: true}; // Define timestamp settings
 db.settings(timestampSettings); // Apply timestamp settings to database settingsA
-/** [IMPORTANT] If not sending data to Google Sheets, omit remaining requirements */
-/** [START] firestoreToSheets Function Support ****/
+// FUNCTION SUPPORT: for firestoreToSheets (Google Sheets) /////////////////////
 const moment = require('moment-timezone'); // Timestamp formats and timezones
 const { google } = require('googleapis');
 const sheets = google.sheets('v4'); // Google Sheets
 const jwtClient = new google.auth.JWT({ // JWT Authentication (for google sheets)
-  email: serviceAccount.client_email, // [**** CREDENTIALS ****]
-  key: serviceAccount.private_key, // [**** CREDENTIALS ****]
+  email: serviceAccount.client_email, // <--- CREDENTIALS
+  key: serviceAccount.private_key, // <--- CREDENTIALS
   scopes: ['https://www.googleapis.com/auth/spreadsheets'] // read and write sheets
 });
-/** [END] firestoreToSheets Function Support ****/
 
 // !SECTION
 
@@ -53,11 +50,11 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 
   try {
 
-    /**
-     *  Check if Authorized App and if Form submit disabled:
-     *  Stop processing if form not submitted by authorized app, or submit disabled
-     */
-    
+    /*--------------------------------------------------------------------------
+      Check if Authorized App and if Form submit disabled:
+      Stop processing if form submitted by unauthorized app, or submit disabled
+    --------------------------------------------------------------------------*/
+
     const formResults = JSON.parse(req.body); // ajax sent as json-string, so must parse
 
     const appRef = await db.collection('app').doc(formResults.appKey.value).get();
@@ -106,16 +103,19 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     }
 
 
-    /**
-     * Fields/Props
-     * Compile fields (app props & form fields) labeled 'props' because they are handled 
-     * as object entries; sanitize; add to structured object; submit to databasea
-     */
+    /*--------------------------------------------------------------------------
+      Props/Fields
+      Compile database props/fields and form fields as 'props' to be handled as
+      object entries; sanitize; add to structured object; submit to database
+    --------------------------------------------------------------------------*/
 
     const appKey = app.id;
     const appInfo = app.appInfo;
 
-    // Global Field Defaults
+    //
+    // Form Field Name Globals: select from db all global fields
+    // Return Object of docs
+    //
     const globalFormFieldNameDefaultsRef = await db.collection('global').doc('formFieldName').get();
     const globalFormFieldNameDefaults = globalFormFieldNameDefaultsRef.data().defaults;
     const formFieldNameGlobalsRefs = globalFormFieldNameDefaults.map(id => 
@@ -127,12 +127,14 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     }, {});
     console.log("formFieldNameGlobals $$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", formFieldNameGlobals);
 
-    // Props consolidate (order-matters) last-in overwrites previous 
+    //
+    // Props All: consolidate available props and fields (order-matters) last-in overwrites previous 
+    //
     const propsAll = { appKey, ...formFieldNameGlobals, ...formResults, ...appInfo };
     console.log("propsAll $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", propsAll);
 
     ////////////////////////////////////////////////////////////////////////////
-    // Props Allowed
+    // Props: reduce to allowed props
     //
     // Remove from 'props' any fields not used for database or code actions because:
     // 1) prevents database errors due to querying docs (formFieldName) using 
@@ -140,11 +142,11 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     //    -->see firebase doc limits: https://firebase.google.com/docs/firestore/quotas#limits
     // 2) only fields used for database or code actions will be included
     //
-    // Fields Allowed
-    //   'appKey'
-    //   app/*/appInfo ---> above appInfo (object)
-    //   formTemplate/*/fields ---> below formTemplateFields (array)
-    //   formFieldNames/*/'required' ---> below requiredFormFieldNames (array)
+    // Props Whitelist: compiled from database
+    // Database Schema
+    //   formFieldName/'all required' --> formFieldNamesRequired
+    //   formTemplate/'templateName'/fields --> formTemplateFields
+    //   app/'appKey'/appInfo.*props --> appInfo
 
     //
     // Form Field Names Required: fields required for cloud function to work
@@ -167,7 +169,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
   
     // Props Whitelist:
     // Array of prop keys allowed for database or code actions (order matters) last-in overwrites previous
-    const propsWhitelist = [ 'appKey', ...formFieldNamesRequired, ...formTemplateFields, ...Object.keys(appInfo) ];
+    const propsWhitelist = [ ...formFieldNamesRequired, ...formTemplateFields, ...Object.keys(appInfo) ];
 
     //
     // Props: entries used for database or code actions
@@ -181,13 +183,18 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     }, {});
     console.log("props ############################## ", props);
     //
-    // End: Props Allowed
+    // [END] Props: reduce to allowed props
     ////////////////////////////////////////////////////////////////////////////
 
+    ////////////////////////////////////////////////////////////////////////////
+    // Sanitizers Props Max Lengths
     //
-    // Props Form Field Types: field types included in props
-    // Return Array of field types
+    // Compile sanitizers for 
     //
+    // Form Field Types: select from db all included in props
+    // Return Object of docs
+    //
+    // Return Array of field types included in props
     const propsFormFieldTypes = Object.values(props).reduce((a, value) => {
       if (!a.includes(value['type']) && typeof value['type'] !== 'undefined' ) { 
         a.push(value['type']); 
@@ -195,11 +202,6 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       return a;
     }, []);
     console.log("propsFormFieldTypes $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", propsFormFieldTypes); 
-
-    //
-    // Form Field Types: select from db all included in props
-    // Return Object of docs
-    //
     // Return array of query doc refs for firestore .getAll()
     const formFieldTypeRefs = propsFormFieldTypes.map(type => 
       db.collection('formFieldType').doc(type));
@@ -244,8 +246,13 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       return a;
     }, {});
     console.log("propssMaxLengths ############################## ", propsMaxLengths);
-    
-    /** [START] Data Validation & Set Props ***********************************/
+    //
+    // [END] Props Max Lengths
+    ////////////////////////////////////////////////////////////////////////////
+
+    ////////////////////////////////////////////////////////////////////////////
+    // Data Sanitize & Set Props
+    //
     const propsSet = (() => { 
 
       const sanitizeMaxLength = (value, maxLength) => 
@@ -284,7 +291,9 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
         }
       }
     })();
-    /** [END] Data Validation & Set Props *************************************/
+    //
+    // [END] Data Sanitize & Set Props
+    ////////////////////////////////////////////////////////////////////////////
 
     const propsGet = ({ templateData, urlRedirect = false, ...key } = propsSet.set()) => ({
       data: {
@@ -306,9 +315,10 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     // update the new-key-record using 'set' which works for existing doc
     newKeyRef.set(propsGet().data)
 
-    /**
-     * Response
-     */
+
+    /*--------------------------------------------------------------------------
+      Response to request
+    --------------------------------------------------------------------------*/
  
     // return response object (even if empty) so client can finish AJAX success
     return res.status(200).send({
