@@ -127,12 +127,6 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     }, {});
     console.log("formFieldNameGlobals $$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", formFieldNameGlobals);
 
-//    const { ...formResults } = reqBody; // destructure reqBody json object
-//    console.log("form #################################### ", formResults);
-
-    // Form results as props, first apply globals, then results to override globals if found in both
-//    const formProps = { ...formFieldNameGlobals, ...formResults };
-
     // Props consolidate (order-matters) last-in overwrites previous 
     const props = { appKey, ...formFieldNameGlobals, ...formResults, ...appInfo };
     console.log("props $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", props);
@@ -165,10 +159,10 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     const formTemplateFields = formTemplateRef.data().fields;
     console.log("formTemplateFields ####################################### ", formTemplateFields);
    
-    const allowed = [ 'appKey', ...formFieldNameRequired, ...formTemplateFields, ...Object.keys(appInfo) ];
+    const allowedFields = [ 'appKey', ...formFieldNameRequired, ...formTemplateFields, ...Object.keys(appInfo) ];
 
     const newProps = Object.entries(props).reduce((a, [key, value]) => {
-      if (allowed.includes(key)) {
+      if (allowedFields.includes(key)) {
         a[key] = value; 
       } 
       return a;
@@ -176,7 +170,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     console.log("newProps ############################## ", newProps);
 
     // formFieldType: get all relevant field types
-    const propsFormFieldTypes = Object.entries(newProps).reduce((a, [key, value]) => {
+    const propsFormFieldTypes = Object.values(newProps).reduce((a, value) => {
       if (!a.includes(value['type']) && typeof value['type'] !== 'undefined' ) { 
         a.push(value['type']); 
       }
@@ -185,7 +179,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     console.log("propsFormFieldTypes $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", propsFormFieldTypes); 
 
     //
-    // Return Object: PENDING
+    // Return Object
     //
     // Return array of query doc refs for firestore .getAll()
     const formFieldTypeRefs = propsFormFieldTypes.map(type => 
@@ -200,14 +194,14 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     console.log("formFieldTypes ####################################### ", formFieldTypes);
  
     //
-    // Return Object: PENDING
+    // Return Object
     //
     // Return array of query doc refs for firestore .getAll()
-    const formFieldNameRefs = Object.keys(newProps).map(id => 
-      db.collection('formFieldName').doc(id));
+    const formFieldNameRefs = Object.keys(newProps).map(key => 
+      db.collection('formFieldName').doc(key));
     // Retrieve selected docs using array of query doc refs
     const formFieldNameGetAll = await db.getAll(...formFieldNameRefs);
-    // Return {} with props containing formFieldTypes
+    // Return {} with props containing formFieldNames
     const formFieldNames = formFieldNameGetAll.reduce((a, doc) => {
       doc.data() && (a[doc.id] = doc.data()); // if doc.data() exists -> push
       return a;
