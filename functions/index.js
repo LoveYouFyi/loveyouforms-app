@@ -128,8 +128,8 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     console.log("formFieldNameGlobals $$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", formFieldNameGlobals);
 
     // Props consolidate (order-matters) last-in overwrites previous 
-    const props = { appKey, ...formFieldNameGlobals, ...formResults, ...appInfo };
-    console.log("props $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", props);
+    const propsAll = { appKey, ...formFieldNameGlobals, ...formResults, ...appInfo };
+    console.log("propsAll $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", propsAll);
 
     // Allowed Fields
     //
@@ -146,7 +146,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     //   formTemplate/*/fields ---> below formTemplateFields (array)
     //   formFieldNames/*/'required' ---> below requiredFormFieldNames (array)
 
-    // Fields required for cloud functions to work
+    // Fields required for cloud function to work
     const formFieldNameRequiredRef = await db.collection('formFieldName').where('required', '==', true).get();
     const formFieldNameRequired = formFieldNameRequiredRef.docs.reduce((a, doc) => {
       a.push(doc.id);
@@ -154,23 +154,25 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     }, []);
     console.log("formFieldNameRequired ####################################### ", formFieldNameRequired);
 
-    // Form template fields whitelist to add props to submitForm docs template.data used by 'trigger email' extension
-    const formTemplateRef = await db.collection('formTemplate').doc(props.templateName.value).get();
+    // Form template fields for submitForm/*/template.data used by 'trigger email' extension
+    const formTemplateRef = await db.collection('formTemplate').doc(propsAll.templateName.value).get();
     const formTemplateFields = formTemplateRef.data().fields;
     console.log("formTemplateFields ####################################### ", formTemplateFields);
-   
-    const allowedFields = [ 'appKey', ...formFieldNameRequired, ...formTemplateFields, ...Object.keys(appInfo) ];
+  
+    // Props Whitelist/allowed (order matters) last-in overwrites previous
+    const propsWhitelist = [ 'appKey', ...formFieldNameRequired, ...formTemplateFields, ...Object.keys(appInfo) ];
 
-    const newProps = Object.entries(props).reduce((a, [key, value]) => {
-      if (allowedFields.includes(key)) {
+    // Props
+    const props = Object.entries(propsAll).reduce((a, [key, value]) => {
+      if (propsWhitelist.includes(key)) {
         a[key] = value; 
       } 
       return a;
     }, {});
-    console.log("newProps ############################## ", newProps);
+    console.log("newProps ############################## ", props);
 
     // formFieldType: get all relevant field types
-    const propsFormFieldTypes = Object.values(newProps).reduce((a, value) => {
+    const propsFormFieldTypes = Object.values(props).reduce((a, value) => {
       if (!a.includes(value['type']) && typeof value['type'] !== 'undefined' ) { 
         a.push(value['type']); 
       }
@@ -179,6 +181,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     console.log("propsFormFieldTypes $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", propsFormFieldTypes); 
 
     //
+    // Form Field Types: select from db all included in props
     // Return Object
     //
     // Return array of query doc refs for firestore .getAll()
@@ -194,10 +197,11 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     console.log("formFieldTypes ####################################### ", formFieldTypes);
  
     //
+    // Form Field Names: select from db all included in props
     // Return Object
     //
     // Return array of query doc refs for firestore .getAll()
-    const formFieldNameRefs = Object.keys(newProps).map(key => 
+    const formFieldNameRefs = Object.keys(props).map(key => 
       db.collection('formFieldName').doc(key));
     // Retrieve selected docs using array of query doc refs
     const formFieldNameGetAll = await db.getAll(...formFieldNameRefs);
@@ -209,10 +213,10 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     console.log("formFieldNames ####################################### ", formFieldNames);
 
     //
-    // Return Object: PENDING -> props object with only KEYS and Number indicating Max Length
+    // Props Max Lengths: assign maxLength first by formFieldType, and if defined by formFieldName
     //
-    // MaxLength Compile
-    const formFieldsMaxLengths = Object.entries(newProps).reduce((a, [key, value]) => {
+    // Return Object: key/number entries for maxLength: e.g. { name: 64, email: 128 }
+    const propsMaxLengths = Object.entries(props).reduce((a, [key, value]) => {
       // set maxLength by formFieldType
       if (formFieldTypes.hasOwnProperty(value.type) && formFieldTypes[value.type].maxLength) {
         a[key] = formFieldTypes[value.type].maxLength;
@@ -223,7 +227,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       } 
       return a;
     }, {});
-    console.log("formFieldsMaxLengths ############################## ", formFieldsMaxLengths);
+    console.log("propssMaxLengths ############################## ", propsMaxLengths);
     
     /** [START] Data Validation & Set Props ***********************************/
     const propsSet = (() => { 
@@ -232,14 +236,14 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
         value.toString().trim().substr(0, maxLength);
 
       // compare database fields with form-submitted props and build object
-      const setProps = Object.entries(newProps).reduce((a, [prop, data]) => {
+      const setProps = Object.entries(props).reduce((a, [prop, data]) => {
         // Sanitize [START]
         let sanitized, maxLength;
         if (appInfo.hasOwnProperty(prop)) {
           sanitized = data;
-        } else if (formFieldsMaxLengths[prop]) {
+        } else if (propsMaxLengths[prop]) {
           // form prop will be undefined if form does not include element, so using global config
-          maxLength = formFieldsMaxLengths[prop];
+          maxLength = propsMaxLengths[prop];
           sanitized = sanitizeMaxLength(data.value, maxLength);
         } else {
           throw error(`Form field "type" for ${prop, data} does not yet have a 
