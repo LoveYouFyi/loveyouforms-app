@@ -11,7 +11,7 @@ admin.initializeApp({ // initialize firebase admin with credentials
 const db = admin.firestore(); // FireStore database reference
 // TIMESTAMPS: for adding server-timestamps to database docs ///////////////////
 const FieldValue = require('firebase-admin').firestore.FieldValue; // Timestamp here
-const timestampSettings = { timestampsInSnapshots: true}; // Define timestamp settings
+const timestampSettings = { timestampsInSnapshots: true }; // Define timestamp settings
 db.settings(timestampSettings); // Apply timestamp settings to database settingsA
 // FUNCTION SUPPORT: for Firestore-to-Sheets function (Google Sheets) //////////
 const moment = require('moment-timezone'); // Timestamp formats and timezones
@@ -511,6 +511,58 @@ exports.firestoreToSheets = functions.firestore.document('submitForm/{formId}')
       await sheets.spreadsheets.values.update(addRow(rangeData)(sheetDataRow));
 
     } // end 'else' add new sheet
+
+  } catch(error) {
+    
+    console.error(logErrorInfo(error));
+
+  } // end catch
+
+});
+
+/*------------------------------------------------------------------------------
+  New 'App' Trigger/Cloud Function: Add default schema
+  When a new 'app' doc is created this adds default schema to it
+------------------------------------------------------------------------------*/
+
+exports.schemaApp = functions.firestore.document('app/{appId}')
+  .onCreate(async (snapshot, context) => {
+
+  try {
+
+    // Schema Default for App
+    const schemaAppRef = await db.collection('global').doc('schemaApp').get();
+    const schemaApp = schemaAppRef.data();
+
+    // Update new app doc with default schema
+    const appRef = db.collection('app').doc(context.params.appId);
+    appRef.set(schemaApp); // update record with 'set' which is for existing doc
+
+  } catch(error) {
+    
+    console.error(logErrorInfo(error));
+
+  } // end catch
+
+});
+
+/*------------------------------------------------------------------------------
+  New 'Form-Template' Trigger/Cloud Function: Add default schema
+  When a new 'formTemplate' doc is created this adds default schema to it
+------------------------------------------------------------------------------*/
+
+exports.schemaFormTemplate = functions.firestore.document('formTemplate/{formTemplateId}')
+  .onCreate(async (snapshot, context) => {
+
+  try {
+
+    // Schema Default for App
+    const schemaFormTemplateRef = await db.collection('global').doc('schemaFormTemplate').get();
+    const schemaFormTemplate = schemaFormTemplateRef.data();
+
+    // Update new app doc with default schema
+    const formTemplateRef = db.collection('formTemplate').doc(context.params.formTemplateId);
+    formTemplateRef.set(schemaFormTemplate); // update record with 'set' which is for existing doc
 
   } catch(error) {
     
