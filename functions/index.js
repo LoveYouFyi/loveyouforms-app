@@ -146,23 +146,31 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     //   formTemplate/*/fields ---> below formTemplateFields (array)
     //   formFieldNames/*/'required' ---> below requiredFormFieldNames (array)
 
-    // Fields required for cloud function to work
-    const formFieldNameRequiredRef = await db.collection('formFieldName').where('required', '==', true).get();
-    const formFieldNameRequired = formFieldNameRequiredRef.docs.reduce((a, doc) => {
+    //
+    // Form Field Names Required: fields required for cloud function to work
+    // Return Array of field names
+    //
+    const formFieldNamesRequiredRef = await db.collection('formFieldName').where('required', '==', true).get();
+    const formFieldNamesRequired = formFieldNamesRequiredRef.docs.reduce((a, doc) => {
       a.push(doc.id);
       return a;
     }, []);
-    console.log("formFieldNameRequired ####################################### ", formFieldNameRequired);
+    console.log("formFieldNamesRequired ####################################### ", formFieldNamesRequired);
 
-    // Form template fields for submitForm/*/template.data used by 'trigger email' extension
+    //
+    // Form Template Fields: array of field names for submitForm/*/template.data used by 'trigger email' extension
+    //
     const formTemplateRef = await db.collection('formTemplate').doc(propsAll.templateName.value).get();
     const formTemplateFields = formTemplateRef.data().fields;
     console.log("formTemplateFields ####################################### ", formTemplateFields);
   
-    // Props Whitelist/allowed (order matters) last-in overwrites previous
-    const propsWhitelist = [ 'appKey', ...formFieldNameRequired, ...formTemplateFields, ...Object.keys(appInfo) ];
+    // Props Whitelist: array of prop keys allowed for database actions (order matters) last-in overwrites previous
+    const propsWhitelist = [ 'appKey', ...formFieldNamesRequired, ...formTemplateFields, ...Object.keys(appInfo) ];
 
-    // Props
+    //
+    // Props: entries allowed for database actions
+    // Return Object entries
+    //
     const props = Object.entries(propsAll).reduce((a, [key, value]) => {
       if (propsWhitelist.includes(key)) {
         a[key] = value; 
@@ -171,7 +179,10 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     }, {});
     console.log("newProps ############################## ", props);
 
-    // formFieldType: get all relevant field types
+    //
+    // Props Form Field Types: field types included in props
+    // Return Array of field types
+    //
     const propsFormFieldTypes = Object.values(props).reduce((a, value) => {
       if (!a.includes(value['type']) && typeof value['type'] !== 'undefined' ) { 
         a.push(value['type']); 
