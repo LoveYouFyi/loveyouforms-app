@@ -131,14 +131,14 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     const propsAll = { appKey, ...formFieldNameGlobals, ...formResults, ...appInfo };
     console.log("propsAll $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", propsAll);
 
-    // Allowed Fields
+    ////////////////////////////////////////////////////////////////////////////
+    // Props Allowed
     //
-    // Remove from 'formResults' any fields not expected to interact with database because:
-    // 1) prevents errors due to querying docs (formFieldName) using disallowed
-    //    database values; e.g. if html <input> had name="__anything__"
-    //    see firebase doc limits: https://firebase.google.com/docs/firestore/quotas#limits
-    // 2) only fields expected to be found in or saved to the database will be 
-    //    included in database actions
+    // Remove from 'props' any fields not used for database or code actions because:
+    // 1) prevents database errors due to querying docs (formFieldName) using 
+    //    disallowed values; e.g. if html <input> had name="__anything__"
+    //    -->see firebase doc limits: https://firebase.google.com/docs/firestore/quotas#limits
+    // 2) only fields used for database or code actions will be included
     //
     // Fields Allowed
     //   'appKey'
@@ -158,18 +158,20 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     console.log("formFieldNamesRequired ####################################### ", formFieldNamesRequired);
 
     //
-    // Form Template Fields: array of field names for submitForm/*/template.data used by 'trigger email' extension
+    // Form Template Fields:
+    // Array of field names for submitForm/*/template.data used by 'trigger email' extension
     //
     const formTemplateRef = await db.collection('formTemplate').doc(propsAll.templateName.value).get();
     const formTemplateFields = formTemplateRef.data().fields;
     console.log("formTemplateFields ####################################### ", formTemplateFields);
   
-    // Props Whitelist: array of prop keys allowed for database actions (order matters) last-in overwrites previous
+    // Props Whitelist:
+    // Array of prop keys allowed for database or code actions (order matters) last-in overwrites previous
     const propsWhitelist = [ 'appKey', ...formFieldNamesRequired, ...formTemplateFields, ...Object.keys(appInfo) ];
 
     //
-    // Props: entries allowed for database actions
-    // Return Object entries
+    // Props: entries used for database or code actions
+    // Return Object
     //
     const props = Object.entries(propsAll).reduce((a, [key, value]) => {
       if (propsWhitelist.includes(key)) {
@@ -177,7 +179,10 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       } 
       return a;
     }, {});
-    console.log("newProps ############################## ", props);
+    console.log("props ############################## ", props);
+    //
+    // End: Props Allowed
+    ////////////////////////////////////////////////////////////////////////////
 
     //
     // Props Form Field Types: field types included in props
@@ -193,7 +198,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 
     //
     // Form Field Types: select from db all included in props
-    // Return Object
+    // Return Object of docs
     //
     // Return array of query doc refs for firestore .getAll()
     const formFieldTypeRefs = propsFormFieldTypes.map(type => 
@@ -209,7 +214,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
  
     //
     // Form Field Names: select from db all included in props
-    // Return Object
+    // Return Object of docs
     //
     // Return array of query doc refs for firestore .getAll()
     const formFieldNameRefs = Object.keys(props).map(key => 
