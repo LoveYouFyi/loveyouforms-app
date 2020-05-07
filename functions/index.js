@@ -1,5 +1,3 @@
-// SECTION Requirements
-
 // Cloud Functions for Firebase SDK to create Cloud Functions and setup triggers.
 const functions = require('firebase-functions');
 // Firebase Admin SDK to access the Firebase/Firestore Realtime Database.
@@ -25,9 +23,10 @@ const jwtClient = new google.auth.JWT({ // JWT Authentication (for google sheets
   scopes: ['https://www.googleapis.com/auth/spreadsheets'] // read and write sheets
 });
 
-// !SECTION
-
-// SECTION Utility Functions
+/*------------------------------------------------------------------------------
+  Utility Functions
+  For use within cloud functions
+------------------------------------------------------------------------------*/
 
 const logErrorInfo = error => ({
   Error: 'Description and source line:',
@@ -37,13 +36,13 @@ const logErrorInfo = error => ({
   info: (new Error()),
 });
 
-// !SECTION
+/*------------------------------------------------------------------------------
+  Form-Handler HTTP Cloud Function
+  Receives data sent by form submission and creates database entry
+  Note: terminate HTTP cloud functions with res.redirect(), res.send(), or res.end()
+  https://firebase.google.com/docs/functions/terminate-functions
+------------------------------------------------------------------------------*/
 
-// Terminate HTTP functions with res.redirect(), res.send(), or res.end().
-// https://firebase.google.com/docs/functions/terminate-functions
-
-
-// ANCHOR Form Handler
 exports.formHandler = functions.https.onRequest(async (req, res) => {
   
   let messages;
@@ -342,8 +341,11 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 
 });
 
+/*------------------------------------------------------------------------------
+  Firestore-to-Sheets Cloud Function
+  Creates new sheet(tab) and row header if required.  Adds data to sheet row.
+------------------------------------------------------------------------------*/
 
-// ANCHOR - Firestore To Sheets [New sheet, header, and data row]
 exports.firestoreToSheets = functions.firestore.document('submitForm/{formId}')
   .onCreate(async (snapshot, context) => {
 
@@ -527,8 +529,11 @@ exports.firestoreToSheets = functions.firestore.document('submitForm/{formId}')
 
 });
 
+/*------------------------------------------------------------------------------
+  Firebase-to-Sheets Cloud Function
+  Basic two column list
+------------------------------------------------------------------------------*/
 
-// ANCHOR Firebase to Sheets [Basic 2 Column List]
 exports.firebaseToSheets = functions.database.ref('/Form')
   .onUpdate(async change => {
 
