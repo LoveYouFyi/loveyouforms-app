@@ -124,13 +124,11 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       a[doc.id] = doc.data();
       return a;
     }, {});
-    console.log("formFieldNameGlobals $$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", formFieldNameGlobals);
 
     //
     // Props All: consolidate available props and fields (order-matters) last-in overwrites previous 
     //
     const propsAll = { appKey, ...formFieldNameGlobals, ...formResults, ...appInfo };
-    console.log("propsAll $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", propsAll);
 
     ////////////////////////////////////////////////////////////////////////////
     // Props: reduce to allowed props
@@ -156,7 +154,6 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       a.push(doc.id);
       return a;
     }, []);
-    console.log("formFieldNamesRequired ####################################### ", formFieldNamesRequired);
 
     //
     // Form Template Fields:
@@ -164,7 +161,6 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     //
     const formTemplateRef = await db.collection('formTemplate').doc(propsAll.templateName.value).get();
     const formTemplateFields = formTemplateRef.data().fields;
-    console.log("formTemplateFields ####################################### ", formTemplateFields);
   
     // Props Whitelist:
     // Array of prop keys allowed for database or code actions (order matters) last-in overwrites previous
@@ -180,7 +176,6 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       } 
       return a;
     }, {});
-    console.log("props ############################## ", props);
     //
     // [END] Props: reduce to allowed props
     ////////////////////////////////////////////////////////////////////////////
@@ -200,7 +195,6 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       }
       return a;
     }, []);
-    console.log("propsFormFieldTypes $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", propsFormFieldTypes); 
     // Return array of query doc refs for firestore .getAll()
     const formFieldTypeRefs = propsFormFieldTypes.map(type => 
       db.collection('formFieldType').doc(type));
@@ -211,7 +205,6 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       doc.data() && (a[doc.id] = doc.data()); // if doc.data() exists -> push
       return a;
     }, {});
-    console.log("formFieldTypes ####################################### ", formFieldTypes);
  
     //
     // Form Field Names: select from db all included in props
@@ -227,7 +220,6 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       doc.data() && (a[doc.id] = doc.data()); // if doc.data() exists -> push
       return a;
     }, {});
-    console.log("formFieldNames ####################################### ", formFieldNames);
 
     //
     // Props Max Lengths: assign maxLength first by formFieldType, and if defined by formFieldName
@@ -244,7 +236,6 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       } 
       return a;
     }, {});
-    console.log("propssMaxLengths ############################## ", propsMaxLengths);
     //
     // [END] Props Max Lengths
     ////////////////////////////////////////////////////////////////////////////
