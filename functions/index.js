@@ -349,9 +349,9 @@ exports.firestoreToSheets = functions.firestore.document('submitForm/{formId}')
 
   try {
 
-    /**
-    * Prepare row data values and sheet header
-    */
+    /*--------------------------------------------------------------------------
+      Prepare row data values and sheet header
+    --------------------------------------------------------------------------*/
 
     // Form Submission: values from Snapshot.data()
     const { appKey, createdDateTime, template: { data: { ...templateData }, 
@@ -370,9 +370,12 @@ exports.firestoreToSheets = functions.firestore.document('submitForm/{formId}')
     // Header fields for sheet requires nested array of strings [ [ 'Date', 'Time', etc ] ]
     const headerRowSheet = [( formTemplate.headerRowSheet )]; 
 
-    /** [START] Row Data: Sort & Merge ****************************************/
+    ////////////////////////////////////////////////////////////////////////////
+    // Row Data: Sort & Merge
+    //
     // Strings to 'prop: value' objects so data to be merged has uniform format
-    // timezone 'tz' string defined by momentjs.com/timezone: https://github.com/moment/moment-timezone/blob/develop/data/packed/latest.json
+    // timezone 'tz' string defined by momentjs.com/timezone:
+    // https://github.com/moment/moment-timezone/blob/develop/data/packed/latest.json
     const dateTime = createdDateTime.toDate(); // toDate() is firebase method
     const createdDate = moment(dateTime).tz(app.appInfo.appTimeZone).format('L');
     const createdTime = moment(dateTime).tz(app.appInfo.appTimeZone).format('h:mm A z');
@@ -391,12 +394,14 @@ exports.firestoreToSheets = functions.firestore.document('submitForm/{formId}')
         ...templateDataSorted 
       })
     )];
-    /** [END] Row Data: Sort & Merge ******************************************/
+    //
+    // [END] Row Data: Sort & Merge
+    ////////////////////////////////////////////////////////////////////////////
 
 
-    /**
-    * Prepare to insert data-row into app spreadsheet
-    */
+    /*--------------------------------------------------------------------------
+      Prepare to insert data-row into app spreadsheet
+    --------------------------------------------------------------------------*/
 
     // Get app spreadsheetId and sheetId (one spreadsheet with multiple sheets possible)
     const spreadsheetId = app.spreadsheet.id; // one spreadsheet per app
@@ -440,9 +445,10 @@ exports.firestoreToSheets = functions.firestore.document('submitForm/{formId}')
       }
     });
 
-    /**
-    * Insert row data into sheet that matches template name
-    */
+
+    /*--------------------------------------------------------------------------
+      Insert row data into sheet that matches template name
+    --------------------------------------------------------------------------*/
 
     // Check if sheet name exists for data insert
     const sheetObjectRequest = () => ({
