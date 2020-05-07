@@ -58,9 +58,9 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
      *  Stop processing if form not submitted by authorized app, or submit disabled
      */
     
-    const reqBody = JSON.parse(req.body); // ajax sent as json-string, so must parse
+    const formResults = JSON.parse(req.body); // ajax sent as json-string, so must parse
 
-    const appRef = await db.collection('app').doc(reqBody.appKey.value).get();
+    const appRef = await db.collection('app').doc(formResults.appKey.value).get();
     const app = appRef.data();
 
     // App key: if exists continue with global and app condition checks
@@ -127,14 +127,14 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     }, {});
     console.log("formFieldNameGlobals $$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", formFieldNameGlobals);
 
-    const { ...formResults } = reqBody; // destructure reqBody json object
-    console.log("form #################################### ", formResults);
+//    const { ...formResults } = reqBody; // destructure reqBody json object
+//    console.log("form #################################### ", formResults);
 
     // Form results as props, first apply globals, then results to override globals if found in both
-    const formProps = { ...formFieldNameGlobals, ...formResults };
+//    const formProps = { ...formFieldNameGlobals, ...formResults };
 
     // Props consolidate (order-matters) last-in overwrites previous 
-    const props = { appKey, ...formProps, ...appInfo };
+    const props = { appKey, ...formFieldNameGlobals, ...formResults, ...appInfo };
     console.log("props $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", props);
 
     // Allowed Fields
@@ -161,7 +161,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     console.log("formFieldNameRequired ####################################### ", formFieldNameRequired);
 
     // Form template fields whitelist to add props to submitForm docs template.data used by 'trigger email' extension
-    const formTemplateRef = await db.collection('formTemplate').doc(formProps.templateName.value).get();
+    const formTemplateRef = await db.collection('formTemplate').doc(props.templateName.value).get();
     const formTemplateFields = formTemplateRef.data().fields;
     console.log("formTemplateFields ####################################### ", formTemplateFields);
    
