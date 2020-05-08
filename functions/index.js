@@ -334,7 +334,12 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 
 /*------------------------------------------------------------------------------
   Firestore-to-Sheets Trigger Cloud Function
+<<<<<<< HEAD
   Creates new sheet(tab) and row header if required.  Adds data to sheet row.
+=======
+  Listend for new 'submitForm' etnries and adds data to google sheets row.
+  Creates new sheet(tab) and row header if required.
+>>>>>>> global-formFieldName-defaults-to-formFieldName
 ------------------------------------------------------------------------------*/
 
 exports.firestoreToSheets = functions.firestore.document('submitForm/{formId}')
