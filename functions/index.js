@@ -333,8 +333,9 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 });
 
 /*------------------------------------------------------------------------------
-  Firestore-to-Sheets Cloud Function
-  Creates new sheet(tab) and row header if required.  Adds data to sheet row.
+  Firestore-to-Sheets Trigger Cloud Function
+  Listend for new 'submitForm' etnries and adds data to google sheets row.
+  Creates new sheet(tab) and row header if required.
 ------------------------------------------------------------------------------*/
 
 exports.firestoreToSheets = functions.firestore.document('submitForm/{formId}')
@@ -521,10 +522,11 @@ exports.firestoreToSheets = functions.firestore.document('submitForm/{formId}')
 });
 
 /*------------------------------------------------------------------------------
-  New 'App' Trigger/Cloud Function: Add default schema
-  When a new 'app' doc is created this adds default schema to it
+  Doc-Schema Trigger Cloud Functions
+  When a new 'doc' is created -> add default fields/schema to it
 ------------------------------------------------------------------------------*/
 
+// New 'App' Trigger Cloud Function: Add default schema
 exports.schemaApp = functions.firestore.document('app/{appId}')
   .onCreate(async (snapshot, context) => {
 
@@ -546,11 +548,7 @@ exports.schemaApp = functions.firestore.document('app/{appId}')
 
 });
 
-/*------------------------------------------------------------------------------
-  New 'Form-Template' Trigger/Cloud Function: Add default schema
-  When a new 'formTemplate' doc is created this adds default schema to it
-------------------------------------------------------------------------------*/
-
+// New 'Form-Template' Trigger Cloud Function: Add default schema
 exports.schemaFormTemplate = functions.firestore.document('formTemplate/{formTemplateId}')
   .onCreate(async (snapshot, context) => {
 
@@ -572,8 +570,9 @@ exports.schemaFormTemplate = functions.firestore.document('formTemplate/{formTem
 
 });
 
+
 /*------------------------------------------------------------------------------
-  Firebase-to-Sheets Cloud Function
+  Firebase-to-Sheets Trigger Cloud Function
   Basic two column list
 ------------------------------------------------------------------------------*/
 
