@@ -112,23 +112,19 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     const appInfo = app.appInfo;
 
     //
-    // Form Field Name Globals: select from db all global fields
+    // Form Field Name Defaults: select from db all formFieldName default fields
     // Return Object of docs
     //
-    const globalFormFieldNameDefaultsRef = await db.collection('global').doc('formFieldName').get();
-    const globalFormFieldNameDefaults = globalFormFieldNameDefaultsRef.data().defaults;
-    const formFieldNameGlobalsRefs = globalFormFieldNameDefaults.map(id => 
-      db.collection('formFieldName').doc(id));
-    const formFieldNameGlobalsGetAll = await db.getAll(...formFieldNameGlobalsRefs);
-    const formFieldNameGlobals = formFieldNameGlobalsGetAll.reduce((a, doc) => {
+    const formFieldNameDefaultsRef = await db.collection('formFieldName').where('default', '==', true).get();
+    const formFieldNameDefaults = formFieldNameDefaultsRef.docs.reduce((a, doc) => {
       a[doc.id] = doc.data();
       return a;
     }, {});
-
+    
     //
     // Props All: consolidate available props and fields (order-matters) last-in overwrites previous 
     //
-    const propsAll = { appKey, ...formFieldNameGlobals, ...formResults, ...appInfo };
+    const propsAll = { appKey, ...formFieldNameDefaults, ...formResults, ...appInfo };
 
     ////////////////////////////////////////////////////////////////////////////
     // Props: reduce to allowed props
@@ -259,9 +255,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
           maxLength = propsMaxLengths[prop];
           sanitized = sanitizeMaxLength(data.value, maxLength);
         } else {
-          throw error(`Form field "type" for ${prop, data} does not yet have a 
-            sanitization check, discontinue use of this field type until this 
-            has been resolved`);
+          throw (`Prop "${prop}" with data ${JSON.stringify(data)} does not yet have a "maxLength" property, discontinue use of this "formFieldName" or "formFieldType" until this has been resolved`);
         }
         // Sanitize [END]
         // add to object {}
