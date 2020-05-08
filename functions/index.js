@@ -334,12 +334,8 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 
 /*------------------------------------------------------------------------------
   Firestore-to-Sheets Trigger Cloud Function
-<<<<<<< HEAD
-  Creates new sheet(tab) and row header if required.  Adds data to sheet row.
-=======
-  Listend for new 'submitForm' etnries and adds data to google sheets row.
+  Listens for new 'submitForm' etnries and adds data to google sheets row.
   Creates new sheet(tab) and row header if required.
->>>>>>> global-formFieldName-defaults-to-formFieldName
 ------------------------------------------------------------------------------*/
 
 exports.firestoreToSheets = functions.firestore.document('submitForm/{formId}')
@@ -527,10 +523,10 @@ exports.firestoreToSheets = functions.firestore.document('submitForm/{formId}')
 
 /*------------------------------------------------------------------------------
   Doc-Schema Trigger Cloud Functions
-  When a new 'doc' is created -> add default fields/schema to it
+  When a new 'doc' is created this adds default fields/schema to it
 ------------------------------------------------------------------------------*/
 
-// New 'App' Trigger Cloud Function: Add default schema
+// New 'app' Trigger Cloud Function: Add default schema
 exports.schemaApp = functions.firestore.document('app/{appId}')
   .onCreate(async (snapshot, context) => {
 
@@ -552,7 +548,7 @@ exports.schemaApp = functions.firestore.document('app/{appId}')
 
 });
 
-// New 'Form-Template' Trigger Cloud Function: Add default schema
+// New 'formTemplate' Trigger Cloud Function: Add default schema
 exports.schemaFormTemplate = functions.firestore.document('formTemplate/{formTemplateId}')
   .onCreate(async (snapshot, context) => {
 
