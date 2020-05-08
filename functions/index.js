@@ -39,7 +39,7 @@ const logErrorInfo = error => ({
 /*------------------------------------------------------------------------------
   Form-Handler HTTP Cloud Function
   Receives data sent by form submission and creates database entry
-  Note: terminate HTTP cloud functions with res.redirect(), res.send(), or res.end()
+  Terminate HTTP cloud functions with res.redirect(), res.send(), or res.end()
   https://firebase.google.com/docs/functions/terminate-functions
 ------------------------------------------------------------------------------*/
 
@@ -334,8 +334,13 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 
 /*------------------------------------------------------------------------------
   Firestore-to-Sheets Trigger Cloud Function
+<<<<<<< HEAD
   Listens for new 'submitForm' etnries and adds data to google sheets row.
   Creates new sheet(tab) and row header if required.
+=======
+  Listens for new 'submitForm' collection docs and adds data to google sheets.
+  If required, creates new sheet(tab) and row header.
+>>>>>>> master
 ------------------------------------------------------------------------------*/
 
 exports.firestoreToSheets = functions.firestore.document('submitForm/{formId}')
@@ -526,7 +531,11 @@ exports.firestoreToSheets = functions.firestore.document('submitForm/{formId}')
   When a new 'doc' is created this adds default fields/schema to it
 ------------------------------------------------------------------------------*/
 
+<<<<<<< HEAD
 // New 'app' Trigger Cloud Function: Add default schema
+=======
+// New 'app' Collection Trigger Cloud Function: Add default schema
+>>>>>>> master
 exports.schemaApp = functions.firestore.document('app/{appId}')
   .onCreate(async (snapshot, context) => {
 
@@ -548,7 +557,11 @@ exports.schemaApp = functions.firestore.document('app/{appId}')
 
 });
 
+<<<<<<< HEAD
 // New 'formTemplate' Trigger Cloud Function: Add default schema
+=======
+// New 'formTemplate' Collection Trigger Cloud Function: Add default schema
+>>>>>>> master
 exports.schemaFormTemplate = functions.firestore.document('formTemplate/{formTemplateId}')
   .onCreate(async (snapshot, context) => {
 
