@@ -63,7 +63,8 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     if (app) {
       const globalAppRef = await db.collection('global').doc('app').get();
       const globalApp = globalAppRef.data();
-      // set messages to globalApp or app-specific
+      // Messages: use global or app-specific messages
+      // global boolean 0/1, if set to 2 bypass global & use app-specific boolean
       if (app.condition.messageGlobal || app.condition.messageGlobal == null) {
         messages = globalApp.message;
       } else {
