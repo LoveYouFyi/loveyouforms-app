@@ -172,6 +172,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       } 
       return a;
     }, {});
+
     //
     // [END] Props: reduce to allowed props
     ////////////////////////////////////////////////////////////////////////////
@@ -201,7 +202,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       doc.data() && (a[doc.id] = doc.data()); // if doc.data() exists -> push
       return a;
     }, {});
- 
+    
     //
     // Form Field Names: select from db all included in props
     // Return Object of docs

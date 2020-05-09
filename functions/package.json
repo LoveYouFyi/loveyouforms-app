@@ -24,7 +24,7 @@
   },
   "dependencies": {
     "firebase-admin": "^8.6.0",
-    "firebase-functions": "^3.3.0",
+    "firebase-functions": "^3.6.1",
     "firestore-export-import": "^0.5.0",
     "fs": "0.0.1-security",
     "googleapis": "^36.0.0",
