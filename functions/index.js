@@ -173,7 +173,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       } 
       return a;
     }, {});
-
+    console.log("props $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", props);
     //
     // [END] Props: reduce to allowed props
     ////////////////////////////////////////////////////////////////////////////
@@ -187,6 +187,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     // Return Object of docs
     //
     // Return Array of field types included in props
+    /*
     const propsFormFieldTypes = Object.values(props).reduce((a, value) => {
       if (!a.includes(value['type']) && typeof value['type'] !== 'undefined' ) { 
         a.push(value['type']); 
@@ -237,37 +238,31 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     //
     // [END] Props Max Lengths
     ////////////////////////////////////////////////////////////////////////////
-
+    */
     ////////////////////////////////////////////////////////////////////////////
     // Data Sanitize & Set Props
     //
-    const propsSet = (() => { 
+    const propsSet = (() => {
 
-      const sanitizeMaxLength = (value, maxLength) => 
-        value.toString().trim().substr(0, maxLength);
+      // const sanitizeMaxLength = (value, maxLength) => 
+        //value.toString().trim().substr(0, maxLength);
 
       // compare database fields with form-submitted props and build object
       const setProps = Object.entries(props).reduce((a, [prop, data]) => {
-        // Sanitize [START]
-        let sanitized, maxLength;
         if (appInfo.hasOwnProperty(prop)) {
-          sanitized = data;
-        } else if (propsMaxLengths[prop]) {
-          // form prop will be undefined if form does not include element, so using global config
-          maxLength = propsMaxLengths[prop];
-          sanitized = sanitizeMaxLength(data.value, maxLength);
+          a[prop] = data;
+          console.log("appInfo: $$$$$$$$$$$$$$$$$$$$$$$$$ ", prop, data);
         } else {
-          throw (`Prop "${prop}" with data ${JSON.stringify(data)} does not yet have a "maxLength" property, discontinue use of this "formFieldName" or "formFieldType" until this has been resolved`);
+          a[prop] = data.value;
+          console.log("all other: $$$$$$$$$$$$$$$$$$$$$$$$$ ", prop, data.value);
         }
-        // Sanitize [END]
-        // add to object {}
-        a[prop] = sanitized;
-        // Whitelist check [START] -> if 'prop' in whitelist, add to object templateData 
-        if (formTemplateFields.includes(prop)) {
-          // add to object {} property 'templateData' object
-          a.templateData[prop] = sanitized; 
-        } 
-        // Whitelist check [END]
+        // Form Template Fields: Whitelist check [START]
+        if (formTemplateFields.includes(prop) && appInfo.hasOwnProperty(prop)) {
+          a.templateData[prop] = data;
+        } else if (formTemplateFields.includes(prop)) {
+          a.templateData[prop] = data.value;
+        }
+        // Form Template Fields: Whitelist check [END]
         return a
       }, { templateData: {} });
 
@@ -280,6 +275,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     //
     // [END] Data Sanitize & Set Props
     ////////////////////////////////////////////////////////////////////////////
+    console.log("propsSet.set() $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", propsSet.set());
 
     const propsGet = ({ templateData, urlRedirect = false, ...key } = propsSet.set()) => ({
       data: {
