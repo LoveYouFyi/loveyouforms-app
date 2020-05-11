@@ -113,11 +113,11 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     const appInfo = app.appInfo;
 
     //
-    // Form Field Name Defaults: select from db all formFieldName default fields
+    // Form Field Name Defaults: select from db all formField default fields
     // Return Object of docs
     //
-    const formFieldNameDefaultsRef = await db.collection('formFieldName').where('default', '==', true).get();
-    const formFieldNameDefaults = formFieldNameDefaultsRef.docs.reduce((a, doc) => {
+    const formFieldsDefaultRef = await db.collection('formField').where('default', '==', true).get();
+    const formFieldsDefault = formFieldsDefaultRef.docs.reduce((a, doc) => {
       a[doc.id] = doc.data();
       return a;
     }, {});
@@ -125,20 +125,20 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     //
     // Props All: consolidate available props and fields (order-matters) last-in overwrites previous 
     //
-    const propsAll = { appKey, ...formFieldNameDefaults, ...formResults, ...appInfo };
+    const propsAll = { appKey, ...formFieldsDefault, ...formResults, ...appInfo };
 
     ////////////////////////////////////////////////////////////////////////////
     // Props Allowed: reduce to allowed props
     //
     // Remove from 'props' any fields not used for database or code actions because:
-    // 1) prevents database errors due to querying docs (formFieldName) using 
+    // 1) prevents database errors due to querying docs (formField) using 
     //    disallowed values; e.g. if html <input> had name="__anything__"
     //    -->see firebase doc limits: https://firebase.google.com/docs/firestore/quotas#limits
     // 2) only fields used for database or code actions will be included
     //
     // Props Whitelist: compiled from database
     // Database Schema
-    //   formFieldName/'all required' --> formFieldNamesRequired
+    //   formField/'all required' --> formFieldsRequired
     //   formTemplate/'templateName'/fields --> formTemplateFields
     //   app/'appKey'/appInfo.*props --> appInfo
 
@@ -146,8 +146,8 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     // Form Field Names Required: fields required for cloud function to work
     // Return Array of field names
     //
-    const formFieldNamesRequiredRef = await db.collection('formFieldName').where('required', '==', true).get();
-    const formFieldNamesRequired = formFieldNamesRequiredRef.docs.reduce((a, doc) => {
+    const formFieldsRequiredRef = await db.collection('formField').where('required', '==', true).get();
+    const formFieldsRequired = formFieldsRequiredRef.docs.reduce((a, doc) => {
       a.push(doc.id);
       return a;
     }, []);
@@ -161,10 +161,10 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
   
     // Props Whitelist:
     // Array of prop keys allowed for database or code actions (order matters) last-in overwrites previous
-    const propsWhitelist = [ ...formFieldNamesRequired, ...formTemplateFields, ...Object.keys(appInfo) ];
+    const propsWhitelist = [ ...formFieldsRequired, ...formTemplateFields, ...Object.keys(appInfo) ];
 
     //
-    // Props: entries used for database or code actions
+    // Props Allowed: entries used for database or code actions
     // Return Object
     //
     const propsAllowed = Object.entries(propsAll).reduce((a, [key, value]) => {
