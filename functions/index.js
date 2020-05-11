@@ -128,7 +128,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     const propsAll = { appKey, ...formFieldNameDefaults, ...formResults, ...appInfo };
 
     ////////////////////////////////////////////////////////////////////////////
-    // Props: reduce to allowed props
+    // Props Allowed: reduce to allowed props
     //
     // Remove from 'props' any fields not used for database or code actions because:
     // 1) prevents database errors due to querying docs (formFieldName) using 
@@ -167,15 +167,14 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     // Props: entries used for database or code actions
     // Return Object
     //
-    const props = Object.entries(propsAll).reduce((a, [key, value]) => {
+    const propsAllowed = Object.entries(propsAll).reduce((a, [key, value]) => {
       if (propsWhitelist.includes(key)) {
         a[key] = value; 
       } 
       return a;
     }, {});
-    console.log("props $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", props);
     //
-    // [END] Props: reduce to allowed props
+    // [END] Props Allowed: reduce to allowed props
     ////////////////////////////////////////////////////////////////////////////
 
    const propsSet = (() => {
@@ -183,13 +182,13 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       const trim = value => value.toString().trim();
 
       // compare database fields with form-submitted props and build object
-      const setProps = Object.entries(props).reduce((a, [prop, data]) => {
+      const parse = propsToParse => Object.entries(propsToParse).reduce((a, [prop, data]) => {
+        // appInfo fields do not have a 'value' property
         if (appInfo.hasOwnProperty(prop)) {
           a[prop] = data;
-          console.log("appInfo: $$$$$$$$$$$$$$$$$$$$$$$$$ ", prop, data);
         } else {
+          // form fields have 'value' property
           a[prop] = trim(data.value);
-          console.log("all other: $$$$$$$$$$$$$$$$$$$$$$$$$ ", prop, data.value);
         }
         // Form Template Fields: Whitelist check [START]
         if (formTemplateFields.includes(prop) && appInfo.hasOwnProperty(prop)) {
@@ -202,17 +201,16 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       }, { templateData: {} });
 
       return {
-        set: () => {
-          return setProps;
+        set: props  => {
+          return parse(props);
         }
       }
     })();
     //
     // [END] Data Sanitize & Set Props
     ////////////////////////////////////////////////////////////////////////////
-    console.log("propsSet.set() $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", propsSet.set());
 
-    const propsGet = ({ templateData, urlRedirect = false, ...key } = propsSet.set()) => ({
+    const propsGet = ({ templateData, urlRedirect = false, ...key } = propsSet.set(propsAllowed)) => ({
       data: {
         appKey: key.appKey, 
         createdDateTime: FieldValue.serverTimestamp(), 
