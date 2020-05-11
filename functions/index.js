@@ -178,74 +178,9 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     // [END] Props: reduce to allowed props
     ////////////////////////////////////////////////////////////////////////////
 
-    ////////////////////////////////////////////////////////////////////////////
-    // Sanitizers Props Max Lengths
-    //
-    // Compile sanitizers for 
-    //
-    // Form Field Types: select from db all included in props
-    // Return Object of docs
-    //
-    // Return Array of field types included in props
-    /*
-    const propsFormFieldTypes = Object.values(props).reduce((a, value) => {
-      if (!a.includes(value['type']) && typeof value['type'] !== 'undefined' ) { 
-        a.push(value['type']); 
-      }
-      return a;
-    }, []);
-    // Return array of query doc refs for firestore .getAll()
-    const formFieldTypeRefs = propsFormFieldTypes.map(type => 
-      db.collection('formFieldType').doc(type));
-    // Retrieve selected docs using array of query doc refs
-    const formFieldTypeGetAll = await db.getAll(...formFieldTypeRefs);
-    // Return {} with props containing formFieldTypes
-    const formFieldTypes =  formFieldTypeGetAll.reduce((a, doc) => {
-      doc.data() && (a[doc.id] = doc.data()); // if doc.data() exists -> push
-      return a;
-    }, {});
-    
-    //
-    // Form Field Names: select from db all included in props
-    // Return Object of docs
-    //
-    // Return array of query doc refs for firestore .getAll()
-    const formFieldNameRefs = Object.keys(props).map(key => 
-      db.collection('formFieldName').doc(key));
-    // Retrieve selected docs using array of query doc refs
-    const formFieldNameGetAll = await db.getAll(...formFieldNameRefs);
-    // Return {} with props containing formFieldNames
-    const formFieldNames = formFieldNameGetAll.reduce((a, doc) => {
-      doc.data() && (a[doc.id] = doc.data()); // if doc.data() exists -> push
-      return a;
-    }, {});
+   const propsSet = (() => {
 
-    //
-    // Props Max Lengths: assign maxLength first by formFieldType, and if defined by formFieldName
-    //
-    // Return Object: key/number entries for maxLength: e.g. { name: 64, email: 128 }
-    const propsMaxLengths = Object.entries(props).reduce((a, [key, value]) => {
-      // set maxLength by formFieldType
-      if (formFieldTypes.hasOwnProperty(value.type) && formFieldTypes[value.type].maxLength) {
-        a[key] = formFieldTypes[value.type].maxLength;
-      } 
-      // set maxLength by formFieldName (if exists it overwrites formFieldType)
-      if (formFieldNames.hasOwnProperty(key) && formFieldNames[key].maxLength) {
-        a[key] = formFieldNames[key].maxLength;
-      } 
-      return a;
-    }, {});
-    //
-    // [END] Props Max Lengths
-    ////////////////////////////////////////////////////////////////////////////
-    */
-    ////////////////////////////////////////////////////////////////////////////
-    // Data Sanitize & Set Props
-    //
-    const propsSet = (() => {
-
-      // const sanitizeMaxLength = (value, maxLength) => 
-        //value.toString().trim().substr(0, maxLength);
+      const trim = value => value.toString().trim();
 
       // compare database fields with form-submitted props and build object
       const setProps = Object.entries(props).reduce((a, [prop, data]) => {
@@ -253,14 +188,14 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
           a[prop] = data;
           console.log("appInfo: $$$$$$$$$$$$$$$$$$$$$$$$$ ", prop, data);
         } else {
-          a[prop] = data.value;
+          a[prop] = trim(data.value);
           console.log("all other: $$$$$$$$$$$$$$$$$$$$$$$$$ ", prop, data.value);
         }
         // Form Template Fields: Whitelist check [START]
         if (formTemplateFields.includes(prop) && appInfo.hasOwnProperty(prop)) {
           a.templateData[prop] = data;
         } else if (formTemplateFields.includes(prop)) {
-          a.templateData[prop] = data.value;
+          a.templateData[prop] = trim(data.value);
         }
         // Form Template Fields: Whitelist check [END]
         return a
