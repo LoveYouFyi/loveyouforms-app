@@ -1,19 +1,19 @@
-// FIREBASE FUNCTIONS SDK: to create Cloud Functions and setup triggers ////////
+// FIREBASE FUNCTIONS SDK: to create Cloud Functions and setup triggers
 const functions = require('firebase-functions');
-// FIREBASE ADMIN SDK: to access the firestore (or firebase) database //////////
+// FIREBASE ADMIN SDK: to access the firestore (or firebase) database
 const admin = require('firebase-admin');
-// DATABASE CREDENTIALS ////////////////////////////////////////////////////////
+// DATABASE CREDENTIALS: so cloud functions can authenticate with the database
 const serviceAccount = require('./service-account.json'); // download from firebase console
 admin.initializeApp({ // initialize firebase admin with credentials
   credential: admin.credential.cert(serviceAccount), // So functions can connect to database
   databaseURL: 'https://loveyou-forms.firebaseio.com' // Needed if using FireBase database (not FireStore)
 });
 const db = admin.firestore(); // FireStore database reference
-// TIMESTAMPS: for adding server-timestamps to database docs ///////////////////
+// TIMESTAMPS: for adding server-timestamps to database docs
 const FieldValue = require('firebase-admin').firestore.FieldValue; // Timestamp here
 const timestampSettings = { timestampsInSnapshots: true }; // Define timestamp settings
 db.settings(timestampSettings); // Apply timestamp settings to database settingsA
-// FUNCTION SUPPORT: for Firestore-to-Sheets function (Google Sheets) //////////
+// FUNCTION SUPPORT: for Firestore-to-Sheets function (Google Sheets)
 const moment = require('moment-timezone'); // Timestamp formats and timezones
 const { google } = require('googleapis');
 const sheets = google.sheets('v4'); // Google Sheets
@@ -25,7 +25,7 @@ const jwtClient = new google.auth.JWT({ // JWT Authentication (for google sheets
 
 /*------------------------------------------------------------------------------
   Utility Functions
-  For use within cloud functions
+  For use by cloud functions
 ------------------------------------------------------------------------------*/
 
 const logErrorInfo = error => ({
