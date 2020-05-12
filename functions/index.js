@@ -86,7 +86,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
         res.setHeader('Access-Control-Allow-Origin', app.appInfo.appUrl);
         // end processing if url does not match (req.headers.origin = url)
         if (req.headers.origin !== app.appInfo.appUrl) { 
-          console.warn('Origin Url does not match app url.');
+          console.warn('CORS Access Control: Origin Url does not match App Url.');
           // no error response sent because submit not from approved app
           return res.end();
         }
@@ -101,7 +101,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
         ) {
         console.warn(`Form submit disabled for app "${app.appInfo.appName}"`);
         // return error response because submit is from approved app
-        throw (globalApp.message.error.text);
+        throw (messages.error.text);
       }
     } else {
       console.warn('App Key does not exist.');
