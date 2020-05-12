@@ -44,17 +44,24 @@ const logErrorInfo = error => ({
 ------------------------------------------------------------------------------*/
 
 exports.formHandler = functions.https.onRequest(async (req, res) => {
-  
+
   let messages;
 
   try {
 
     /*--------------------------------------------------------------------------
-      Check if Authorized App and if Form submit disabled:
-      Stop processing if form submitted by unauthorized app, or submit disabled
+      Check: Request content-type, if Authorized app, if Form submit disabled:
+      Stop processing if checks fail
     --------------------------------------------------------------------------*/
-
-    const formResults = JSON.parse(req.body); // ajax sent as json-string, so must parse
+   
+    // Request Content-Type: stop processing if content type is not 'text/plain'
+    const contentType = req.headers['content-type'];
+    if (typeof contentType === 'undefined' || contentType.toLowerCase() !== 'text/plain') {
+      console.warn(`Request header 'content-type' must be 'text/plain'`);
+      return res.end();
+    }
+    
+    const formResults = JSON.parse(req.body); // ajax sent as json-text-string, so must parse
 
     const appRef = await db.collection('app').doc(formResults.appKey.value).get();
     const app = appRef.data();
@@ -76,28 +83,28 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
           || (globalApp.condition.corsBypass === 2 && !app.condition.corsBypass)
         ) {
         // restrict to url requests that match the app
-        res.set('Access-Control-Allow-Origin', app.appInfo.appUrl);
+        res.setHeader('Access-Control-Allow-Origin', app.appInfo.appUrl);
         // end processing if url does not match (req.headers.origin = url)
         if (req.headers.origin !== app.appInfo.appUrl) { 
-          console.info(new Error('Origin Url does not match app url.'));
+          console.warn('Origin Url does not match app url.');
           // no error response sent because submit not from approved app
           return res.end();
         }
       } else {
         // allow * so localhost (or any source) recieves response
-        res.set('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Origin', '*');
       }
       // Form Submit Enabled/Disabled: stop cloud function if submitForm disabled
       // global boolean 0/1, if set to 2 bypass global & use app-specific boolean
       if (!globalApp.condition.submitForm
           || (globalApp.condition.submitForm === 2 && !app.condition.submitForm)
         ) {
-        console.info(new Error(`Form submit disabled for app "${app.appInfo.appName}"`));
+        console.warn(`Form submit disabled for app "${app.appInfo.appName}"`);
         // return error response because submit is from approved app
         throw (globalApp.message.error.text);
       }
     } else {
-      console.info(new Error('App Key does not exist.'));
+      console.warn('App Key does not exist.');
       // no error response sent because submit not from approved app
       return res.end();
     }
