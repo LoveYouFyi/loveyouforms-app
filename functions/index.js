@@ -258,12 +258,12 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       urlRedirect: urlRedirect
     });
 
-    // Akismet Check form spam
+    // Akismet Check form data for spam
     const checkData = {
       ip: req.ip,
       useragent: req.headers['user-agent'],
-      name: propsGet().data.template.data.name,
-      email: propsGet().data.template.data.email
+      ...propsGet().data.template.data.name && { name: propsGet().data.template.data.name },
+      ...propsGet().data.template.data.email && { email: propsGet().data.template.data.email }
     }
     console.log("checkData ???????????????????????????????? ", checkData);
 
