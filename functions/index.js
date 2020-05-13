@@ -50,25 +50,7 @@ const logErrorInfo = error => ({
 
 exports.formHandler = functions.https.onRequest(async (req, res) => {
 
-  /*--------------------------------------------------------------------------
-    Akismet
-  --------------------------------------------------------------------------*/
   console.log("req.headers $$$$$$$$$$$$$$$$$$$$$$$$$$$ ", req.headers);
-
-  // Akismet Validate API Key
-  try {
-    const isValid = await client.verifyKey();
-    console.log('isValid $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ');
-    if (isValid) {
-      console.log('Valid key !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
-    } else {
-      console.log('Invalid key !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
-    }
-  } catch (err) {
-    console.error('Could not reach Akismet !!!!!!!!!!!!!!!!!!!!!!!!!!!!! ', err.message)
-  }
-
-
 
   let messages;
 
@@ -133,7 +115,6 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       // no error response sent because submit not from approved app
       return res.end();
     }
-
     
 
     /*--------------------------------------------------------------------------
@@ -258,22 +239,42 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       urlRedirect: urlRedirect
     });
 
-    // Akismet Check form data for spam
-    const checkData = {
-      ip: req.ip,
-      useragent: req.headers['user-agent'],
-      ...propsGet().data.template.data.name && { name: propsGet().data.template.data.name },
-      ...propsGet().data.template.data.email && { email: propsGet().data.template.data.email }
-    }
-    console.log("checkData ???????????????????????????????? ", checkData);
 
-    const isSpam = await client.checkSpam(checkData)
-    console.log('isSpam @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@', isSpam);
+    /*--------------------------------------------------------------------------
+      Akismet
+    --------------------------------------------------------------------------*/
 
-    if (isSpam) {
-      console.log('OMG Spam @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@');
-    } else {
-      console.log('Totally not spam');
+    try {
+      // Akismet Check form data for spam
+      const testData = {
+        ...req.ip && { ip: req.ip },
+        ...req.headers['user-agent'] && { useragent: req.headers['user-agent'] },
+        ...propsGet().data.template.data.name && { name: propsGet().data.template.data.name },
+        ...propsGet().data.template.data.email && { email: propsGet().data.template.data.email }
+      }
+      console.log("testData ???????????????????????????????? ", testData);
+
+      // Test if data is spam -> a successful test returns boolean
+      const isSpam = await client.checkSpam(testData);
+      if (typeof isSpam === 'boolean' && isSpam) {
+        console.info('OMG Spam @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@');
+      } else if (typeof isSpam === 'boolean' && !isSpam) {
+        console.info('Totally not spam');
+      }
+
+    } catch(err) {
+
+      // Validate API Key
+      const isValid = await client.verifyKey();
+      if (isValid) {
+        console.info('Akismet: API key is valid');
+      } else if (!isValid) {
+        console.warn('Akismet: Invalid API key');
+      }
+
+      // if api key is valid -> error likely due to fail of client.checkSpam()
+      console.error("Akismet ", err);
+
     }
 
 
