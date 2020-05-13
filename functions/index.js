@@ -199,7 +199,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       const parse = propsToParse => Object.entries(propsToParse).reduce((a, [prop, data]) => {
         // appInfo fields do not have a 'value' property
         if (appInfo.hasOwnProperty(prop)) {
-          a[prop] = data;
+          a[prop] = trim(data);
         } else {
           // form fields have 'value' property
           a[prop] = trim(data.value);
@@ -212,10 +212,10 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
         }
         // Form Template Fields: Whitelist check [END]
         return a
-      }, { templateData: {} });
+      }, { templateData: {}, akismetData: {} });
 
       return {
-        set: props  => {
+        set: props => {
           return parse(props);
         }
       }
@@ -245,6 +245,14 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     --------------------------------------------------------------------------*/
 
     try {
+
+      const fieldsAkismetContent = formTemplateRef.data().fieldsAkismetContent;
+      const akismetContent = fieldsAkismetContent.reduce((a, field) => {
+        console.log("reduce me $$$$$$$$$$$$$$$$$$$$ ", field, propsGet().data.template.data[field] );
+        return a + propsGet().data.template.data[field] + ". ";
+      }, '');
+      console.log("akismetContent $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", akismetContent);
+
       // Akismet Check form data for spam
       const testData = {
         ...req.ip && { ip: req.ip },
