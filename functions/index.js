@@ -22,6 +22,11 @@ const jwtClient = new google.auth.JWT({ // JWT Authentication (for google sheets
   key: serviceAccount.private_key, // <--- CREDENTIALS
   scopes: ['https://www.googleapis.com/auth/spreadsheets'] // read and write sheets
 });
+// AKISMET
+const { AkismetClient } = require('akismet-api/lib/akismet.js'); // not sure why needed to hardcode path
+const key = '5c73ad452f54'
+const blog = 'https://lyfdev.web.app'
+const client = new AkismetClient({ key, blog })
 
 /*------------------------------------------------------------------------------
   Utility Functions
@@ -44,6 +49,23 @@ const logErrorInfo = error => ({
 ------------------------------------------------------------------------------*/
 
 exports.formHandler = functions.https.onRequest(async (req, res) => {
+
+  /*--------------------------------------------------------------------------
+    Akismet
+  --------------------------------------------------------------------------*/
+  try {
+    const isValid = await client.verifyKey();
+    console.log('isValid $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ');
+
+    if (isValid) {
+      console.log('Valid key !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
+    } else {
+      console.log('Invalid key !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
+    }
+  } catch (err) {
+    console.error('Could not reach Akismet !!!!!!!!!!!!!!!!!!!!!!!!!!!!! ', err.message)
+  }
+
 
   let messages;
 
@@ -109,6 +131,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       return res.end();
     }
 
+    
 
     /*--------------------------------------------------------------------------
       Props/Fields
