@@ -53,10 +53,12 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
   /*--------------------------------------------------------------------------
     Akismet
   --------------------------------------------------------------------------*/
+  console.log("req.headers $$$$$$$$$$$$$$$$$$$$$$$$$$$ ", req.headers);
+
+  // Akismet Validate API Key
   try {
     const isValid = await client.verifyKey();
     console.log('isValid $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ');
-
     if (isValid) {
       console.log('Valid key !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
     } else {
@@ -65,6 +67,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
   } catch (err) {
     console.error('Could not reach Akismet !!!!!!!!!!!!!!!!!!!!!!!!!!!!! ', err.message)
   }
+
 
 
   let messages;
@@ -254,6 +257,25 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       },
       urlRedirect: urlRedirect
     });
+
+    // Akismet Check form spam
+    const checkData = {
+      ip: req.ip,
+      useragent: req.headers['user-agent'],
+      name: propsGet().data.template.data.name,
+      email: propsGet().data.template.data.email
+    }
+    console.log("checkData ???????????????????????????????? ", checkData);
+
+    const isSpam = await client.checkSpam(checkData)
+    console.log('isSpam @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@', isSpam);
+
+    if (isSpam) {
+      console.log('OMG Spam @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@');
+    } else {
+      console.log('Totally not spam');
+    }
+
 
     // For serverTimestamp to work must first create new doc key then 'set' data
     const newKeyRef = db.collection('submitForm').doc();
