@@ -238,7 +238,10 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       },
       urlRedirect: urlRedirect
     });
-
+    
+    // Get data here so Akismet statement can update it if data is spam
+    const submitFormData = propsGet().data;
+    console.log("submitFormData 1111111111111111111111111111 ", submitFormData);
 
     /*--------------------------------------------------------------------------
       Akismet Spam Check
@@ -280,7 +283,10 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       // Test if data is spam -> a successful test returns boolean
       const isSpam = await client.checkSpam(testData);
       if (typeof isSpam === 'boolean' && isSpam) {
-        console.info('Akismet: OMG Spam @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@');
+        console.info('Akismet: OMG Spam @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@');
+        // delete submitFormData.toUids;
+        submitFormData.toUids = [ "SPAM_DO_NOT_SEND" ];
+
       } else if (typeof isSpam === 'boolean' && !isSpam) {
         console.info('Akismet: Totally not spam');
       }
@@ -300,11 +306,13 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 
     }
 
+    console.log("submitFormData 2222222222222222222222222222 ", submitFormData);
+
 
     // For serverTimestamp to work must first create new doc key then 'set' data
     const newKeyRef = db.collection('submitForm').doc();
     // update the new-key-record using 'set' which works for existing doc
-    newKeyRef.set(propsGet().data)
+    newKeyRef.set(submitFormData)
 
 
     /*--------------------------------------------------------------------------
