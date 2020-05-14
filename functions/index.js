@@ -245,40 +245,34 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     --------------------------------------------------------------------------*/
 
     try {
-      
-      // String for akismet 'content' field. Ternary check...
-      const formTemplateFieldsAkismetContent =
+
+      // Ternary with reduce
+      // returns either 'content' fields as string, or 'other' props as {}
+      const formTemplateFieldsAkismet = array => accumulatorType =>
         // does data/array exist, and if so does it have length > 0
-        formTemplateRef.data().fieldsAkismet.content
-          && formTemplateRef.data().fieldsAkismet.content.length > 0
-        // If true, combine corresponding 'prop' values as string
-        ? (formTemplateRef.data().fieldsAkismet.content.reduce((a, field) => {
-          return a + propsGet().data.template.data[field] + " ";
-        }, ''))
-        // if false -> null prevents this from being added to object
+        formTemplateRef.data().fieldsAkismet[array]
+          && formTemplateRef.data().fieldsAkismet[array].length > 0
+        // if exists then reduce
+        ? (formTemplateRef.data().fieldsAkismet[array].reduce((a, field) => {
+          if (array === 'content') {
+            return a + propsGet().data.template.data[field] + " ";
+          } else if (array === 'other') {
+            a[field] = propsGet().data.template.data[field];
+            return a;
+          }
+        }, accumulatorType))
+        // null prevents from being added to object
         : null;
 
-      const formTemplateFieldsAkismetOther =
-      // does data/array exist, and if so does it have length > 0
-        formTemplateRef.data().fieldsAkismet.other
-          && formTemplateRef.data().fieldsAkismet.other.length > 0
-      // If true, combine corresponding 'prop' values as string
-      ? (formTemplateRef.data().fieldsAkismet.other.reduce((a, field) => {
-        a[field] = propsGet().data.template.data[field];
-        return a;
-      }, {}))
-      // if false -> null prevents this from being added to object
-      : null;
-
-      console.log("formTemplateFieldsAkismetContent  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", formTemplateFieldsAkismetContent);
-      console.log("formTemplateFieldsAkismetOther  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", formTemplateFieldsAkismetOther);
+      console.log("formTemplateFieldsAkismet content ", formTemplateFieldsAkismet('content')(''));
+      console.log("formTemplateFieldsAkismet other ", formTemplateFieldsAkismet('other')({}));
 
       // Data to check for spam
       const testData = {
         ...req.ip && { ip: req.ip },
         ...req.headers['user-agent'] && { useragent: req.headers['user-agent'] },
-        ...formTemplateFieldsAkismetContent && { content: formTemplateFieldsAkismetContent },
-        ...formTemplateFieldsAkismetOther
+        ...formTemplateFieldsAkismet('content')('') && { content: formTemplateFieldsAkismet('content')('') },
+        ...formTemplateFieldsAkismet('other')({})
       }
       console.log("testData ???????????????????????????????? ", testData);
 
