@@ -241,11 +241,12 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 
 
     /*--------------------------------------------------------------------------
-      Akismet
+      Akismet Spam Check
+      Minimally checks IP Address and User Agent
+      Also checks fields defined as 'content' and 'other' based on config
     --------------------------------------------------------------------------*/
 
     try {
-
       // Ternary with reduce
       // returns either 'content' fields as string, or 'other' props as {}
       const formTemplateFieldsAkismet = array => accumulatorType =>
