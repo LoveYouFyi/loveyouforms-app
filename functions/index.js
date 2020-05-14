@@ -212,7 +212,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
         }
         // Form Template Fields: Whitelist check [END]
         return a
-      }, { templateData: {}, akismetData: {} });
+      }, { templateData: {} });
 
       return {
         set: props => {
@@ -245,26 +245,40 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     --------------------------------------------------------------------------*/
 
     try {
+      
       // String for akismet 'content' field. Ternary check...
-      const akismetContent = 
+      const formTemplateFieldsAkismetContent =
         // does data/array exist, and if so does it have length > 0
-        formTemplateRef.data().fieldsAkismetContent 
-          && formTemplateRef.data().fieldsAkismetContent.length > 0
+        formTemplateRef.data().fieldsAkismet.content
+          && formTemplateRef.data().fieldsAkismet.content.length > 0
         // If true, combine corresponding 'prop' values as string
-        ? (formTemplateRef.data().fieldsAkismetContent.reduce((a, field) => {
+        ? (formTemplateRef.data().fieldsAkismet.content.reduce((a, field) => {
           return a + propsGet().data.template.data[field] + " ";
         }, ''))
         // if false -> null prevents this from being added to object
         : null;
-      console.log("akismetContent $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", akismetContent);
+
+      const formTemplateFieldsAkismetOther =
+      // does data/array exist, and if so does it have length > 0
+        formTemplateRef.data().fieldsAkismet.other
+          && formTemplateRef.data().fieldsAkismet.other.length > 0
+      // If true, combine corresponding 'prop' values as string
+      ? (formTemplateRef.data().fieldsAkismet.other.reduce((a, field) => {
+        a[field] = propsGet().data.template.data[field];
+        return a;
+      }, {}))
+      // if false -> null prevents this from being added to object
+      : null;
+
+      console.log("formTemplateFieldsAkismetContent  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", formTemplateFieldsAkismetContent);
+      console.log("formTemplateFieldsAkismetOther  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", formTemplateFieldsAkismetOther);
 
       // Data to check for spam
       const testData = {
         ...req.ip && { ip: req.ip },
         ...req.headers['user-agent'] && { useragent: req.headers['user-agent'] },
-        ...propsGet().data.template.data.name && { name: propsGet().data.template.data.name },
-        ...propsGet().data.template.data.email && { email: propsGet().data.template.data.email },
-        ...akismetContent && { content: akismetContent }
+        ...formTemplateFieldsAkismetContent && { content: formTemplateFieldsAkismetContent },
+        ...formTemplateFieldsAkismetOther
       }
       console.log("testData ???????????????????????????????? ", testData);
 
