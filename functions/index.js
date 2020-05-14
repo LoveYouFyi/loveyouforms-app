@@ -245,29 +245,35 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     --------------------------------------------------------------------------*/
 
     try {
-
-      const fieldsAkismetContent = formTemplateRef.data().fieldsAkismetContent;
-      const akismetContent = fieldsAkismetContent.reduce((a, field) => {
-        console.log("reduce me $$$$$$$$$$$$$$$$$$$$ ", field, propsGet().data.template.data[field] );
-        return a + propsGet().data.template.data[field] + ". ";
-      }, '');
+      // String for akismet 'content' field. Ternary check...
+      const akismetContent = 
+        // does data/array exist, and if so does it have length > 0
+        formTemplateRef.data().fieldsAkismetContent 
+          && formTemplateRef.data().fieldsAkismetContent.length > 0
+        // If true, combine corresponding 'prop' values as string
+        ? (formTemplateRef.data().fieldsAkismetContent.reduce((a, field) => {
+          return a + propsGet().data.template.data[field] + " ";
+        }, ''))
+        // if false -> null prevents this from being added to object
+        : null;
       console.log("akismetContent $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", akismetContent);
 
-      // Akismet Check form data for spam
+      // Data to check for spam
       const testData = {
         ...req.ip && { ip: req.ip },
         ...req.headers['user-agent'] && { useragent: req.headers['user-agent'] },
         ...propsGet().data.template.data.name && { name: propsGet().data.template.data.name },
-        ...propsGet().data.template.data.email && { email: propsGet().data.template.data.email }
+        ...propsGet().data.template.data.email && { email: propsGet().data.template.data.email },
+        ...akismetContent && { content: akismetContent }
       }
       console.log("testData ???????????????????????????????? ", testData);
 
       // Test if data is spam -> a successful test returns boolean
       const isSpam = await client.checkSpam(testData);
       if (typeof isSpam === 'boolean' && isSpam) {
-        console.info('OMG Spam @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@');
+        console.info('Akismet: OMG Spam @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@');
       } else if (typeof isSpam === 'boolean' && !isSpam) {
-        console.info('Totally not spam');
+        console.info('Akismet: Totally not spam');
       }
 
     } catch(err) {
