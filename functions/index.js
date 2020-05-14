@@ -282,14 +282,15 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 
       // Test if data is spam -> a successful test returns boolean
       const isSpam = await client.checkSpam(testData);
+      // if spam suspected
       if (typeof isSpam === 'boolean' && isSpam) {
-        console.info('Akismet: OMG Spam @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@');
-        // delete submitFormData.toUids;
+        console.info('Akismet: OMG Spam');
         submitFormData.spam = true;
-        submitFormData.toUids = [ "SPAM_SUSPECTED_DO_NOT_SEND" ];
+        submitFormData.toUids = [ "SPAM_SUSPECTED_DO_NOT_EMAIL" ];
         submitFormData.template.data.spam = 'Suspected';
-
-      } else if (typeof isSpam === 'boolean' && !isSpam) {
+      } 
+      // if spam check passed
+      else if (typeof isSpam === 'boolean' && !isSpam) {
         console.info('Akismet: Totally not spam');
         submitFormData.spam = false;
         submitFormData.template.data.spam = 'Passed';
