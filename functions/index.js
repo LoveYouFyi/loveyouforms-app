@@ -142,7 +142,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     const propsAll = { appKey, ...formFieldsDefault, ...formResults, ...appInfo };
 
     ////////////////////////////////////////////////////////////////////////////
-    // Props Allowed: reduce to allowed props
+    // Props Allowed Entries: reduce to allowed props
     //
     // Remove from 'props' any fields not used for database or code actions because:
     // 1) prevents database errors due to querying docs (formField) using 
@@ -178,17 +178,17 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     const propsWhitelist = [ ...formFieldsRequired, ...formTemplateFields, ...Object.keys(appInfo) ];
 
     //
-    // Props Allowed: entries used for database or code actions
+    // Props Allowed Entries: entries used for database or code actions
     // Return Object
     //
-    const propsAllowed = Object.entries(propsAll).reduce((a, [key, value]) => {
+    const propsAllowedEntries = Object.entries(propsAll).reduce((a, [key, value]) => {
       if (propsWhitelist.includes(key)) {
         a[key] = value; 
       } 
       return a;
     }, {});
     //
-    // [END] Props Allowed: reduce to allowed props
+    // [END] Props Allowed Entries: reduce to allowed props
     ////////////////////////////////////////////////////////////////////////////
 
    const propsSet = (() => {
@@ -224,7 +224,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     // [END] Data Sanitize & Set Props
     ////////////////////////////////////////////////////////////////////////////
 
-    const propsGet = ({ templateData, urlRedirect = false, ...key } = propsSet.set(propsAllowed)) => ({
+    const propsGet = ({ templateData, urlRedirect = false, ...key } = propsSet.set(propsAllowedEntries)) => ({
       data: {
         appKey: key.appKey, 
         createdDateTime: FieldValue.serverTimestamp(), 
@@ -285,10 +285,14 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       if (typeof isSpam === 'boolean' && isSpam) {
         console.info('Akismet: OMG Spam @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@');
         // delete submitFormData.toUids;
-        submitFormData.toUids = [ "SPAM_DO_NOT_SEND" ];
+        submitFormData.spam = true;
+        submitFormData.toUids = [ "SPAM_SUSPECTED_DO_NOT_SEND" ];
+        submitFormData.template.data.spam = 'Suspected';
 
       } else if (typeof isSpam === 'boolean' && !isSpam) {
         console.info('Akismet: Totally not spam');
+        submitFormData.spam = false;
+        submitFormData.template.data.spam = 'Passed';
       }
 
     } catch(err) {
