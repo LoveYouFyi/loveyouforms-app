@@ -191,56 +191,64 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     // [END] Props Allowed Entries: reduce to allowed props
     ////////////////////////////////////////////////////////////////////////////
 
-   const propsSet = (() => {
+   const props = (() => {
 
       const trim = value => value.toString().trim();
+      const props =  { templateData: {} };
 
       // compare database fields with form-submitted props and build object
-      const parse = propsToParse => Object.entries(propsToParse).reduce((a, [prop, data]) => {
+      const set = propsToParse => Object.entries(propsToParse).forEach(([prop, data]) => {
         // appInfo fields do not have a 'value' property
         if (appInfo.hasOwnProperty(prop)) {
-          a[prop] = trim(data);
+          props[prop] = trim(data);
         } else {
           // form fields have 'value' property
-          a[prop] = trim(data.value);
+          props[prop] = trim(data.value);
         }
         // Form Template Fields: Whitelist check [START]
         if (formTemplateFields.includes(prop) && appInfo.hasOwnProperty(prop)) {
-          a.templateData[prop] = data;
+          props.templateData[prop] = data;
         } else if (formTemplateFields.includes(prop)) {
-          a.templateData[prop] = trim(data.value);
+          props.templateData[prop] = trim(data.value);
         }
         // Form Template Fields: Whitelist check [END]
-        return a
-      }, { templateData: {} });
+      });
 
+      console.log("Props 22222222222222222222222222222222 ", props);
+
+      const get = ({ templateData, urlRedirect = false, ...key } = props) => ({
+        data: {
+          appKey: key.appKey, 
+          createdDateTime: FieldValue.serverTimestamp(), 
+          from: key.appFrom, 
+          toUids: [ key.appKey ], 
+          replyTo: templateData.email,
+          template: { 
+            name: key.templateName, 
+            data: templateData
+          }
+        },
+        urlRedirect: urlRedirect
+      });
+ 
       return {
         set: props => {
-          return parse(props);
+          return set(props);
+        },
+        get: () => {
+          return get();
         }
       }
     })();
     //
     // [END] Data Sanitize & Set Props
     ////////////////////////////////////////////////////////////////////////////
+    const these = props.set(propsAllowedEntries);
+    console.log("these $$$$$$$$$$$$$$$$$$$$$$ ", these);
 
-    const propsGet = ({ templateData, urlRedirect = false, ...key } = propsSet.set(propsAllowedEntries)) => ({
-      data: {
-        appKey: key.appKey, 
-        createdDateTime: FieldValue.serverTimestamp(), 
-        from: key.appFrom, 
-        toUids: [ key.appKey ], 
-        replyTo: templateData.email,
-        template: { 
-          name: key.templateName, 
-          data: templateData
-        }
-      },
-      urlRedirect: urlRedirect
-    });
-    
+
     // Get data here so Akismet statement can update it if data is spam
-    const submitFormData = propsGet().data;
+    const submitFormData = props.get().data;
     console.log("submitFormData 1111111111111111111111111111 ", submitFormData);
 
     /*--------------------------------------------------------------------------
@@ -259,9 +267,9 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
         // if exists then reduce
         ? (formTemplateRef.data().fieldsAkismet[array].reduce((a, field) => {
           if (array === 'content') {
-            return a + propsGet().data.template.data[field] + " ";
+            return a + props.get().data.template.data[field] + " ";
           } else if (array === 'other') {
-            a[field] = propsGet().data.template.data[field];
+            a[field] = props.get().data.template.data[field];
             return a;
           }
         }, accumulatorType))
@@ -327,7 +335,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     // return response object (even if empty) so client can finish AJAX success
     return res.status(200).send({
       data: {
-        redirect: propsGet().urlRedirect,
+        redirect: props.get().urlRedirect,
         message: messages.success
       }
     });
