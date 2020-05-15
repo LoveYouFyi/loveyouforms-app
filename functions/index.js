@@ -29,9 +29,7 @@ const jwtClient = new google.auth.JWT({ // JWT Authentication (for google sheets
 });
 // AKISMET
 const { AkismetClient } = require('akismet-api/lib/akismet.js'); // had to hardcode path
-const key = '5c73ad452f54'
-const blog = 'https://lyfdev.web.app'
-const client = new AkismetClient({ key, blog })
+
 
 
 /*------------------------------------------------------------------------------
@@ -260,64 +258,76 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 
 
     ////////////////////////////////////////////////////////////////////////////
-    // Akismet Spam Check
+    // Akismet Spam Filter
     // Minimally checks IP Address and User Agent
     // Also checks fields defined as 'content' and 'other' based on config
-    ////////////////////////////////////////////////////////////////////////////
+    //
+    const akismetEnabled = app.condition.spamFilterAkismet;
 
-    try {
-      // Ternary with reduce
-      // returns either 'content' fields as string, or 'other' props as {}
-      const akismetProps = fieldGroup => accumulatorType =>
-        // does data/array exist, and if so does it have length > 0
-        formTemplateRef.data().fieldsAkismet[fieldGroup]
-          && formTemplateRef.data().fieldsAkismet[fieldGroup].length > 0
-        // if exists then reduce
-        ? (formTemplateRef.data().fieldsAkismet[fieldGroup].reduce((a, field) => {
-          if (fieldGroup === 'content') {
-            return a + props.get().data.template.data[field] + " ";
-          } else if (fieldGroup === 'other') {
-            a[field] = props.get().data.template.data[field];
-            return a;
-          }
-        }, accumulatorType))
-        // null prevents from being added to object
-        : null;
+    if (typeof akismetEnabled !== 'undefined' && akismetEnabled) {
+      // Akismet credentials
+      const key = app.spamFilterAkismet.key;
+      const blog = app.appInfo.appUrl;
+      const client = new AkismetClient({ key, blog })
 
-      // Data to check for spam
-      const testData = {
-        ...req.ip && { ip: req.ip },
-        ...req.headers['user-agent'] && { useragent: req.headers['user-agent'] },
-        ...akismetProps('content')('') && { content: akismetProps('content')('') },
-        ...akismetProps('other')({})
+      try {
+        // Ternary with reduce
+        // returns either 'content' fields as string, or 'other' props as {}
+        const akismetProps = fieldGroup => accumulatorType =>
+          // does data/array exist, and if so does it have length > 0
+          formTemplateRef.data().fieldsAkismet[fieldGroup]
+            && formTemplateRef.data().fieldsAkismet[fieldGroup].length > 0
+          // if exists then reduce
+          ? (formTemplateRef.data().fieldsAkismet[fieldGroup].reduce((a, field) => {
+            if (fieldGroup === 'content') {
+              return a + props.get().data.template.data[field] + " ";
+            } else if (fieldGroup === 'other') {
+              a[field] = props.get().data.template.data[field];
+              return a;
+            }
+          }, accumulatorType))
+          // null prevents from being added to object
+          : null;
+
+        // Data to check for spam
+        const testData = {
+          ...req.ip && { ip: req.ip },
+          ...req.headers['user-agent'] && { useragent: req.headers['user-agent'] },
+          ...akismetProps('content')('') && { content: akismetProps('content')('') },
+          ...akismetProps('other')({})
+        }
+
+        // Test if data is spam -> a successful test returns boolean
+        const isSpam = await client.checkSpam(testData);
+        // if spam suspected
+        if (typeof isSpam === 'boolean' && isSpam) {
+          props.set({spam: { value: 'true' }});
+          props.set({toUidsSpamOverride: { value: "SPAM_SUSPECTED_DO_NOT_EMAIL" } });
+        } 
+        // if spam check passed
+        else if (typeof isSpam === 'boolean' && !isSpam) {
+          props.set({spam: { value: 'false' }});
+        }
+
+      } catch(err) {
+
+        // Validate API Key
+        const isValid = await client.verifyKey();
+        if (isValid) {
+          console.info('Akismet: API key is valid');
+        } else if (!isValid) {
+          console.warn('Akismet: Invalid API key');
+        }
+
+        // if api key valid -> error is likely network failure of client.checkSpam()
+        console.error("Akismet ", err);
+
       }
-
-      // Test if data is spam -> a successful test returns boolean
-      const isSpam = await client.checkSpam(testData);
-      // if spam suspected
-      if (typeof isSpam === 'boolean' && isSpam) {
-        props.set({spam: { value: 'true' }});
-        props.set({toUidsSpamOverride: { value: "SPAM_SUSPECTED_DO_NOT_EMAIL" } });
-      } 
-      // if spam check passed
-      else if (typeof isSpam === 'boolean' && !isSpam) {
-        props.set({spam: { value: 'false' }});
-      }
-
-    } catch(err) {
-
-      // Validate API Key
-      const isValid = await client.verifyKey();
-      if (isValid) {
-        console.info('Akismet: API key is valid');
-      } else if (!isValid) {
-        console.warn('Akismet: Invalid API key');
-      }
-
-      // if api key valid -> error is likely network failure of client.checkSpam()
-      console.error("Akismet ", err);
 
     }
+    //
+    // [END] Akismet Spam Filter
+    ////////////////////////////////////////////////////////////////////////////
 
 
     // For serverTimestamp to work must first create new doc key then 'set' data
