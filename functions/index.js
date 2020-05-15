@@ -27,9 +27,8 @@ const jwtClient = new google.auth.JWT({ // JWT Authentication (for google sheets
   key: serviceAccount.private_key, // <--- CREDENTIALS
   scopes: ['https://www.googleapis.com/auth/spreadsheets'] // read and write sheets
 });
-// AKISMET
+// AKISMET SPAM FILTER
 const { AkismetClient } = require('akismet-api/lib/akismet.js'); // had to hardcode path
-
 
 
 /*------------------------------------------------------------------------------
