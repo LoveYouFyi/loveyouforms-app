@@ -243,9 +243,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     //
     // [END] Data Sanitize & Set Props
     ////////////////////////////////////////////////////////////////////////////
-    const these = props.set(propsAllowedEntries);
-    console.log("these $$$$$$$$$$$$$$$$$$$$$$ ", these);
-
+    props.set(propsAllowedEntries);
 
     // Get data here so Akismet statement can update it if data is spam
     const submitFormData = props.get().data;
@@ -293,15 +291,13 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       // if spam suspected
       if (typeof isSpam === 'boolean' && isSpam) {
         console.info('Akismet: OMG Spam');
-        submitFormData.spam = true;
-        submitFormData.toUids = [ "SPAM_SUSPECTED_DO_NOT_EMAIL" ];
-        submitFormData.template.data.spam = 'Suspected';
+        props.set({spam: { value: true }});
+        props.set({toUids: { value: [ "SPAM_SUSPECTED_DO_NOT_EMAIL" ] } });
       } 
       // if spam check passed
       else if (typeof isSpam === 'boolean' && !isSpam) {
         console.info('Akismet: Totally not spam');
-        submitFormData.spam = false;
-        submitFormData.template.data.spam = 'Passed';
+        props.set({spam: { value: false }});
       }
 
     } catch(err) {
@@ -325,7 +321,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     // For serverTimestamp to work must first create new doc key then 'set' data
     const newKeyRef = db.collection('submitForm').doc();
     // update the new-key-record using 'set' which works for existing doc
-    newKeyRef.set(submitFormData)
+    newKeyRef.set(props.get().data);
 
 
     /*--------------------------------------------------------------------------
