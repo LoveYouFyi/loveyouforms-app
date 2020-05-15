@@ -6,7 +6,7 @@ const admin = require('firebase-admin');
 const serviceAccount = require('./service-account.json'); // download from firebase console
 admin.initializeApp({ // initialize firebase admin with credentials
   credential: admin.credential.cert(serviceAccount), // So functions can connect to database
-  databaseURL: 'https://loveyou-forms.firebaseio.com' // Needed if using FireBase database (not FireStore)
+  databaseURL: 'https://loveyou-forms.firebaseio.com' // if using FireBase database (not FireStore)
 });
 const db = admin.firestore(); // FireStore database reference
 // TIMESTAMPS: for adding server-timestamps to database docs
@@ -23,7 +23,7 @@ const jwtClient = new google.auth.JWT({ // JWT Authentication (for google sheets
   scopes: ['https://www.googleapis.com/auth/spreadsheets'] // read and write sheets
 });
 // AKISMET
-const { AkismetClient } = require('akismet-api/lib/akismet.js'); // not sure why needed to hardcode path
+const { AkismetClient } = require('akismet-api/lib/akismet.js'); // had to hardcode path
 const key = '5c73ad452f54'
 const blog = 'https://lyfdev.web.app'
 const client = new AkismetClient({ key, blog })
@@ -45,7 +45,6 @@ const logErrorInfo = error => ({
   Form-Handler HTTP Cloud Function
   Receives data sent by form submission and creates database entry
   Terminate HTTP cloud functions with res.redirect(), res.send(), or res.end()
-  https://firebase.google.com/docs/functions/terminate-functions
 ------------------------------------------------------------------------------*/
 
 exports.formHandler = functions.https.onRequest(async (req, res) => {
@@ -61,12 +60,13 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
    
     // Request Content-Type: stop processing if content type is not 'text/plain'
     const contentType = req.headers['content-type'];
-    if (typeof contentType === 'undefined' || contentType.toLowerCase() !== 'text/plain') {
+    if (typeof contentType === 'undefined' 
+        || contentType.toLowerCase() !== 'text/plain') {
       console.warn(`Request header 'content-type' must be 'text/plain'`);
       return res.end();
     }
     
-    const formResults = JSON.parse(req.body); // ajax sent as json-text-string, so must parse
+    const formResults = JSON.parse(req.body); // parse req.body json-text-string
 
     const appRef = await db.collection('app').doc(formResults.appKey.value).get();
     const app = appRef.data();
@@ -135,17 +135,17 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     }, {});
     
     //
-    // Props All: consolidate available props and fields (order-matters) last-in overwrites previous 
+    // Props All: consolidate props and fields last-in overwrites previous 
     //
     const propsAll = { appKey, ...formFieldsDefault, ...formResults, ...appInfo };
 
     ////////////////////////////////////////////////////////////////////////////
     // Props Allowed Entries: reduce to allowed props
     //
-    // Remove from 'props' any fields not used for database or code actions because:
+    // Remove from 'props' fields not used for database or code actions because:
     // 1) prevents database errors due to querying docs (formField) using 
     //    disallowed values; e.g. if html <input> had name="__anything__"
-    //    -->see firebase doc limits: https://firebase.google.com/docs/firestore/quotas#limits
+    //    doc limits: https://firebase.google.com/docs/firestore/quotas#limits
     // 2) only fields used for database or code actions will be included
     //
     // Props Whitelist: compiled from database
@@ -172,7 +172,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     const formTemplateFields = formTemplateRef.data().fields;
   
     // Props Whitelist:
-    // Array of prop keys allowed for database or code actions (order matters) last-in overwrites previous
+    // Array of prop keys allowed for database or code actions last-in overwrites previous
     const propsWhitelist = [ ...formFieldsRequired, ...formTemplateFields, ...Object.keys(appInfo) ];
 
     //
@@ -308,7 +308,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
         console.warn('Akismet: Invalid API key');
       }
 
-      // if api key is valid -> error likely due to network fail of client.checkSpam()
+      // if api key valid -> error is likely network failure of client.checkSpam()
       console.error("Akismet ", err);
 
     }
@@ -538,51 +538,37 @@ exports.firestoreToSheets = functions.firestore.document('submitForm/{formId}')
 /*------------------------------------------------------------------------------
   Doc-Schema Trigger Cloud Functions
   When a new 'doc' is created this adds default fields/schema to it
-------------------------------------------------------------------------------*/
+  Parameters 'col' for collection type and 'schema' type from 'global' collection
+ ------------------------------------------------------------------------------*/
 
-// New 'app' Collection Trigger Cloud Function: Add default schema
-exports.schemaApp = functions.firestore.document('app/{appId}')
+const schemaDefault = (col, schema) => functions.firestore.document(`${col}/{id}`)
   .onCreate(async (snapshot, context) => {
 
   try {
 
-    // Schema Default for App
-    const schemaAppRef = await db.collection('global').doc('schemaApp').get();
-    const schemaApp = schemaAppRef.data();
+    // Get Default Schema
+    const schemaRef = await db.collection('global').doc(schema).get();
+    const schemaData = schemaRef.data();
 
-    // Update new app doc with default schema
-    const appRef = db.collection('app').doc(context.params.appId);
-    appRef.set(schemaApp); // update record with 'set' which is for existing doc
+    // Update new doc with default schema
+    const appRef = db.collection('app').doc(context.params.id);
+    appRef.set(schemaData); // update record with 'set' which is for existing doc
 
   } catch(error) {
     
     console.error(logErrorInfo(error));
 
-  } // end catch
+  }
 
 });
 
-// New 'formTemplate' Collection Trigger Cloud Function: Add default schema
-exports.schemaFormTemplate = functions.firestore.document('formTemplate/{formTemplateId}')
-  .onCreate(async (snapshot, context) => {
+// Default schema functions for 'app' and 'formTemplate' collections
+module.exports = {
+  schemaApp: schemaDefault('app', 'schemaApp'),
+  schemaFormTemplate: schemaDefault('formTemplate', 'schemaFormTemplate')
+};
 
-  try {
 
-    // Schema Default for App
-    const schemaFormTemplateRef = await db.collection('global').doc('schemaFormTemplate').get();
-    const schemaFormTemplate = schemaFormTemplateRef.data();
-
-    // Update new app doc with default schema
-    const formTemplateRef = db.collection('formTemplate').doc(context.params.formTemplateId);
-    formTemplateRef.set(schemaFormTemplate); // update record with 'set' which is for existing doc
-
-  } catch(error) {
-    
-    console.error(logErrorInfo(error));
-
-  } // end catch
-
-});
 
 
 /*------------------------------------------------------------------------------
