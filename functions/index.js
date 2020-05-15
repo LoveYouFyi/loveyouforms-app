@@ -1,3 +1,8 @@
+/*------------------------------------------------------------------------------
+  Node.js Modules
+  Required modules and their configuration for use by cloud functions
+------------------------------------------------------------------------------*/
+
 // FIREBASE FUNCTIONS SDK: to create Cloud Functions and setup triggers
 const functions = require('firebase-functions');
 // FIREBASE ADMIN SDK: to access the firestore (or firebase) database
@@ -12,8 +17,8 @@ const db = admin.firestore(); // FireStore database reference
 // TIMESTAMPS: for adding server-timestamps to database docs
 const FieldValue = require('firebase-admin').firestore.FieldValue; // Timestamp here
 const timestampSettings = { timestampsInSnapshots: true }; // Define timestamp settings
-db.settings(timestampSettings); // Apply timestamp settings to database settingsA
-// FUNCTION SUPPORT: for Firestore-to-Sheets function (Google Sheets)
+db.settings(timestampSettings); // Apply timestamp settings to database settings
+// FIRESTORE-TO-SHEETS: support for data sync to Google Sheets
 const moment = require('moment-timezone'); // Timestamp formats and timezones
 const { google } = require('googleapis');
 const sheets = google.sheets('v4'); // Google Sheets
@@ -28,6 +33,7 @@ const key = '5c73ad452f54'
 const blog = 'https://lyfdev.web.app'
 const client = new AkismetClient({ key, blog })
 
+
 /*------------------------------------------------------------------------------
   Utility Functions
   For use by cloud functions
@@ -41,6 +47,7 @@ const logErrorInfo = error => ({
   info: (new Error()),
 });
 
+
 /*------------------------------------------------------------------------------
   Form-Handler HTTP Cloud Function
   Receives data sent by form submission and creates database entry
@@ -53,10 +60,10 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 
   try {
 
-    /*--------------------------------------------------------------------------
-      Check: Request content-type, if Authorized app, if Form submit disabled:
-      Stop processing if checks fail
-    --------------------------------------------------------------------------*/
+    ////////////////////////////////////////////////////////////////////////////
+    // Checks: Request content-type; Authorized app; Form submit disabled
+    // Stop processing if checks fail
+    ////////////////////////////////////////////////////////////////////////////
    
     // Request Content-Type: stop processing if content type is not 'text/plain'
     const contentType = req.headers['content-type'];
@@ -114,12 +121,11 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       return res.end();
     }
     
-
-    /*--------------------------------------------------------------------------
-      Props/Fields
-      Compile database props/fields and form fields as 'props' to be handled as
-      object entries; sanitize; add to structured object; submit to database
-    --------------------------------------------------------------------------*/
+    ////////////////////////////////////////////////////////////////////////////
+    // Props/Fields
+    // Compile database and form fields to be handled as object entries;
+    // sanitize; add to structured object 
+    ////////////////////////////////////////////////////////////////////////////
 
     const appKey = app.id;
     const appInfo = app.appInfo;
@@ -253,11 +259,11 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     props.set(propsAllowedEntries);
 
 
-    /*--------------------------------------------------------------------------
-      Akismet Spam Check
-      Minimally checks IP Address and User Agent
-      Also checks fields defined as 'content' and 'other' based on config
-    --------------------------------------------------------------------------*/
+    ////////////////////////////////////////////////////////////////////////////
+    // Akismet Spam Check
+    // Minimally checks IP Address and User Agent
+    // Also checks fields defined as 'content' and 'other' based on config
+    ////////////////////////////////////////////////////////////////////////////
 
     try {
       // Ternary with reduce
@@ -320,10 +326,10 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     newKeyRef.set(props.get().data);
 
 
-    /*--------------------------------------------------------------------------
-      Response to request
-    --------------------------------------------------------------------------*/
- 
+    ////////////////////////////////////////////////////////////////////////////
+    // Response to request
+    ////////////////////////////////////////////////////////////////////////////
+
     // return response object (even if empty) so client can finish AJAX success
     return res.status(200).send({
       data: {
@@ -346,6 +352,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 
 });
 
+
 /*------------------------------------------------------------------------------
   Firestore-to-Sheets Trigger Cloud Function
   Listens for new 'submitForm' collection docs and adds data to google sheets.
@@ -357,9 +364,9 @@ exports.firestoreToSheets = functions.firestore.document('submitForm/{formId}')
 
   try {
 
-    /*--------------------------------------------------------------------------
-      Prepare row data values and sheet header
-    --------------------------------------------------------------------------*/
+    ////////////////////////////////////////////////////////////////////////////
+    // Prepare row data values and sheet header
+    ////////////////////////////////////////////////////////////////////////////
 
     // Form Submission: values from Snapshot.data()
     const { appKey, createdDateTime, template: { data: { ...templateData }, 
@@ -407,9 +414,9 @@ exports.firestoreToSheets = functions.firestore.document('submitForm/{formId}')
     ////////////////////////////////////////////////////////////////////////////
 
 
-    /*--------------------------------------------------------------------------
-      Prepare to insert data-row into app spreadsheet
-    --------------------------------------------------------------------------*/
+    ////////////////////////////////////////////////////////////////////////////
+    // Prepare to insert data-row into app spreadsheet
+    ////////////////////////////////////////////////////////////////////////////
 
     // Get app spreadsheetId and sheetId (one spreadsheet with multiple sheets possible)
     const spreadsheetId = app.spreadsheet.id; // one spreadsheet per app
@@ -454,9 +461,9 @@ exports.firestoreToSheets = functions.firestore.document('submitForm/{formId}')
     });
 
 
-    /*--------------------------------------------------------------------------
-      Insert row data into sheet that matches template name
-    --------------------------------------------------------------------------*/
+    ////////////////////////////////////////////////////////////////////////////
+    // Insert row data into sheet that matches template name
+    ////////////////////////////////////////////////////////////////////////////
 
     // Check if sheet name exists for data insert
     const sheetObjectRequest = () => ({
@@ -531,14 +538,15 @@ exports.firestoreToSheets = functions.firestore.document('submitForm/{formId}')
     
     console.error(logErrorInfo(error));
 
-  } // end catch
+  }
 
 });
+
 
 /*------------------------------------------------------------------------------
   Doc-Schema Trigger Cloud Functions
   When a new 'doc' is created this adds default fields/schema to it
-  Parameters 'col' for collection type and 'schema' type from 'global' collection
+  Parameters: 'col' is collection type and 'schema' is from 'global' collection
  ------------------------------------------------------------------------------*/
 
 const schemaDefault = (col, schema) => functions.firestore.document(`${col}/{id}`)
