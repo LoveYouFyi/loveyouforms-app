@@ -50,8 +50,6 @@ const logErrorInfo = error => ({
 
 exports.formHandler = functions.https.onRequest(async (req, res) => {
 
-  console.log("req.headers $$$$$$$$$$$$$$$$$$$$$$$$$$$ ", req.headers);
-
   let messages;
 
   try {
@@ -194,7 +192,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
    const props = (() => {
 
       const trim = value => value.toString().trim();
-      const props =  { templateData: {} };
+      const props =  { toUids: [], templateData: {} };
 
       // compare database fields with form-submitted props and build object
       const set = propsToParse => Object.entries(propsToParse).forEach(([prop, data]) => {
@@ -205,6 +203,12 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
           // form fields have 'value' property
           props[prop] = trim(data.value);
         }
+        // toUids: appKey unless if spam then use [ alert message ]
+        if (prop === 'appKey') {
+           props.toUids = trim(data.value);
+        } else if (prop === 'toUidsSpamOverride') {
+           props.toUids = trim(data.value);
+        }
         // Form Template Fields: Whitelist check [START]
         if (formTemplateFields.includes(prop) && appInfo.hasOwnProperty(prop)) {
           props.templateData[prop] = data;
@@ -214,14 +218,13 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
         // Form Template Fields: Whitelist check [END]
       });
 
-      console.log("Props 22222222222222222222222222222222 ", props);
-
       const get = ({ templateData, urlRedirect = false, ...key } = props) => ({
         data: {
           appKey: key.appKey, 
           createdDateTime: FieldValue.serverTimestamp(), 
-          from: key.appFrom, 
-          toUids: [ key.appKey ], 
+          from: key.appFrom,
+          ...key.spam && { spam: key.spam }, // only available if akismet enabled
+          toUids: [ key.toUids ], 
           replyTo: templateData.email,
           template: { 
             name: key.templateName, 
@@ -243,11 +246,12 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     //
     // [END] Data Sanitize & Set Props
     ////////////////////////////////////////////////////////////////////////////
+
+    //
+    // Props: Set Allowed Props 
+    //
     props.set(propsAllowedEntries);
 
-    // Get data here so Akismet statement can update it if data is spam
-    const submitFormData = props.get().data;
-    console.log("submitFormData 1111111111111111111111111111 ", submitFormData);
 
     /*--------------------------------------------------------------------------
       Akismet Spam Check
@@ -258,15 +262,15 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     try {
       // Ternary with reduce
       // returns either 'content' fields as string, or 'other' props as {}
-      const formTemplateFieldsAkismet = array => accumulatorType =>
+      const akismetProps = fieldGroup => accumulatorType =>
         // does data/array exist, and if so does it have length > 0
-        formTemplateRef.data().fieldsAkismet[array]
-          && formTemplateRef.data().fieldsAkismet[array].length > 0
+        formTemplateRef.data().fieldsAkismet[fieldGroup]
+          && formTemplateRef.data().fieldsAkismet[fieldGroup].length > 0
         // if exists then reduce
-        ? (formTemplateRef.data().fieldsAkismet[array].reduce((a, field) => {
-          if (array === 'content') {
+        ? (formTemplateRef.data().fieldsAkismet[fieldGroup].reduce((a, field) => {
+          if (fieldGroup === 'content') {
             return a + props.get().data.template.data[field] + " ";
-          } else if (array === 'other') {
+          } else if (fieldGroup === 'other') {
             a[field] = props.get().data.template.data[field];
             return a;
           }
@@ -274,30 +278,24 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
         // null prevents from being added to object
         : null;
 
-      console.log("formTemplateFieldsAkismet content ", formTemplateFieldsAkismet('content')(''));
-      console.log("formTemplateFieldsAkismet other ", formTemplateFieldsAkismet('other')({}));
-
       // Data to check for spam
       const testData = {
         ...req.ip && { ip: req.ip },
         ...req.headers['user-agent'] && { useragent: req.headers['user-agent'] },
-        ...formTemplateFieldsAkismet('content')('') && { content: formTemplateFieldsAkismet('content')('') },
-        ...formTemplateFieldsAkismet('other')({})
+        ...akismetProps('content')('') && { content: akismetProps('content')('') },
+        ...akismetProps('other')({})
       }
-      console.log("testData ???????????????????????????????? ", testData);
 
       // Test if data is spam -> a successful test returns boolean
       const isSpam = await client.checkSpam(testData);
       // if spam suspected
       if (typeof isSpam === 'boolean' && isSpam) {
-        console.info('Akismet: OMG Spam');
-        props.set({spam: { value: true }});
-        props.set({toUids: { value: [ "SPAM_SUSPECTED_DO_NOT_EMAIL" ] } });
+        props.set({spam: { value: 'true' }});
+        props.set({toUidsSpamOverride: { value: "SPAM_SUSPECTED_DO_NOT_EMAIL" } });
       } 
       // if spam check passed
       else if (typeof isSpam === 'boolean' && !isSpam) {
-        console.info('Akismet: Totally not spam');
-        props.set({spam: { value: false }});
+        props.set({spam: { value: 'false' }});
       }
 
     } catch(err) {
@@ -310,12 +308,10 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
         console.warn('Akismet: Invalid API key');
       }
 
-      // if api key is valid -> error likely due to fail of client.checkSpam()
+      // if api key is valid -> error likely due to network fail of client.checkSpam()
       console.error("Akismet ", err);
 
     }
-
-    console.log("submitFormData 2222222222222222222222222222 ", submitFormData);
 
 
     // For serverTimestamp to work must first create new doc key then 'set' data
