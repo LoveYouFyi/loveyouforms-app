@@ -11,7 +11,7 @@ const admin = require('firebase-admin');
 const serviceAccount = require('./service-account.json'); // download from firebase console
 admin.initializeApp({ // initialize firebase admin with credentials
   credential: admin.credential.cert(serviceAccount), // So functions can connect to database
-  databaseURL: 'https://loveyou-forms.firebaseio.com' // if using FireBase database (not FireStore)
+  databaseURL: 'https://loveyou-forms.firebaseio.com'
 });
 const db = admin.firestore(); // FireStore database reference
 // TIMESTAMPS: for adding server-timestamps to database docs
@@ -571,59 +571,5 @@ const schemaDefault = (col, schema) => functions.firestore.document(`${col}/{id}
 });
 
 // Default schema functions for 'app' and 'formTemplate' collections
-module.exports = {
-  schemaApp: schemaDefault('app', 'schemaApp'),
-  schemaFormTemplate: schemaDefault('formTemplate', 'schemaFormTemplate')
-};
-
-
-
-
-/*------------------------------------------------------------------------------
-  Firebase-to-Sheets Trigger Cloud Function
-  Basic two column list
-------------------------------------------------------------------------------*/
-
-exports.firebaseToSheets = functions.database.ref('/Form')
-  .onUpdate(async change => {
-
-  let data = change.after.val();
-  console.log("data ################ ", data);
-  // Convert JSON to Array following structure below
-  //
-  //[
-  //  ['COL-A', 'COL-B'],
-  //  ['COL-A', 'COL-B']
-  //]
-  //
-  let itemArray = [];
-  let valueArray = [];
-  Object.keys(data).forEach((key, index) => {
-    itemArray.push(key);
-    itemArray.push(data[key]);
-    console.log("itemArray ############################# ", itemArray);
-    valueArray[index] = itemArray;
-    itemArray = [];
-  });
-
-  let maxRange = valueArray.length + 1;
-
-  // Do authorization
-  await jwtClient.authorize();
-  console.log("valueArray ############################# ", valueArray) 
-
-  // Create Google Sheets request
-  let request = {
-    auth: jwtClient,
-    spreadsheetId: "1nOzYKj0Gr1zJPsZv-GhF00hUAJ2sTsCosMk4edJJ9nU",
-    range: "Firebase!A2:B" + maxRange,
-    valueInputOption: "RAW",
-    requestBody: {
-      values: valueArray
-    }
-  };
-  
-  // Update data to Google Sheets
-  await sheets.spreadsheets.values.update(request, {});
-});
-
+exports.schemaApp = schemaDefault('app', 'schemaApp'),
+exports.schemaFormTemplate = schemaDefault('formTemplate', 'schemaFormTemplate')
