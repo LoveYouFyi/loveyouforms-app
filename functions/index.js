@@ -74,22 +74,27 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 
     const appRef = await db.collection('app').doc(formResults.appKey.value).get();
     const app = appRef.data();
+    let globalApp; // made available here for akismet
 
     // App key: if exists continue with global and app condition checks
     if (app) {
       const globalAppRef = await db.collection('global').doc('app').get();
-      const globalApp = globalAppRef.data();
+      globalApp = globalAppRef.data();
       // Messages: use global or app-specific messages
-      // global boolean 0/1, if set to 2 bypass global & use app-specific boolean
-      if (app.condition.messageGlobal || app.condition.messageGlobal == null) {
+      // global boolean 0/false, 1/true, or '2' bypass global & use app boolean
+      if (globalApp.condition.messageGlobal === 1
+          || (globalApp.condition.messageGlobal === 2 
+              && !!app.condition.messageGlobal)
+        ) {
         messages = globalApp.message;
       } else {
         messages = app.message;
       }
       // CORS validation: stop cloud function if CORS check does not pass
-      // global boolean 0/1, if set to 2 bypass global & use app-specific boolean
-      if (!globalApp.condition.corsBypass
-          || (globalApp.condition.corsBypass === 2 && !app.condition.corsBypass)
+      // global boolean 0/false, 1/true, or '2' bypass global & use app boolean
+      if (globalApp.condition.corsBypass === 0
+          || (globalApp.condition.corsBypass === 2 
+              && !app.condition.corsBypass)
         ) {
         // restrict to url requests that match the app
         res.setHeader('Access-Control-Allow-Origin', app.appInfo.appUrl);
@@ -105,8 +110,9 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       }
       // Form Submit Enabled/Disabled: stop cloud function if submitForm disabled
       // global boolean 0/1, if set to 2 bypass global & use app-specific boolean
-      if (!globalApp.condition.submitForm
-          || (globalApp.condition.submitForm === 2 && !app.condition.submitForm)
+      if (globalApp.condition.submitForm === 0
+          || (globalApp.condition.submitForm === 2 
+              && !app.condition.submitForm)
         ) {
         console.warn(`Form submit disabled for app "${app.appInfo.appName}"`);
         // return error response because submit is from approved app
@@ -261,9 +267,15 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     // Minimally checks IP Address and User Agent
     // Also checks fields defined as 'content' and 'other' based on config
     //
-    const akismetEnabled = app.condition.spamFilterAkismet;
-
-    if (typeof akismetEnabled !== 'undefined' && akismetEnabled) {
+    let akismetEnabled = false;
+    if (globalApp.condition.spamFilterAkismet === 1
+        || (globalApp.condition.spamFilterAkismet === 2 
+            && !!app.condition.spamFilterAkismet)
+    ) { 
+      akismetEnabled = true;
+    }
+    
+    if (akismetEnabled) {
       // Akismet credentials
       const key = app.spamFilterAkismet.key;
       const blog = app.appInfo.appUrl;
