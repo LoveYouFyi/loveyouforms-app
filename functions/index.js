@@ -72,7 +72,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     
     const formResults = JSON.parse(req.body); // parse req.body json-text-string
 
-    const appRef = await db.collection('app').doc(formResults.appKey.value).get();
+    const appRef = await db.collection('app').doc(formResults.appKey).get();
     const app = appRef.data();
     let globalApp; // made available here for akismet
 
@@ -177,7 +177,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     // Form Template Fields:
     // Array of field names for submitForm/*/template.data used by 'trigger email' extension
     //
-    const formTemplateRef = await db.collection('formTemplate').doc(propsAll.templateName.value).get();
+    const formTemplateRef = await db.collection('formTemplate').doc(propsAll.templateName).get();
     const formTemplateFields = formTemplateRef.data().fields;
   
     // Props Whitelist:
@@ -205,24 +205,17 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 
       // compare database fields with form-submitted props and build object
       const setProps = propsToParse => Object.entries(propsToParse).forEach(([prop, data]) => {
-        // appInfo fields do not have a 'value' property
-        if (appInfo.hasOwnProperty(prop)) {
-          props[prop] = trim(data);
-        } else {
-          // form fields have 'value' property
-          props[prop] = trim(data.value);
-        }
+        data = trim(data);
+        props[prop] = data;
         // toUids: appKey unless if spam then use [ spam alert message ]
         if (prop === 'appKey') {
-           props.toUids = trim(data.value);
+           props.toUids = data;
         } else if (prop === 'toUidsSpamOverride') {
-           props.toUids = trim(data.value);
+           props.toUids = data;
         }
         // Form Template Fields: Whitelist check [START]
-        if (formTemplateFields.includes(prop) && appInfo.hasOwnProperty(prop)) {
+        if (formTemplateFields.includes(prop)) {
           props.templateData[prop] = data;
-        } else if (formTemplateFields.includes(prop)) {
-          props.templateData[prop] = trim(data.value);
         }
         // Form Template Fields: Whitelist check [END]
       });
@@ -274,7 +267,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     ) { 
       akismetEnabled = true;
     }
-    
+
     if (akismetEnabled) {
       // Akismet credentials
       const key = app.spamFilterAkismet.key;
@@ -285,7 +278,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
         // Ternary with reduce
         // returns either 'content' fields as string, or 'other' props as {}
         const akismetProps = fieldGroup => accumulatorType =>
-          // does data/array exist, and if so does it have length > 0
+          // does data/array exist and have length > 0
           formTemplateRef.data().fieldsAkismet[fieldGroup]
             && formTemplateRef.data().fieldsAkismet[fieldGroup].length > 0
           // if exists then reduce
@@ -312,12 +305,12 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
         const isSpam = await client.checkSpam(testData);
         // if spam suspected
         if (typeof isSpam === 'boolean' && isSpam) {
-          props.set({spam: { value: 'true' }});
-          props.set({toUidsSpamOverride: { value: "SPAM_SUSPECTED_DO_NOT_EMAIL" } });
+          props.set({spam: 'true' });
+          props.set({toUidsSpamOverride: "SPAM_SUSPECTED_DO_NOT_EMAIL" });
         } 
         // if spam check passed
         else if (typeof isSpam === 'boolean' && !isSpam) {
-          props.set({spam: { value: 'false' }});
+          props.set({spam: 'false' });
         }
 
       } catch(err) {
