@@ -201,7 +201,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
    const props = (() => {
 
       const trim = value => value.toString().trim();
-      const props =  { toUids: [], templateData: {} }
+      const props =  { toUids: '', templateData: {} }
 
       // compare database fields with form-submitted props and build object
       const setProps = propsToParse => Object.entries(propsToParse).forEach(([prop, data]) => {
