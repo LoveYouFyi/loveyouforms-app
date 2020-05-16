@@ -201,10 +201,10 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
    const props = (() => {
 
       const trim = value => value.toString().trim();
-      const props =  { toUids: [], templateData: {} };
+      const props =  { toUids: [], templateData: {} }
 
       // compare database fields with form-submitted props and build object
-      const set = propsToParse => Object.entries(propsToParse).forEach(([prop, data]) => {
+      const setProps = propsToParse => Object.entries(propsToParse).forEach(([prop, data]) => {
         // appInfo fields do not have a 'value' property
         if (appInfo.hasOwnProperty(prop)) {
           props[prop] = trim(data);
@@ -227,7 +227,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
         // Form Template Fields: Whitelist check [END]
       });
 
-      const get = ({ templateData, urlRedirect = false, ...key } = props) => ({
+      const getProps = ({ templateData, urlRedirect = false, ...key } = props) => ({
         data: {
           appKey: key.appKey, 
           createdDateTime: FieldValue.serverTimestamp(), 
@@ -245,12 +245,12 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
  
       return {
         set: props => {
-          return set(props);
+          setProps(props);
         },
         get: () => {
-          return get();
+          return getProps();
         }
-      }
+      };
     })();
     //
     // [END] Data Sanitize & Set Props
