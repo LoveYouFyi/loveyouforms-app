@@ -58,7 +58,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
   try {
 
     ////////////////////////////////////////////////////////////////////////////
-    // Checks: Request content-type; Authorized app; Form submit disabled
+    // Validate: request content-type; cors authorized app; form submit disabled
     // Stop processing if checks fail
     ////////////////////////////////////////////////////////////////////////////
    
@@ -90,26 +90,26 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       } else {
         messages = app.message;
       }
-      // CORS validation: stop cloud function if CORS check does not pass
-      // global boolean 0/false, 1/true, or '2' bypass global & use app boolean
+      // CORS validation: stop cloud function if check does not pass
+      // global boolean 0/false, 1/true, or '2' bypass global to use app boolean
       if (globalApp.condition.corsBypass === 0
           || (globalApp.condition.corsBypass === 2 
               && !app.condition.corsBypass)
         ) {
-        // restrict to url requests that match the app
+        // url requests restricted to match the app
         res.setHeader('Access-Control-Allow-Origin', app.appInfo.appUrl);
-        // end processing if url does not match (req.headers.origin = url)
+        // end processing if app url does not match req.headers.origin url
         if (req.headers.origin !== app.appInfo.appUrl) { 
           console.warn('CORS Access Control: Origin Url does not match App Url.');
-          // no error response sent because submit not from approved app
+          // no error response sent because request not from approved app
           return res.end();
         }
       } else {
-        // allow * so localhost (or any source) recieves response
+        // allow all so localhost (or any source) can submit requests
         res.setHeader('Access-Control-Allow-Origin', '*');
       }
-      // Form Submit Enabled/Disabled: stop cloud function if submitForm disabled
-      // global boolean 0/1, if set to 2 bypass global & use app-specific boolean
+      // Form Submit Enabled: stop cloud function if submitForm disabled
+      // global boolean 0/false, 1/true, or '2' bypass global to use app boolean
       if (globalApp.condition.submitForm === 0
           || (globalApp.condition.submitForm === 2 
               && !app.condition.submitForm)
@@ -134,7 +134,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     const appInfo = app.appInfo;
 
     //
-    // Form Field Name Defaults: select from db all formField default fields
+    // Form Field Defaults: select from db all default fields
     // Return Object of docs
     //
     const formFieldsDefaultRef = await db.collection('formField').where('default', '==', true).get();
@@ -151,11 +151,11 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     ////////////////////////////////////////////////////////////////////////////
     // Props Allowed Entries: reduce to allowed props
     //
-    // Remove from 'props' fields not used for database or code actions because:
-    // 1) prevents database errors due to querying docs (formField) using 
-    //    disallowed values; e.g. if html <input> had name="__anything__"
+    // Remove the fields not used for database or code actions to:
+    // 1) prevent database errors due to querying docs using disallowed values
+    //    e.g. if html <input> had name="__anything__"
     //    doc limits: https://firebase.google.com/docs/firestore/quotas#limits
-    // 2) only fields used for database or code actions will be included
+    // 2) only include fields used for database or code actions
     //
     // Props Whitelist: compiled from database
     // Database Schema
@@ -164,7 +164,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     //   app/'appKey'/appInfo.*props --> appInfo
 
     //
-    // Form Field Names Required: fields required for cloud function to work
+    // Form Fields Required: fields required for cloud function to work
     // Return Array of field names
     //
     const formFieldsRequiredRef = await db.collection('formField').where('required', '==', true).get();
@@ -175,7 +175,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
 
     //
     // Form Template Fields:
-    // Array of field names for submitForm/*/template.data used by 'trigger email' extension
+    // Array of field for submitForm/*/template.data used by 'trigger email' extension
     //
     const formTemplateRef = await db.collection('formTemplate').doc(propsAll.templateName).get();
     const formTemplateFields = formTemplateRef.data().fields;
@@ -207,7 +207,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       const setProps = propsToParse => Object.entries(propsToParse).forEach(([prop, data]) => {
         data = trim(data);
         props[prop] = data;
-        // toUids: appKey unless if spam then use [ spam alert message ]
+        // toUids: appKey value unless if spam flagged is [ akismet spam message ]
         if (prop === 'appKey') {
            props.toUids = data;
         } else if (prop === 'toUidsSpamOverride') {
@@ -225,7 +225,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
           appKey: key.appKey, 
           createdDateTime: FieldValue.serverTimestamp(), 
           from: key.appFrom,
-          ...key.spam && { spam: key.spam }, // only available if akismet enabled
+          ...key.spam && { spam: key.spam }, // only defined if akismet enabled
           toUids: [ key.toUids ], 
           replyTo: templateData.email,
           template: { 
@@ -278,7 +278,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
         // Ternary with reduce
         // returns either 'content' fields as string, or 'other' props as {}
         const akismetProps = fieldGroup => accumulatorType =>
-          // does data/array exist and have length > 0
+          // does data/array exist and is length > 0
           formTemplateRef.data().fieldsAkismet[fieldGroup]
             && formTemplateRef.data().fieldsAkismet[fieldGroup].length > 0
           // if exists then reduce
@@ -290,7 +290,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
               return a;
             }
           }, accumulatorType))
-          // null prevents from being added to object
+          // null prevents from being added to data to check for spam object
           : null;
 
         // Data to check for spam
@@ -301,14 +301,14 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
           ...akismetProps('other')({})
         }
 
-        // Test if data is spam -> a successful test returns boolean
+        // Test if data is spam: a successful test returns boolean
         const isSpam = await client.checkSpam(testData);
         // if spam suspected
         if (typeof isSpam === 'boolean' && isSpam) {
           props.set({spam: 'true' });
           props.set({toUidsSpamOverride: "SPAM_SUSPECTED_DO_NOT_EMAIL" });
         } 
-        // if spam check passed
+        // if spam not suspected
         else if (typeof isSpam === 'boolean' && !isSpam) {
           props.set({spam: 'false' });
         }
@@ -323,7 +323,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
           console.warn('Akismet: Invalid API key');
         }
 
-        // if api key valid -> error is likely network failure of client.checkSpam()
+        // if api key valid: error is likely network failure of client.checkSpam()
         console.error("Akismet ", err);
 
       }
