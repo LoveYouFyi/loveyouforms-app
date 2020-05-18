@@ -139,7 +139,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     //
     const formFieldsDefaultRef = await db.collection('formField').where('default', '==', true).get();
     const formFieldsDefault = formFieldsDefaultRef.docs.reduce((a, doc) => {
-      a[doc.id] = doc.data();
+      a[doc.id] = doc.data().value;
       return a;
     }, {});
     
