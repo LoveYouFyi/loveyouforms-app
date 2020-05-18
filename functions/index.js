@@ -126,8 +126,8 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     
     ////////////////////////////////////////////////////////////////////////////
     // Props/Fields
-    // Compile database and form fields to be handled as object entries;
-    // sanitize; add to structured object 
+    // Compile database and form fields to be handled as object entries, and
+    // add to structured object 
     ////////////////////////////////////////////////////////////////////////////
 
     const appKey = app.id;
@@ -275,22 +275,26 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       const client = new AkismetClient({ key, blog })
 
       try {
-        // Ternary with reduce
-        // returns either 'content' fields as string, or 'other' props as {}
+        // Returns akismet props either as string or {}
+        // ternary with reduce
         const akismetProps = fieldGroup => accumulatorType =>
-          // does data/array exist and is length > 0
-          formTemplateRef.data().fieldsAkismet[fieldGroup]
-            && formTemplateRef.data().fieldsAkismet[fieldGroup].length > 0
-          // if exists then reduce
+          // if database contains fieldsAkismet and [fieldGroup] array 
+          ( typeof formTemplateRef.data().fieldsAkismet !== 'undefined'
+            && typeof formTemplateRef.data().fieldsAkismet[fieldGroup] !== 'undefined'
+            && formTemplateRef.data().fieldsAkismet[fieldGroup].length > 0)
+          // if true then reduce
           ? (formTemplateRef.data().fieldsAkismet[fieldGroup].reduce((a, field) => {
-            if (fieldGroup === 'content') {
+            // skip if field not found in props.get()...
+            if (typeof props.get().data.template.data[field] === 'undefined') { return a }
+            // accumulate as 'string' or {} based on accumulatorType 
+            if (typeof accumulatorType === 'string') {
               return a + props.get().data.template.data[field] + " ";
-            } else if (fieldGroup === 'other') {
+            } else if (accumulatorType.constructor === Object) {
               a[field] = props.get().data.template.data[field];
               return a;
             }
           }, accumulatorType))
-          // null prevents from being added to data to check for spam object
+          // if false then null
           : null;
 
         // Data to check for spam
