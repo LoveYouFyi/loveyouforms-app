@@ -1,5 +1,6 @@
-# Firebase Service Account(s)
+# Firebase 
 service-account*.json
+.firebaserc
 
 # Export/Import Data
 exported.json
