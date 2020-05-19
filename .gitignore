@@ -1,8 +1,9 @@
 # Firebase Service Account(s)
 service-account*.json
 
-# Firebase Exports
+# Export/Import Data
 exported.json
+import-collection.json
 
 # OS
 .DS_Store

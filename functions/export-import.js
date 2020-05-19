@@ -13,11 +13,26 @@ firestoreService.initializeApp(serviceAccount);
 // file system module to perform file operations
 const fs = require('fs');
 
-/**
- * Firestore Export
- * run export from command-line: $ node -e 'require("./export-import").firestoreExport()'
- * run import from command-line: $ node -e 'require("./export-import").firestoreImport()'
- */
+/*------------------------------------------------------------------------------
+  Firestore Import
+  run import from command-line: 
+  $ node -e 'require("./export-import").firestoreImport()'
+------------------------------------------------------------------------------*/
+
+module.exports.firestoreImport = function () {
+  // The array of date, location and reference fields are optional
+  firestoreService.restore('import-starter-database.json', {
+    // for importing collections with refKey
+    // refs: ['refKey', 'formSubmit'],
+  });
+}
+
+/*------------------------------------------------------------------------------
+  Firestore Export
+  run export from command-line: 
+  $ node -e 'require("./export-import").firestoreExport()'
+------------------------------------------------------------------------------*/
+
 // get all collections provide empty array: .backups([])
 // get specific collections provide array: .backups(['app', 'field']) 
 module.exports.firestoreExport = function () {
@@ -43,13 +58,12 @@ module.exports.firestoreExport = function () {
   // [End] Firestore Export Import
 }
 
-module.exports.firestoreImport = function () {
-  // The array of date, location and reference fields are optional
-  firestoreService.restore('import-starter-database.json', {
-    // for importing collections with refKey
-    // refs: ['refKey', 'formSubmit'],
-  });
-}
+
+/*------------------------------------------------------------------------------
+  Firestore Import Collection Only
+  run import from command-line: 
+  $ node -e 'require("./export-import").importCollection()'
+------------------------------------------------------------------------------*/
 
 module.exports.importCollection = function () {
   // The array of date, location and reference fields are optional
