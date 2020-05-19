@@ -16,7 +16,7 @@ const fs = require('fs');
 /*------------------------------------------------------------------------------
   Firestore Import
   run import from command-line: 
-  $ node -e 'require("./export-import").firestoreImport()'
+  $ node -e 'require("./import-export").firestoreImport()'
 ------------------------------------------------------------------------------*/
 
 module.exports.firestoreImport = function () {
@@ -30,7 +30,7 @@ module.exports.firestoreImport = function () {
 /*------------------------------------------------------------------------------
   Firestore Export
   run export from command-line: 
-  $ node -e 'require("./export-import").firestoreExport()'
+  $ node -e 'require("./import-export").firestoreExport()'
 ------------------------------------------------------------------------------*/
 
 // get all collections provide empty array: .backups([])
@@ -62,7 +62,7 @@ module.exports.firestoreExport = function () {
 /*------------------------------------------------------------------------------
   Firestore Import Collection Only
   run import from command-line: 
-  $ node -e 'require("./export-import").importCollection()'
+  $ node -e 'require("./import-export").importCollection()'
 ------------------------------------------------------------------------------*/
 
 module.exports.importCollection = function () {
