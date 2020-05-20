@@ -44,6 +44,22 @@ const logErrorInfo = error => ({
   info: (new Error()),
 });
 
+// argument 'propKey' value must be of type 'string' or 'number'
+const sortObjectsAsc = (array, propKey) => array.sort((a, b) => {
+  const value = val => typeof val === 'string' ? val.toUpperCase() : val;
+  const valueA = value(a[propKey]);
+  const valueB = value(b[propKey]);
+  console.log("here you go: ", valueA, valueB);
+  
+  if (valueA > valueB ) return 1;
+  if (valueA < valueB) return -1;
+  return 0; // if equal
+});
+
+const objectValuesByKey = array => propKey => array.reduce((a, c) => {
+  a.push(c[propKey]);
+  return a;
+}, []);
 
 /*------------------------------------------------------------------------------
   Form-Handler HTTP Cloud Function
@@ -178,9 +194,9 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     // Array of field for submitForm/*/template.data used by 'trigger email' extension
     //
     const formTemplateRef = await db.collection('formTemplate').doc(propsAll.templateName).get();
-    const formTemplateFields = formTemplateRef.data().fields;
+    const formTemplateDataFields = formTemplateRef.data().fields; // array of objects
+    const formTemplateFields = objectValuesByKey(sortObjectsAsc(formTemplateDataFields, 'position'))('id');
     console.log("formTemplateFields $$$$$$$$$$$$$$$$$$$$ ", formTemplateFields);
-
 
     // Props Whitelist:
     // Array of prop keys allowed for database or code actions last-in overwrites previous
@@ -401,6 +417,7 @@ exports.firestoreToSheets = functions.firestore.document('submitForm/{formId}')
     // templateData array is sorted to match the order of headerRowSheet
     const formTemplateRef = await db.collection('formTemplate').doc(templateName).get();
     const formTemplate = formTemplateRef.data();
+    console.log("formTemplate $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", formTemplate);
 
     // Header fields for sheet requires nested array of strings [ [ 'Date', 'Time', etc ] ]
     const headerRowSheet = [( formTemplate.headerRowSheet )]; 
