@@ -5,7 +5,7 @@
 
 // FIREBASE FUNCTIONS SDK: to create Cloud Functions and setup triggers
 const functions = require('firebase-functions');
-// FIREBASE ADMIN SDK: to access the firestore (or firebase) database
+// FIREBASE ADMIN SDK: to interact with the Firestore (or firebase) database
 const admin = require('firebase-admin');
 // DATABASE CREDENTIALS: so cloud functions can authenticate with the database
 const serviceAccount = require('./service-account.json'); // download from firebase console
