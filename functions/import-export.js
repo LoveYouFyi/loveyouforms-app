@@ -1,11 +1,5 @@
-// FIREBASE ADMIN SDK: to interact with the Firestore (or firebase) database
-const admin = require('firebase-admin');
-// DATABASE CREDENTIALS: so cloud functions can authenticate with the database
+// DATABASE CREDENTIALS: so export-import can authenticate with the database
 const serviceAccount = require('./service-account.json'); // download from firebase console
-//admin.initializeApp({ // initialize firebase admin with credentials
-  //credential: admin.credential.cert(serviceAccount), // So functions can connect to database
-  //databaseURL: 'https://loveyou-forms.firebaseio.com'
-//});
 // FIRESTORE EXPORT-IMPORT
 const firestoreService = require('firestore-export-import');
 firestoreService.initializeApp(serviceAccount);
@@ -14,14 +8,15 @@ const fs = require('fs');
 
 
 /*------------------------------------------------------------------------------
-  Firestore Import
-  run import from command-line: 
-  $ node -e 'require("./import-export").firestoreImport()'
+  Firestore Import Entire Database or a Single Collection
+  run file import from command-line: 
+  $ node -e 'require("./import-export").firestoreImport("./import-starter-database.json")'
 ------------------------------------------------------------------------------*/
 
-module.exports.firestoreImport = function () {
-  // The array of date, location and reference fields are optional
-  firestoreService.restore('import-starter-database.json', {
+module.exports.firestoreImport = jsonFile => {
+  // 1) set the json file name to import 
+  // 2) The array of date, location and reference fields are optional
+  firestoreService.restore(jsonFile, {
     // for importing collections with refKey
     // refs: ['refKey', 'formSubmit'],
   });
@@ -56,20 +51,4 @@ module.exports.firestoreExport = function () {
       });
       
     });
-}
-
-
-/*------------------------------------------------------------------------------
-  Firestore Import Collection Only
-  run import from command-line: 
-  $ node -e 'require("./import-export").importCollection()'
-------------------------------------------------------------------------------*/
-
-module.exports.importCollection = function () {
-  // 1) set the json file name to import 
-  // 2) The array of date, location and reference fields are optional
-  firestoreService.restore('import-collection.json', {
-    // for importing collections with refKey
-    // refs: ['refKey', 'formSubmit'],
-  });
 }
