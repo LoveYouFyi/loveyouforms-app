@@ -10,7 +10,7 @@ const serviceAccount = require('./service-account.json'); // download from fireb
 // FIREBASE ADMIN SDK: to interact with the Firestore (or firebase) database
 const admin = require('firebase-admin');
 admin.initializeApp({ // initialize firebase admin with credentials
-  credential: admin.credential.cert(serviceAccount), // So functions can connect to database
+  credential: admin.credential.cert(serviceAccount), // So functions connect to database
   databaseURL: 'https://loveyou-forms.firebaseio.com'
 });
 const db = admin.firestore(); // FireStore database reference
@@ -153,7 +153,9 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     // Form Field Defaults: select from db all default fields
     // Return Object of docs
     //
-    const formFieldsDefaultRef = await db.collection('formField').where('default', '==', true).get();
+    const formFieldsDefaultRef = await db.collection('formField')
+      .where('default', '==', true).get();
+
     const formFieldsDefault = formFieldsDefaultRef.docs.reduce((a, doc) => {
       a[doc.id] = doc.data().value;
       return a;
@@ -183,7 +185,9 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     // Form Fields Required: fields required for cloud function to work
     // Return Array of field names
     //
-    const formFieldsRequiredRef = await db.collection('formField').where('required', '==', true).get();
+    const formFieldsRequiredRef = await db.collection('formField')
+      .where('required', '==', true).get();
+
     const formFieldsRequired = formFieldsRequiredRef.docs.reduce((a, doc) => {
       a.push(doc.id);
       return a;
@@ -193,13 +197,18 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     // Form Template Fields:
     // Array of field for submitForm/*/template.data used by 'trigger email' extension
     //
-    const formTemplateRef = await db.collection('formTemplate').doc(propsAll.templateName).get();
-    const formTemplateFields = objectValuesByKey(sortObjectsAsc(formTemplateRef.data().fields, 'position'))('id');
-    console.log("formTemplateFields $$$$$$$$$$$$$$$$$$$$ ", formTemplateFields);
+    const formTemplateRef = await db.collection('formTemplate')
+      .doc(propsAll.templateName).get();
+
+    const formTemplateFields = objectValuesByKey(
+      sortObjectsAsc(formTemplateRef.data().fields, 'position')
+    )('id');
 
     // Props Whitelist:
     // Array of prop keys allowed for database or code actions last-in overwrites previous
-    const propsWhitelist = [ ...formFieldsRequired, ...formTemplateFields, ...Object.keys(appInfo) ];
+    const propsWhitelist = [ ...formFieldsRequired, ...formTemplateFields, 
+      ...Object.keys(appInfo) 
+    ];
 
     //
     // Props Allowed Entries: entries used for database or code actions
@@ -221,21 +230,22 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       const props =  { toUids: '', templateData: {} }
 
       // compare database fields with form-submitted props and build object
-      const setProps = propsToParse => Object.entries(propsToParse).forEach(([prop, data]) => {
-        data = trim(data);
-        props[prop] = data;
-        // toUids: appKey value unless if spam flagged is [ akismet spam message ]
-        if (prop === 'appKey') {
-           props.toUids = data;
-        } else if (prop === 'toUidsSpamOverride') {
-           props.toUids = data;
-        }
-        // Form Template Fields: Whitelist check [START]
-        if (formTemplateFields.includes(prop)) {
-          props.templateData[prop] = data;
-        }
-        // Form Template Fields: Whitelist check [END]
-      });
+      const setProps = propsToParse => 
+        Object.entries(propsToParse).forEach(([prop, data]) => {
+          data = trim(data);
+          props[prop] = data;
+          // toUids: appKey value unless if spam flagged is [ akismet spam message ]
+          if (prop === 'appKey') {
+            props.toUids = data;
+          } else if (prop === 'toUidsSpamOverride') {
+            props.toUids = data;
+          }
+          // Form Template Fields: Whitelist check [START]
+          if (formTemplateFields.includes(prop)) {
+            props.templateData[prop] = data;
+          }
+          // Form Template Fields: Whitelist check [END]
+        });
 
       const getProps = ({ templateData, urlRedirect = false, ...key } = props) => ({
         data: {
@@ -302,7 +312,9 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
           // if true then reduce
           ? (formTemplateRef.data().fieldsAkismet[fieldGroup].reduce((a, field) => {
             // skip if field not found in props.get()...
-            if (typeof props.get().data.template.data[field] === 'undefined') { return a }
+            if (typeof props.get().data.template.data[field] === 'undefined') { 
+              return a 
+            }
             // accumulate as 'string' or {} based on accumulatorType 
             if (typeof accumulatorType === 'string') {
               return a + props.get().data.template.data[field] + " ";
@@ -411,47 +423,56 @@ exports.firestoreToSheets = functions.firestore.document('submitForm/{formId}')
     const appRef = await db.collection('app').doc(appKey).get();
     const app = appRef.data();
  
-    // Template: two sort-ordered arrays of strings
-    // headerRowSheet array is sorted according to desired sheets visual
+    // Template Field Ids and Header Row Sheet Columns
+    // Database needs to have Fields Ids and Header Columns sorted to match
     // templateData array is sorted to match the order of headerRowSheet
     const formTemplateRef = await db.collection('formTemplate').doc(templateName).get();
     const formTemplate = formTemplateRef.data();
-    console.log("formTemplate $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", formTemplate);
 
-    // Header fields for sheet requires nested array of strings [ [ 'Date', 'Time', etc ] ]
-    const headerRowSheet = [( formTemplate.headerRowSheet )]; 
-    console.log("headerRowSheet $$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", headerRowSheet);
-    const formTemplateFields = objectValuesByKey(sortObjectsAsc(formTemplateDataFields, 'position'))('id');
-    console.log("formTemplateFields $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", formTemplateFields);
+    // Fields Sorted: required for sorting templateData so data row that is sent 
+    // to sheets will be sorted in the same order as the sheet's column header
+    const formTemplateFieldsSorted = objectValuesByKey(
+      sortObjectsAsc(formTemplate.fields, "position")
+    )("id");
+
+    // Header Row Sheet Sorted: required for spreadsheet column headers when 
+    // adding a new sheet to a spreadsheet
+    // Sheets requires a nested array of strings [ [ 'Date', 'Time', etc ] ]
+    const formTemplateHeaderRowSheetSorted = [
+      objectValuesByKey(sortObjectsAsc(formTemplate.headerRowSheet, "position"))(
+        "id"
+      ),
+    ];
 
     ////////////////////////////////////////////////////////////////////////////
-    // Row Data: Sort & Merge
+    // Row Data: Sort and Merge (data row to be sent to sheets)
     //
-    // Strings to 'prop: value' objects so data to be merged has uniform format
+
     // timezone 'tz' string defined by momentjs.com/timezone:
     // https://github.com/moment/moment-timezone/blob/develop/data/packed/latest.json
     const dateTime = createdDateTime.toDate(); // toDate() is firebase method
     const createdDate = moment(dateTime).tz(app.appInfo.appTimeZone).format('L');
     const createdTime = moment(dateTime).tz(app.appInfo.appTimeZone).format('h:mm A z');
-    // Reduce array formTemplate.templateData, this returns an object that 
-    // is sort-ordered to match database headerRowSheet fields of array.
-    const templateDataSorted = formTemplate.fields.reduce((a, fieldName) => {
+    
+    // Template Data Sorted: returns an object that contains the new 
+    // formSubmit record's data sort-ordered to match formTemplate fields positions
+    const templateDataSorted = formTemplateFieldsSorted.reduce((a, fieldName) => {
+      // if fieldName data not exist set empty string since config sort order requires it
       templateData[fieldName] ? a[fieldName] = templateData[fieldName] : a[fieldName] = "";
       return a
     }, {});
-    console.log("templateDataSorted $$$$$$$$$$$$$$$$$$$$ ", templateDataSorted);
 
     // Merge objects in sort-order and return only values
     // Data-row for sheet requires nested array of strings [ [ 'John Smith', etc ] ]
     const sheetDataRow = [(
-      Object.values({ 
+      Object.values({
         createdDate,
-        createdTime, 
-        ...templateDataSorted 
+        createdTime,
+        ...templateDataSorted
       })
     )];
     //
-    // [END] Row Data: Sort & Merge
+    // [END] Row Data: Sort and Merge
     ////////////////////////////////////////////////////////////////////////////
 
 
@@ -459,7 +480,7 @@ exports.firestoreToSheets = functions.firestore.document('submitForm/{formId}')
     // Prepare to insert data-row into app spreadsheet
     ////////////////////////////////////////////////////////////////////////////
 
-    // Get app spreadsheetId and sheetId (one spreadsheet with multiple sheets possible)
+    // Get app spreadsheetId and sheetId(s)
     const spreadsheetId = app.spreadsheet.id; // one spreadsheet per app
     const sheetId = app.spreadsheet.sheetId[templateName]; // multiple possible sheets
 
@@ -555,7 +576,8 @@ exports.firestoreToSheets = functions.firestore.document('submitForm/{formId}')
       // Get new sheetId and add to app spreadsheet info
       // newSheet returns 'data' object with properties:
       //   prop: spreadsheetId
-      //   prop: replies[0].addSheet.properties (sheetId, title, index, sheetType, gridProperties { rowCount, columnCount }
+      //   prop: replies[0].addSheet.properties (
+      //     sheetId, title, index, sheetType, gridProperties { rowCount, columnCount } )
       const newSheet = await sheets.spreadsheets.batchUpdate(addSheet());
       // Map 'replies' array to get sheetId
       const newSheetId = sheet => {
@@ -570,7 +592,9 @@ exports.firestoreToSheets = functions.firestore.document('submitForm/{formId}')
       });
 
       // New Sheet Actions: add row header then row data
-      await sheets.spreadsheets.values.update(addRow(rangeHeader)(headerRowSheet));
+      await sheets.spreadsheets.values.update(
+        addRow(rangeHeader)(formTemplateHeaderRowSheetSorted)
+      );
       await sheets.spreadsheets.values.update(addRow(rangeData)(sheetDataRow));
 
     } // end 'else' add new sheet
