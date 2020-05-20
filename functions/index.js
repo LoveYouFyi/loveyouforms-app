@@ -179,7 +179,9 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     //
     const formTemplateRef = await db.collection('formTemplate').doc(propsAll.templateName).get();
     const formTemplateFields = formTemplateRef.data().fields;
-  
+    console.log("formTemplateFields $$$$$$$$$$$$$$$$$$$$ ", formTemplateFields);
+
+
     // Props Whitelist:
     // Array of prop keys allowed for database or code actions last-in overwrites previous
     const propsWhitelist = [ ...formFieldsRequired, ...formTemplateFields, ...Object.keys(appInfo) ];
@@ -402,6 +404,7 @@ exports.firestoreToSheets = functions.firestore.document('submitForm/{formId}')
 
     // Header fields for sheet requires nested array of strings [ [ 'Date', 'Time', etc ] ]
     const headerRowSheet = [( formTemplate.headerRowSheet )]; 
+    console.log("headerRowSheet $$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", headerRowSheet);
 
     ////////////////////////////////////////////////////////////////////////////
     // Row Data: Sort & Merge
@@ -418,6 +421,8 @@ exports.firestoreToSheets = functions.firestore.document('submitForm/{formId}')
       templateData[fieldName] ? a[fieldName] = templateData[fieldName] : a[fieldName] = "";
       return a
     }, {});
+    console.log("templateDataSorted $$$$$$$$$$$$$$$$$$$$ ", templateDataSorted);
+
     // Merge objects in sort-order and return only values
     // Data-row for sheet requires nested array of strings [ [ 'John Smith', etc ] ]
     const sheetDataRow = [(
