@@ -194,8 +194,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     // Array of field for submitForm/*/template.data used by 'trigger email' extension
     //
     const formTemplateRef = await db.collection('formTemplate').doc(propsAll.templateName).get();
-    const formTemplateDataFields = formTemplateRef.data().fields; // array of objects
-    const formTemplateFields = objectValuesByKey(sortObjectsAsc(formTemplateDataFields, 'position'))('id');
+    const formTemplateFields = objectValuesByKey(sortObjectsAsc(formTemplateRef.data().fields, 'position'))('id');
     console.log("formTemplateFields $$$$$$$$$$$$$$$$$$$$ ", formTemplateFields);
 
     // Props Whitelist:
@@ -422,6 +421,8 @@ exports.firestoreToSheets = functions.firestore.document('submitForm/{formId}')
     // Header fields for sheet requires nested array of strings [ [ 'Date', 'Time', etc ] ]
     const headerRowSheet = [( formTemplate.headerRowSheet )]; 
     console.log("headerRowSheet $$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", headerRowSheet);
+    const formTemplateFields = objectValuesByKey(sortObjectsAsc(formTemplateDataFields, 'position'))('id');
+    console.log("formTemplateFields $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", formTemplateFields);
 
     ////////////////////////////////////////////////////////////////////////////
     // Row Data: Sort & Merge
