@@ -3,7 +3,7 @@ service-account*.json
 .firebaserc
 
 # Export/Import Data
-exported.json
+exported*.json
 import-collection.json
 
 # OS

@@ -2,10 +2,10 @@
 const admin = require('firebase-admin');
 // DATABASE CREDENTIALS: so cloud functions can authenticate with the database
 const serviceAccount = require('./service-account.json'); // download from firebase console
-admin.initializeApp({ // initialize firebase admin with credentials
-  credential: admin.credential.cert(serviceAccount), // So functions can connect to database
-  databaseURL: 'https://loveyou-forms.firebaseio.com'
-});
+//admin.initializeApp({ // initialize firebase admin with credentials
+  //credential: admin.credential.cert(serviceAccount), // So functions can connect to database
+  //databaseURL: 'https://loveyou-forms.firebaseio.com'
+//});
 // FIRESTORE EXPORT-IMPORT
 const firestoreService = require('firestore-export-import');
 firestoreService.initializeApp(serviceAccount);

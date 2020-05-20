@@ -5,10 +5,10 @@
 
 // FIREBASE FUNCTIONS SDK: to create Cloud Functions and setup triggers
 const functions = require('firebase-functions');
-// FIREBASE ADMIN SDK: to interact with the Firestore (or firebase) database
-const admin = require('firebase-admin');
 // DATABASE CREDENTIALS: so cloud functions can authenticate with the database
 const serviceAccount = require('./service-account.json'); // download from firebase console
+// FIREBASE ADMIN SDK: to interact with the Firestore (or firebase) database
+const admin = require('firebase-admin');
 admin.initializeApp({ // initialize firebase admin with credentials
   credential: admin.credential.cert(serviceAccount), // So functions can connect to database
   databaseURL: 'https://loveyou-forms.firebaseio.com'
