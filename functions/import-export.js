@@ -14,8 +14,7 @@ const fs = require('fs');
 ------------------------------------------------------------------------------*/
 
 module.exports.firestoreImport = jsonFile => {
-  // 1) set the json file name to import 
-  // 2) The array of date, location and reference fields are optional
+  // The arrays for dates, locations, and reference fields are optional
   firestoreService.restore(jsonFile, {
     // for importing collections with refKey
     // refs: ['refKey', 'formSubmit'],
