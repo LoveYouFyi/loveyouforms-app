@@ -624,7 +624,7 @@ const schemaDefault = (col, schema) => functions.firestore.document(`${col}/{id}
     const schemaData = schemaRef.data();
 
     // Update new doc with default schema
-    const appRef = db.collection('app').doc(context.params.id);
+    const appRef = db.collection(col).doc(context.params.id);
     appRef.set(schemaData); // update record with 'set' which is for existing doc
 
   } catch(error) {
