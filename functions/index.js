@@ -200,13 +200,13 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     const formTemplateRef = await db.collection('formTemplate')
       .doc(propsAll.templateName).get();
 
-    const formTemplateFields = objectValuesByKey(
+    const formTemplateFieldsSorted = objectValuesByKey(
       sortObjectsAsc(formTemplateRef.data().fields, 'position')
     )('id');
 
     // Props Whitelist:
     // Array of prop keys allowed for database or code actions last-in overwrites previous
-    const propsWhitelist = [ ...formFieldsRequired, ...formTemplateFields, 
+    const propsWhitelist = [ ...formFieldsRequired, ...formTemplateFieldsSorted, 
       ...Object.keys(appInfo) 
     ];
 
@@ -241,7 +241,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
             props.toUids = data;
           }
           // Form Template Fields: Whitelist check [START]
-          if (formTemplateFields.includes(prop)) {
+          if (formTemplateFieldsSorted.includes(prop)) {
             props.templateData[prop] = data;
           }
           // Form Template Fields: Whitelist check [END]
