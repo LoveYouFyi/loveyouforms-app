@@ -49,7 +49,6 @@ const sortObjectsAsc = (array, propKey) => array.sort((a, b) => {
   const value = val => typeof val === 'string' ? val.toUpperCase() : val;
   const valueA = value(a[propKey]);
   const valueB = value(b[propKey]);
-  console.log("here you go: ", valueA, valueB);
   
   if (valueA > valueB ) return 1;
   if (valueA < valueB) return -1;
