@@ -223,7 +223,10 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     // [END] Props Allowed Entries: reduce to allowed props
     ////////////////////////////////////////////////////////////////////////////
 
-   const props = (() => {
+    ////////////////////////////////////////////////////////////////////////////
+    // Props Set & Get
+    //
+    const props = (() => {
 
       const trim = value => value.toString().trim();
       const props =  { toUids: '', templateData: {} }
@@ -271,20 +274,22 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
         }
       };
     })();
-    //
-    // [END] Data Sanitize & Set Props
-    ////////////////////////////////////////////////////////////////////////////
-
-    //
-    // Props: Set Allowed Props 
-    //
+    // Set allowed props
     props.set(propsAllowedEntries);
+    //
+    // [END] Props Set & Get
+    ////////////////////////////////////////////////////////////////////////////
 
 
     ////////////////////////////////////////////////////////////////////////////
-    // Akismet Spam Filter
-    // Minimally checks IP Address and User Agent
-    // Also checks fields defined as 'content' and 'other' based on config
+    // Akismet Spam Filter 
+    // If enabled: 
+    //  1) Checks if spam
+    //     a. minimally checks IP Address and User Agent 
+    //     b. checks fields defined as 'content' and 'other' based on config
+    //  2) Sets props
+    //     a. spam 
+    //     b. toUidsSpamOverride (if spam, string overrides UID to prevent email)
     //
     let akismetEnabled = false;
     if (globalApp.condition.spamFilterAkismet === 1
@@ -365,6 +370,10 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
     // [END] Akismet Spam Filter
     ////////////////////////////////////////////////////////////////////////////
 
+
+    ////////////////////////////////////////////////////////////////////////////
+    // Database Entry: add form submission to database
+    ////////////////////////////////////////////////////////////////////////////
 
     // For serverTimestamp to work must first create new doc key then 'set' data
     const newKeyRef = db.collection('submitForm').doc();
