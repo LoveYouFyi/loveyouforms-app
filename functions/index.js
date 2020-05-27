@@ -55,7 +55,7 @@ const sortObjectsAsc = (array, propKey) => array.sort((a, b) => {
   return 0; // if equal
 });
 
-const objectValuesByKey = array => propKey => array.reduce((a, c) => {
+const objectValuesByKey = (array, propKey) => array.reduce((a, c) => {
   a.push(c[propKey]);
   return a;
 }, []);
@@ -200,8 +200,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
       .doc(propsAll.templateName).get();
 
     const formTemplateFieldsSorted = objectValuesByKey(
-      sortObjectsAsc(formTemplateRef.data().fields, 'position')
-    )('id');
+      sortObjectsAsc(formTemplateRef.data().fields, 'position'), 'id');
 
     // Props Whitelist:
     // Array of prop keys allowed for database or code actions last-in overwrites previous
@@ -440,18 +439,16 @@ exports.firestoreToSheets = functions.firestore.document('submitForm/{formId}')
     // Fields Sorted: required for sorting templateData so data row that is sent 
     // to sheets will be sorted in the same order as the sheet's column header
     const formTemplateFieldsSorted = objectValuesByKey(
-      sortObjectsAsc(formTemplate.fields, "position")
-    )("id");
-
+      sortObjectsAsc(formTemplate.fields, "position"), "id");
+    
     // Header Row Sheet Sorted: required for spreadsheet column headers when 
     // adding a new sheet to a spreadsheet
     // Sheets requires a nested array of strings [ [ 'Date', 'Time', etc ] ]
     const formTemplateHeaderRowSheetSorted = [
-      objectValuesByKey(sortObjectsAsc(formTemplate.headerRowSheet, "position"))(
-        "id"
-      ),
+      objectValuesByKey(
+        sortObjectsAsc(formTemplate.headerRowSheet, "position"), "id")
     ];
-
+    console.log('formTemplateHeaderRowSheetSorted $$$$$$$$$$$$$$$$$$$$ ', formTemplateHeaderRowSheetSorted);
     ////////////////////////////////////////////////////////////////////////////
     // Row Data: Sort and Merge (data row to be sent to sheets)
     //
