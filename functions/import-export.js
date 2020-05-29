@@ -24,13 +24,13 @@ module.exports.firestoreImport = jsonFile => {
 
 /*------------------------------------------------------------------------------
   Firestore Export
-  run export from command-line: 
+  run export from command-line (creates file named exported.json)
   $ node -e 'require("./import-export").firestoreExport()'
 ------------------------------------------------------------------------------*/
 
 // To get all collections provide empty array: .backups([])
 // To get specific collections provide array: .backups(['app', 'field']) 
-module.exports.firestoreExport = function () {
+module.exports.firestoreExport = () => {
   firestoreService
     .backups([]) // Array of collection names is OPTIONAL
     .then((collections) => {
