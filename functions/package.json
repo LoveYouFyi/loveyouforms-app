@@ -1,10 +1,17 @@
 {
   "name": "loveyouforms",
   "description": "Cloud app to handle form submissions for one website or 1,000 using Firebase platform",
+  "license": "MIT",
+  "contributors": [
+    {
+      "name": "Nils Erik Hendrick",
+      "email": "erik@loveyou.fyi",
+      "url": "https://loveyou.fyi"
+    }
+  ],
   "engines": {
     "node": "8"
   },
-  "license": "MIT",
   "## Scripts Notes ########################################################": {
     "exportData": "you may never need this",
     "importData": "you should only need to use this once to import starter database"
