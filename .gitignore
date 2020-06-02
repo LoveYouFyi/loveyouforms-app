@@ -4,7 +4,6 @@ service-account*.json
 
 # Export/Import Data
 exported*.json
-import-collection.json
 
 # OS
 .DS_Store
