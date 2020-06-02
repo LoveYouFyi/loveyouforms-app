@@ -2,6 +2,7 @@
  * AJAX Form Submissions (Vanilla JS)
  */
 
+
 // Form listeners 'submit'
 const listenFormSubmit = ajaxRequest => {
   document.querySelectorAll('form').forEach(form => {
@@ -83,9 +84,20 @@ const serializeForm = form => {
       || field.type === 'submit' 
       || field.type === 'button'
     ) continue; // 'continue 'jumps over' one iteration in the loop, here, it skips the element if not of this type
+
+    // If a multi-select, get all selections
+		if (field.type === 'select-multiple') {
+      let values = "";
+			for (let n = 0; n < field.options.length; n++) {
+        if (!field.options[n].selected) continue;
+          values += field.options[n].value + ' ';
+      }
+		  serialized[field.name] = values;
+    }
+
 		// Convert field data to a query string
-		if ((field.type !== 'checkbox' && field.type !== 'radio') || field.checked) {
-      serialized[field.name] = { type: field.type, value: field.value };
+		else if ((field.type !== 'checkbox' && field.type !== 'radio') || field.checked) {
+      serialized[field.name] = field.value;
     }
   }
   serialized = JSON.stringify(serialized);
@@ -101,7 +113,7 @@ const ajaxRequest = event => {
   let form = event.target;
   let formUrlAction = form.querySelector('[name=urlAction]').value;
   let formData = serializeForm(form);
-
+  
   /**
    * Ajax Request Object
    */
@@ -117,6 +129,10 @@ const ajaxRequest = event => {
   // successful response = onload (any response from application including error)
   xhr.onload = function(event) {
     let res = event.target.response; // responseType set to json
+    // some browsers (chrome) 'res' is object other browsers (ie11) 'res' is string
+    if (typeof res === 'string') {
+      res = JSON.parse(res);
+    }
     // error handling
     // ECMAScript 2020 check if property defined with '?' res?.message?.error because if undefined will error
     if (res?.error?.message) { 
@@ -134,12 +150,26 @@ const ajaxRequest = event => {
       message(form, 'none', res.data.message.timeout, res.data.message.text);
     } 
   }
-  // Send Request
-  xhr.open('POST', formUrlAction);
+  // Send Request (bypass url caching by appending url-parameter timestamp)
+  xhr.open('POST', formUrlAction + ((/\?/).test(formUrlAction) ? "&" : "?") + (new Date()).getTime());
   xhr.setRequestHeader('Content-Type', 'text/plain');
   xhr.responseType = 'json';
   xhr.send(formData);
 }
 
+// ie11 and edge15 forEach broken, converts all forEach to for loop
+// babel does not convert forEach as it's es5 and babel converts all to es5
+let forEachPolyfill = () => {
+  if (typeof window !== 'undefined' &&  window.NodeList && !NodeList.prototype.forEach) {
+    NodeList.prototype.forEach = function (callback, thisArg) {
+        thisArg = thisArg || window;
+        for (var i = 0; i < this.length; i++) {
+            callback.call(thisArg, this[i], i, this);
+        }
+    };
+  }
+}
+
+document.onload = forEachPolyfill(); // call this first
 document.onload = listenFormSubmit(ajaxRequest);
 document.onload = radiosChecked();
