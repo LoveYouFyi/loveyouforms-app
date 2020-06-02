@@ -1,7 +1,8 @@
-/**
- * AJAX Form Submissions (Vanilla JS)
- */
+/*! LoveYouForms.js v1.0.0 | loveyouforms.com/license */
 
+////////////////////////////////////////////////////////////////////////////////
+// AJAX Form Submissions using Vanilla JS
+////////////////////////////////////////////////////////////////////////////////
 
 // Form listeners 'submit'
 const listenFormSubmit = ajaxRequest => {
@@ -47,16 +48,16 @@ const radiosChecked = () => {
 // Reset form values
 const formReset = form => {
   let parent = form.parentNode; // get form parent element
-  /**
-   * Inputs (except specified), selects, and textareas: set innerHTML to empty string
-   */
+  //
+  // Inputs (except specified), selects, and textareas: set innerHTML to empty string
+  //
   let elements =  parent.querySelectorAll('input:not([type="hidden"]):not([type="radio"]), select, textarea'); 
   elements.forEach(e => {
     e.value = '';
   });
-  /**
-   * Radios reset: select first radio of group
-   */
+  //
+  // Radios reset: select first radio of group
+  //
   let radios =  parent.querySelectorAll('[love-wrapper="radio"] [type=radio]'); 
   let elementName = "";
   radios.forEach(e => {
@@ -107,16 +108,16 @@ const serializeForm = form => {
 // Ajax request
 const ajaxRequest = event => {
   event.preventDefault(); // stop submit so input values do not get cleared before being able to act on them
-  /**
-   * Form data
-   */
+  //
+  // Form data
+  //
   let form = event.target;
   let formUrlAction = form.querySelector('[name=urlAction]').value;
   let formData = serializeForm(form);
   
-  /**
-   * Ajax Request Object
-   */
+  //
+  // Ajax Request Object
+  //
   let xhr = new XMLHttpRequest();
   // initiate request = onloadstart
   xhr.onloadstart = function() {
