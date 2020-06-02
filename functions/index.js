@@ -1,8 +1,11 @@
 /*------------------------------------------------------------------------------
   Node.js Modules
-  Required modules and their configuration for use by cloud functions
+  Required modules and configuration for use by Firestore cloud functions
 ------------------------------------------------------------------------------*/
 
+/*------------------------------------------------------------------------------
+ Dependencies for all cloud functions
+------------------------------------------------------------------------------*/
 // FIREBASE FUNCTIONS SDK: to create Cloud Functions and setup triggers
 const functions = require('firebase-functions');
 // DATABASE CREDENTIALS: so cloud functions can authenticate with the database
@@ -14,11 +17,18 @@ admin.initializeApp({ // initialize firebase admin with credentials
   databaseURL: 'https://loveyou-forms.firebaseio.com'
 });
 const db = admin.firestore(); // FireStore database reference
+/*------------------------------------------------------------------------------
+ Dependencies formHandler function: capture form submissions & save to database
+ ------------------------------------------------------------------------------*/
 // TIMESTAMPS: for adding server-timestamps to database docs
 const FieldValue = require('firebase-admin').firestore.FieldValue; // Timestamp here
 const timestampSettings = { timestampsInSnapshots: true }; // Define timestamp settings
 db.settings(timestampSettings); // Apply timestamp settings to database settings
-// FIRESTORE-TO-SHEETS: support for data sync to Google Sheets
+// AKISMET SPAM FILTER
+const { AkismetClient } = require('akismet-api/lib/akismet.js'); // had to hardcode path
+/*------------------------------------------------------------------------------
+ Dependencies firestoreToSheets function: sync form submit data to Google Sheets
+ ------------------------------------------------------------------------------*/
 const moment = require('moment-timezone'); // Timestamp formats and timezones
 const { google } = require('googleapis');
 const sheets = google.sheets('v4'); // Google Sheets
@@ -27,8 +37,7 @@ const jwtClient = new google.auth.JWT({ // JWT Authentication (for google sheets
   key: serviceAccount.private_key, // <--- CREDENTIALS
   scopes: ['https://www.googleapis.com/auth/spreadsheets'] // read and write sheets
 });
-// AKISMET SPAM FILTER
-const { AkismetClient } = require('akismet-api/lib/akismet.js'); // had to hardcode path
+
 
 
 /*------------------------------------------------------------------------------
