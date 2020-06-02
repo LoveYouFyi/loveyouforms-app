@@ -1,24 +1,24 @@
 {
   "name": "loveyouforms",
-  "description": "Cloud Functions for Firebase",
-  "## Notes for Scripts ####################################################": {
-    "exportData": "you may never need this",
-    "importData": "will only need to use this once to import starter database"
+  "description": "Cloud app to handle form submissions for one website or 1,000 using Firebase platform",
+  "engines": {
+    "node": "8"
   },
-  "scripts": {
+  "license": "MIT",
+  "## Scripts Notes ########################################################": {
+    "exportData": "you may never need this",
+    "importData": "you should only need to use this once to import starter database"
+  },
+ "scripts": {
     "exportData": "node -e 'require(\"./export-import\").firestoreExport()'",
     "importData": "node -e 'require(\"./export-import\").firestoreImport()'",
-    "importCollection": "node -e 'require(\"./export-import\").importCollection()'",
     "serve": "firebase serve --only functions",
     "shell": "firebase functions:shell",
     "start": "npm run shell",
     "deploy": "firebase deploy --only functions",
     "logs": "firebase functions:log"
   },
-  "engines": {
-    "node": "8"
-  },
-  "## Notes for Dependencies ###############################################": {
+ "## Dependencies Notes ###################################################": {
     "firestore-export-import": "required once to import starter database",
     "fs": "only needed if you want to run the script exportData which saves to file"
   },
@@ -33,6 +33,5 @@
   },
   "devDependencies": {
     "firebase-functions-test": "^0.1.6"
-  },
-  "private": true
+  }
 }
