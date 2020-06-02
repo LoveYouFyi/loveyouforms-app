@@ -1,175 +1,253 @@
 {
   "app":{
-    "diliberatelyEmpty":{
-      "deleteDocument":"The 'app' collection is where new apps are created. This document was included so the app collection would be created. Feel free to delete this DOCUMENT named 'deliberatelyEmpty' but do not delete the 'app' COLLECTION"
-    }
+    "deliberatelyEmpty":{
+        "deleteDocument":"The 'app' collection is where new apps are created. This document was included so the app collection would be created. Feel free to delete this DOCUMENT named 'deliberatelyEmpty' but do not delete the 'app' COLLECTION"
+     }
   },
-  "formFieldName":{
+  "formField":{
      "appKey":{
         "required":true
      },
-     "name":{
-        "maxLength":64
-     },
-     "phone":{
-        "maxLength":64
-     },
      "templateName":{
-        "value":"contactDefault",
-        "maxLength":256,
+        "required":true,
         "default":true,
-        "required":true
+        "value":"contactDefault"
      },
      "urlRedirect":{
-        "default":true,
-        "required":true,
         "value":"/message-received",
-        "maxLength":1280
-     }
-  },
-  "formFieldType":{
-     "email":{
-        "maxLength":256
-     },
-     "hidden":{
-        "maxLength":256
-     },
-     "radio":{
-        "maxLength":256
-     },
-     "select-one":{
-        "maxLength":256
-     },
-     "text":{
-        "maxLength":256
-     },
-     "textarea":{
-        "maxLength":1280
+        "required":true,
+        "default":true
      }
   },
   "formTemplate":{
-     "contactAlt":{
-        "fields":[
-           "name",
-           "phone",
-           "email",
-           "message",
-           "webformId",
-           "appName",
-           "appUrl"
-        ],
-        "headerRowSheet":[
-           "Date",
-           "Time",
-           "Name",
-           "Phone",
-           "Email",
-           "Message",
-           "Webform_Id",
-           "App_Name",
-           "App_Url"
-        ],
+     "contactShort":{
         "subject":"[CONTACT] Inquiry for {{ appName }}",
-        "html":"<p>Inquiry {{#if appName}} for {{ appName }} {{/if}} {{#if appUrl}} from {{ appUrl }} {{/if}}</p> <h3 style=\"display: inline;\">Name...</h3> &nbsp;&nbsp;<span>{{ name }}</span><br>   <h3 style=\"display: inline;\">Phone...</h3> &nbsp;&nbsp;<span>{{ phone }}</span><br>   <h3 style=\"display: inline;\">E-mail...</h3> &nbsp;&nbsp;<span>{{ email }}</span><br>   <h3 style=\"display: inline;\">Message...</h3> {{ message }}"
+        "html":"<p>Inquiry {{#if appName}} for {{ appName }} {{/if}} {{#if appUrl}} from {{ appUrl }} {{/if}}</p> <h3 style=\"display: inline;\">Name...</h3> &nbsp;&nbsp;<span>{{ name }}</span><br>   <h3 style=\"display: inline;\">Phone...</h3> &nbsp;&nbsp;<span>{{ phone }}</span><br>   <h3 style=\"display: inline;\">E-mail...</h3> &nbsp;&nbsp;<span>{{ email }}</span><br>   <h3 style=\"display: inline;\">Message...</h3> {{ message }}",
+        "fields":[
+           {
+              "position":1,
+              "sheetHeader":"Name",
+              "id":"name"
+           },
+           {
+              "sheetHeader":"Phone",
+              "id":"phone",
+              "position":2
+           },
+           {
+              "id":"email",
+              "position":3,
+              "sheetHeader":"Email"
+           },
+           {
+              "sheetHeader":"Message",
+              "id":"message",
+              "position":4
+           },
+           {
+              "position":5,
+              "sheetHeader":"Webform_Id",
+              "id":"webformId"
+           },
+           {
+              "sheetHeader":"App_Name",
+              "id":"appName",
+              "position":6
+           },
+           {
+              "position":7,
+              "sheetHeader":"App_Url",
+              "id":"appUrl"
+           },
+           {
+              "sheetHeader":"Spam",
+              "id":"spam",
+              "position":8
+           }
+        ],
+        "fieldsAkismet":{
+           "content":[
+              "message"
+           ],
+           "other":[
+              "email",
+              "name"
+           ]
+       }
      },
      "contactDefault":{
-        "headerRowSheet":[
-           "Date",
-           "Time",
-           "Name",
-           "Phone",
-           "Email",
-           "Message",
-           "Budget",
-           "Time_Frame",
-           "Service",
-           "Webform_Id",
-           "App_Name",
-           "App_Url"
-        ],
+        "html":"<p>Inquiry {{#if appName}} for {{ appName }} {{/if}} {{#if appUrl}} from {{ appUrl }} {{/if}}</p> <h3 style=\"display: inline;\">Name...</h3> &nbsp;&nbsp;<span>{{ name }}</span><br> <h3 style=\"display: inline;\">Phone...</h3> &nbsp;&nbsp;<span>{{ phone }}</span><br> <h3 style=\"display: inline;\">E-mail...</h3> &nbsp;&nbsp;<span>{{ email }}</span><br> <h3 style=\"display: inline;\">Message...</h3> {{ message }}<br> <h3 style=\"display: inline;\">Budget...</h3> &nbsp;&nbsp;<span>{{ budget }}</span><br> <h3 style=\"display: inline;\">Time Frame...</h3> &nbsp;&nbsp;<span>{{ timeframe }}</span><br> <h3 style=\"display: inline;\">Service...</h3> &nbsp;&nbsp;<span>{{ service }}</span><br>",
         "fields":[
-           "name",
-           "phone",
-           "email",
-           "message",
-           "budget",
-           "timeframe",
-           "selectService",
-           "webformId",
-           "appName",
-           "appUrl"
+           {
+              "id":"name",
+              "position":1,
+              "sheetHeader":"Name"
+           },
+           {
+              "position":2,
+              "sheetHeader":"Phone",
+              "id":"phone"
+           },
+           {
+              "sheetHeader":"Email",
+              "id":"email",
+              "position":3
+           },
+           {
+              "position":4,
+              "sheetHeader":"Message",
+              "id":"message"
+           },
+           {
+              "position":5,
+              "sheetHeader":"Budget",
+              "id":"budget"
+           },
+           {
+              "position":6,
+              "sheetHeader":"Time_Frame",
+              "id":"timeframe"
+           },
+           {
+              "id":"service",
+              "position":7,
+              "sheetHeader":"Service"
+           },
+           {
+              "position":8,
+              "sheetHeader":"Webform_Id",
+              "id":"webformId"
+           },
+           {
+              "id":"appName",
+              "position":9,
+              "sheetHeader":"App_Name"
+           },
+           {
+              "position":10,
+              "sheetHeader":"App_Url",
+              "id":"appUrl"
+           },
+           {
+              "sheetHeader":"Spam",
+              "id":"spam",
+              "position":12
+           }
         ],
-        "subject":"[CONTACT] Inquiry for {{ appName }}",
-        "html":"<p>Inquiry {{#if appName}} for {{ appName }} {{/if}} {{#if appUrl}} from {{ appUrl }} {{/if}}</p> <h3 style=\"display: inline;\">Name...</h3> &nbsp;&nbsp;<span>{{ name }}</span><br> <h3 style=\"display: inline;\">Phone...</h3> &nbsp;&nbsp;<span>{{ phone }}</span><br> <h3 style=\"display: inline;\">E-mail...</h3> &nbsp;&nbsp;<span>{{ email }}</span><br> <h3 style=\"display: inline;\">Message...</h3> {{ message }}<br> <h3 style=\"display: inline;\">Budget...</h3> &nbsp;&nbsp;<span>{{ budget }}</span><br> <h3 style=\"display: inline;\">Time Frame...</h3> &nbsp;&nbsp;<span>{{ timeframe }}</span><br> <h3 style=\"display: inline;\">Service...</h3> &nbsp;&nbsp;<span>{{ selectService }}</span><br>"
+        "fieldsAkismet":{
+           "content":[
+              "message"
+           ],
+           "other":[
+              "email",
+              "name"
+           ]
+        },
+        "subject":"[CONTACT] Inquiry for {{ appName }}"
      }
   },
   "global":{
      "app":{
         "condition":{
            "corsBypass":2,
-           "submitForm":2
-        },
-        "message":{
-           "error":{
-              "timeout":0,
-              "text":"GLOBAL Error: Sorry, please try again or contact us by phone."
-           },
-           "success":{
-              "text":"GLOBAL Message Received!",
-              "timeout":4000
-           }
-        }
-     },
-     "schemaApp":{
-        "email":"myname@mywebsite.com",
-        "spreadsheet":{
-           "id":"My-Long-Alpha-Numeric-Spreadsheet-Id",
-           "sheetId":{
-              "contactDefault":1000000000
-           }
-        },
-        "condition":{
-           "corsBypass":true,
-           "submitForm":true,
-           "messageGlobal":true
-        },
-        "appInfo":{
-           "appUrl":"https://mywebsite.com",
-           "appName":"My Website",
-           "appTimeZone":"America/New_York",
-           "appFrom":"My Website <info@mywebsite.com>"
+           "submitForm":2,
+           "spamFilterAkismet":2,
+           "messageGlobal":2
         },
         "message":{
            "success":{
               "timeout":4000,
-              "text":"Message Received!"
+              "text":"GLOBAL Message Received!"
            },
            "error":{
               "timeout":0,
-              "text":"Error: Sorry, please try again or contact us by phone."
+              "text":"GLOBAL Error: Sorry, please try again or contact us by phone."
            }
         }
      },
+     "schemaApp":{
+        "message":{
+           "error":{
+              "text":"Error: Sorry, please try again or contact us by phone.",
+              "timeout":0
+           },
+           "success":{
+              "text":"Message Received!",
+              "timeout":4000
+           }
+        },
+        "condition":{
+           "corsBypass":true,
+           "spamFilterAkismet":false,
+           "submitForm":true,
+           "messageGlobal":true
+        },
+        "appInfo":{
+           "appFrom":"My Website <info@mywebsite.com>",
+           "appTimeZone":"America/New_York",
+           "appUrl":"https://mywebsite.com",
+           "appName":"My Website"
+        },
+        "spamFilterAkismet":{
+           "key":"Get Your Key from akismet.com"
+        },
+        "email":"myname@mywebsite.com",
+        "spreadsheet":{
+           "sheetId":{
+              "contactDefault":1000000000
+           },
+           "id":"My-Long-Alpha-Numeric-Spreadsheet-Id"
+        }
+     },
      "schemaFormTemplate":{
-        "html":"<p>Inquiry {{#if appName}} for {{ appName }} {{/if}} {{#if appUrl}} from {{ appUrl }} {{/if}}</p> <h3 style=\"display: inline;\">Message...</h3> {{ message }}",
-        "headerRowSheet":[
-           "Date",
-           "Time",
-           "Message",
-           "App_Name",
-           "App_Url"
-        ],
         "fields":[
-           "message",
-           "appName",
-           "appUrl"
+           {
+              "id":"name",
+              "position":1,
+              "sheetHeader":"Name"
+           },
+           {
+              "position":2,
+              "sheetHeader":"Email",
+              "id":"email"
+           },
+           {
+              "position":3,
+              "sheetHeader":"Message",
+              "id":"message"
+           },
+           {
+              "sheetHeader":"App_Name",
+              "id":"appName",
+              "position":4
+           },
+           {
+              "position":5,
+              "sheetHeader":"App_Url",
+              "id":"appUrl"
+           },
+           {
+              "position":6,
+              "sheetHeader":"Spam",
+              "id":"spam"
+           }
         ],
-        "subject":"[CONTACT] Inquiry for {{ appName }}"
+        "fieldsAkismet":{
+           "other":[
+              "email",
+              "name"
+           ],
+           "content":[
+              "message"
+           ]
+        },
+        "subject":"[CONTACT] Inquiry for {{ appName }}",
+        "html":"<p>Inquiry {{#if appName}} for {{ appName }} {{/if}} {{#if appUrl}} from {{ appUrl }} {{/if}}</p> <h3 style=\"display: inline;\">Name...</h3> &nbsp;&nbsp;<span>{{ name }}</span><br>    <h3 style=\"display: inline;\">E-mail...</h3> &nbsp;&nbsp;<span>{{ email }}</span><br>    <h3 style=\"display: inline;\">Message...</h3> {{ message }}"
      }
   },
   "submitForm":{
-    "diliberatelyEmpty":{
-      "deleteDocument":"The 'formSubmit' collection is where form submissions will be saved. This document was included so the formSubmit collection would be created. Feel free to delete this DOCUMENT named 'deliberatelyEmpty' but do not delete the 'formSubmit' COLLECTION"
-    }
+     "diliberatelyEmpty":{
+        "deleteDocument":"The 'submitForm' collection is where new form entries are created. This document was included so the submitForm collection would be created. Feel free to delete this DOCUMENT named 'deliberatelyEmpty' but do not delete the 'submitForm' COLLECTION"
+     }
   }
 }
