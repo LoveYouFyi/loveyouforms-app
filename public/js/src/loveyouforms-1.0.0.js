@@ -1,4 +1,4 @@
-/*! LoveYouForms.js v1.0.0 | loveyouforms.com/license */
+/*! LoveYouForms.js v1.0.0 | Copyright (c) 2020 Nils Erik Hendrick | loveyouforms.com/license */
 
 ////////////////////////////////////////////////////////////////////////////////
 // AJAX Form Submissions using Vanilla JS
