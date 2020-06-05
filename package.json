@@ -1,0 +1,25 @@
+{
+  "name": "loveyouforms",
+  "description": "Cloud app to handle form submissions for one website or 1,000 using the Firebase platform.",
+  "version": "1.0.4",
+  "license": "MIT",
+  "contributors": [
+    {
+      "name": "Nils Erik Hendrick",
+      "email": "erik@loveyou.fyi",
+      "url": "https://loveyou.fyi"
+    }
+  ],
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "akismet-api": "^5.0.0",
+    "firebase-admin": "^8.6.0",
+    "firebase-functions": "^3.6.1",
+    "googleapis": "^36.0.0",
+    "moment-timezone": "^0.5.28",
+    "path": "^0.12.7"
+  }
+}

@@ -1,43 +1,38 @@
 /*------------------------------------------------------------------------------
   Node.js Modules
-  Required modules and configuration for use by Firestore cloud functions
+  Modules and configuration for use by Firestore cloud functions
 ------------------------------------------------------------------------------*/
 
-/*------------------------------------------------------------------------------
- Dependencies for all cloud functions
-------------------------------------------------------------------------------*/
-// FIREBASE FUNCTIONS SDK: to create Cloud Functions and setup triggers
+/*-- Dependencies for all cloud functions ------------------------------------*/
+// Service Account for Firebase: Resolve path for service-account file, then 
+// require it. Fyi: you must manually download file using Firebase console. 
+const path = require('path');
+const serviceAccount = require(path.join(__dirname, "../../", "service-account.json")); 
+// Firebase Functions SDK: to create Cloud Functions and setup triggers
 const functions = require('firebase-functions');
-// DATABASE CREDENTIALS: so cloud functions can authenticate with the database
-const serviceAccount = require('./service-account.json'); // download from firebase console
-// FIREBASE ADMIN SDK: to interact with the Firestore (or firebase) database
+// Database Credentials: so cloud functions can authenticate with the database
+// Firebase Admin SDK: to interact with the Firestore (or firebase) database 
 const admin = require('firebase-admin');
 admin.initializeApp({ // initialize firebase admin with credentials
-  credential: admin.credential.cert(serviceAccount), // So functions connect to database
-  databaseURL: 'https://loveyou-forms.firebaseio.com'
+  credential: admin.credential.cert(serviceAccount)
 });
 const db = admin.firestore(); // FireStore database reference
-/*------------------------------------------------------------------------------
- Dependencies formHandler function: capture form submissions & save to database
- ------------------------------------------------------------------------------*/
-// TIMESTAMPS: for adding server-timestamps to database docs
-const FieldValue = require('firebase-admin').firestore.FieldValue; // Timestamp here
+/*-- Dependencies formHandler cloud function ---------------------------------*/
+// Timestamps: for adding server-timestamps to database docs
+const FieldValue = admin.firestore.FieldValue; // Timestamp here
 const timestampSettings = { timestampsInSnapshots: true }; // Define timestamp settings
 db.settings(timestampSettings); // Apply timestamp settings to database settings
-// AKISMET SPAM FILTER
+// Akismet Spam Filter 
 const { AkismetClient } = require('akismet-api/lib/akismet.js'); // had to hardcode path
-/*------------------------------------------------------------------------------
- Dependencies firestoreToSheets function: sync form submit data to Google Sheets
- ------------------------------------------------------------------------------*/
+/*-- Dependencies firestoreToSheets cloud function ---------------------------*/
 const moment = require('moment-timezone'); // Timestamp formats and timezones
-const { google } = require('googleapis');
+const { google } = require('googleapis'); // Google API 
 const sheets = google.sheets('v4'); // Google Sheets
 const jwtClient = new google.auth.JWT({ // JWT Authentication (for google sheets)
   email: serviceAccount.client_email, // <--- CREDENTIALS
   key: serviceAccount.private_key, // <--- CREDENTIALS
   scopes: ['https://www.googleapis.com/auth/spreadsheets'] // read and write sheets
 });
-
 
 
 /*------------------------------------------------------------------------------
@@ -76,7 +71,7 @@ const objectValuesByKey = (array, propKey) => array.reduce((a, c) => {
   Terminate HTTP cloud functions with res.redirect(), res.send(), or res.end()
 ------------------------------------------------------------------------------*/
 
-exports.formHandler = functions.https.onRequest(async (req, res) => {
+module.exports.formHandler = functions.https.onRequest(async (req, res) => {
 
   let messages; // declared here so catch has access to config messages 
 
@@ -423,7 +418,7 @@ exports.formHandler = functions.https.onRequest(async (req, res) => {
   If required, creates new sheet(tab) and row header.
 ------------------------------------------------------------------------------*/
 
-exports.firestoreToSheets = functions.firestore.document('submitForm/{formId}')
+module.exports.firestoreToSheets = functions.firestore.document('submitForm/{formId}')
   .onCreate(async (snapshot, context) => {
 
   try {
@@ -630,7 +625,7 @@ exports.firestoreToSheets = functions.firestore.document('submitForm/{formId}')
   Doc-Schema Trigger Cloud Functions
   When a new 'doc' is created this adds default fields/schema to it
   Parameters: 'col' is collection type and 'schema' is from 'global' collection
- ------------------------------------------------------------------------------*/
+------------------------------------------------------------------------------*/
 
 const schemaDefault = (col, schema) => functions.firestore.document(`${col}/{id}`)
   .onCreate(async (snapshot, context) => {
@@ -654,5 +649,5 @@ const schemaDefault = (col, schema) => functions.firestore.document(`${col}/{id}
 });
 
 // Default schema functions for 'app' and 'formTemplate' collections
-exports.schemaApp = schemaDefault('app', 'schemaApp'),
-exports.schemaFormTemplate = schemaDefault('formTemplate', 'schemaFormTemplate')
+module.exports.schemaApp = schemaDefault('app', 'schemaApp'),
+module.exports.schemaFormTemplate = schemaDefault('formTemplate', 'schemaFormTemplate')

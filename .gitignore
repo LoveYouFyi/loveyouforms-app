@@ -1,12 +1,9 @@
-# Firebase 
-service-account*.json
-.firebaserc
-
-# Export/Import Data
-exported*.json
 
 # OS
 .DS_Store
+
+# package-lock: ignore when package is a dependency of another project  
+package-lock.json
 
 # Logs
 logs
