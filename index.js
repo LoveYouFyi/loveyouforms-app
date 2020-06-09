@@ -2,7 +2,7 @@
   Node.js Modules
   Modules and configuration for use by Firestore cloud functions
 ------------------------------------------------------------------------------*/
-// hello
+
 /*-- Dependencies for all cloud functions ------------------------------------*/
 // Service Account for Firebase: Resolve path for service-account file, then 
 // require it. Fyi: you must manually download file using Firebase console. 
