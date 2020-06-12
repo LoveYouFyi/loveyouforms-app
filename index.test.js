@@ -28,13 +28,29 @@ test("should be 1", () => {
 test("Expect new app doc to contain default schemaApp properties", async () => {
   // Create new doc key then 'set' data
   const newKeyRef = db.collection('app').doc();
-  console.log("newKeyRef/doc.id", newKeyRef.id);
+  console.log("newKeyRef/doc.id $$$$$$$$$$$$$", newKeyRef.id);
   // create the new-key-record using 'set' which works for existing doc
   newKeyRef.set({});
 
+  const appRef = await db.collection('app').doc(newKeyRef.id).get();
+  console.log("appRef 11111111111111 ", appRef.id);
+  const app = appRef.data();
+  console.log("app 11111111111111111 ", app);
 
   expect(1).toBe(1);
 });
+
+test("Expect new app doc to contain default schemaApp properties", async () => {
+
+  const appRef = await db.collection('app').doc('Rao2t1NWyb3b14okSS64').get();
+  console.log("appRef 22222222222222 ", appRef.id);
+  const app = appRef.data();
+  console.log("app 22222222222222222 ", app);
+
+  expect(1).toBe(1);
+});
+
+
 
 
 
