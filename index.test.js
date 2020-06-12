@@ -26,9 +26,12 @@ test("should be 1", () => {
 // When document written to '/app/{DocumentId}' , trigger function overwrites it
 // with copy of '/global/schemaApp' document 
 test("Expect new app doc to contain default schemaApp properties", async () => {
-  // create random doc id
-  const ref = db.collection('app').doc();
-  ref.set({random: 'name'});
+  // Create new doc key then 'set' data
+  const newKeyRef = db.collection('app').doc();
+  console.log("newKeyRef/doc.id", newKeyRef.id);
+  // create the new-key-record using 'set' which works for existing doc
+  newKeyRef.set({});
+
 
   expect(1).toBe(1);
 });
