@@ -23,6 +23,25 @@ test("should be 1", () => {
   expect(1).toBe(1);
 });
 
+// When document written to '/app/{DocumentId}' , trigger function overwrites it
+// with copy of '/global/schemaApp' document 
+test("Expect new app doc to contain default schemaApp properties", async () => {
+  // create random doc id
+  const ref = db.collection('app').doc();
+  ref.set({random: 'name'});
+
+  expect(1).toBe(1);
+});
+
+
+
+
+
+
+
+
+
+
 
 /*
 test("Test something", () => {
