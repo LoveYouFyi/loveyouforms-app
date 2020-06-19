@@ -653,19 +653,3 @@ const schemaDefault = (col, schema) => functions.firestore.document(`${col}/{id}
 // Default schema functions for 'app' and 'formTemplate' collections
 module.exports.schemaApp = schemaDefault('app', 'schemaApp'),
 module.exports.schemaFormTemplate = schemaDefault('formTemplate', 'schemaFormTemplate')
-
-
-/*------------------------------------------------------------------------------
-  Jest Test
-------------------------------------------------------------------------------*/
-module.exports.onCreate = functions.firestore.document('TestCollection/{docId}')
-  .onCreate(async (snapshot)=> {
-
-  const data = snapshot.data()
-  const docId = snapshot.id
-
-  const copyRef = db.collection('Copies').doc(docId)
-  await copyRef.set(data)
-
-});
-
