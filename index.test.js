@@ -36,24 +36,34 @@ const propCheck = (obj, l1, l2, l3) => {
 // it with the document copied from '/global/schemaApp'
 test("Expect new '/app/{DocumentId}' === '/global/schemaApp' doc", async () => {
 
-  // 1) Get copy of /global/schemaApp
-  const schemaRef = await db.collection('global').doc('schemaApp').get();
-  const schemaRefData = schemaRef.data();
+  // 1) Get copy of /global/schema* doc data 
+  const schemaData = async (col, doc) => {
+    const schemaRef = await db.collection(col).doc(doc).get();
+    return schemaRef.data();
+  }
 
-  // 2) Create new doc with single-level prop by hardcoding the object since 
-  // that's how someone would add a new app to the database 
-  const newIdRef = db.collection('app').doc(); // First create new doc id (so we know the id) then 'set' data
-  newIdRef.set({fake: "data"}); // update the new-id-record using 'set' which works for existing doc
+  // 2) Create new doc -> allow schema trigger time to run -> return new doc data 
+  const newDoc = async (col) => {
+    // Create new doc with single-level prop by hardcoding the object since 
+    // that's how someone would add a new app to the database 
+    const newIdRef = db.collection(col).doc(); // First create new doc id (so we know the id) then 'set' data
+    newIdRef.set({fake: "data"}); // update the new-id-record using 'set' which works for existing doc
 
-  // Trigger Function should execute and copy 
-  // Manual delay so schema trigger function 'onCreate' has time to execute
-  await new Promise((r) => setTimeout(r, 2000));
+    // Trigger Function should execute and copy /global/schema* doc to new doc 
+    // Manual delay so schema trigger function 'onCreate' has time to execute
+    await new Promise((r) => setTimeout(r, 2000));
 
-  // 3) Test copy of new '/app/{DocumentId}' against expected object props 
-  const newRef = await db.collection('app').doc(newIdRef.id).get();
-  const newData = newRef.data();
+    // Doc Data should contain data copied from /global/schema* doc 
+    const newRef = await db.collection(col).doc(newIdRef.id).get();
+    return newRef.data();
+  }
 
-  const propsExistInAppDoc = obj => {
+  // 3) Test if collection newly created doc === global schema doc 
+  expect(await newDoc('app')).toStrictEqual(await schemaData('global', 'schemaApp'));
+  expect(await newDoc('formTemplate')).toStrictEqual(await schemaData('global', 'schemaFormTemplate'));
+
+  //////////////////////////////////////////////////////////////////////////////
+  const appCollectionPropsCheck = obj => {
     return (
       propCheck(obj, 'appInfo', 'appName') && 
       propCheck(obj, 'message', 'error', 'timeout') &&
@@ -63,12 +73,10 @@ test("Expect new '/app/{DocumentId}' === '/global/schemaApp' doc", async () => {
       propCheck(obj, 'email')
     )
   }
-
-  // Test if newly created doc === global schema doc 
-  expect(newData).toStrictEqual(schemaRefData);
   // Test if hardcoded props exist in newly created doc (because what if global 
   // schema doc is empty or has been mutated?) 
-  expect(propsExistInAppDoc(newData)).toBe(true);
+  expect(appCollectionPropsCheck(newDoc)).toBe(true);
+  //////////////////////////////////////////////////////////////////////////////
 })
 
 
