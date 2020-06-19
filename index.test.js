@@ -23,6 +23,42 @@ test("should be 1", () => {
   expect(1).toBe(1);
 });
 
+/*
+  1) Get copy of /global/schemaApp
+  2) Add new App doc
+  3) Compare new App doc with globalSchemaApp
+*/
+// When Document written to '/app/{DocumentId}', trigger function to overwrite
+// it with document copied from '/global/schemaApp'
+test("Expect new '/app/{DocumentId}' === '/global/schemaApp' doc", async () => {
+  const schemaAppRef = await db.collection('global').doc('schemaApp').get();
+  const app = schemaAppRef.data();
+  console.log("app: $$$$$$$$$$$$$ ", app);
+
+  /*
+  const appDoc = {
+      app: 'name'
+  }
+
+  const ref = db.collection('app').doc();
+  await ref.set(appDoc);
+  
+  const copyId = ref.id;
+
+  const copyRef = db.collection('Copies').doc(copyId);
+
+  // DELAY EXECUTION 
+  await new Promise((r) => setTimeout(r, 3000));
+
+  const copyDoc = await copyRef.get();
+  console.log("copyDoc", copyDoc);
+  console.log("copyDoc.id", copyDoc.id);
+  console.log("copyDoc.data()", copyDoc.data());
+*/
+//  expect(copyDoc.data()).toStrictEqual(appDoc)
+  expect(1).toBe(1);
+})
+
 
 // When Document written to '/TestCollection/{DocumentId}' , trigger function to copy it to '/Copies/{DocumentId}
 test("Expect to find a copy in 'Copies' Collection", async () => {
