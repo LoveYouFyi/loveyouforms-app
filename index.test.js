@@ -33,7 +33,7 @@ test("should be 1", () => {
 // When Document written to '/app/{DocumentId}', trigger function to overwrite
 // it with document copied from '/global/schemaApp'
 test("Expect new '/app/{DocumentId}' === '/global/schemaApp' doc", async () => {
-  
+
   // 1) Get copy of /global/schemaApp
   const schemaAppRef = await db.collection('global').doc('schemaApp').get();
   const app = schemaAppRef.data();
@@ -50,6 +50,15 @@ test("Expect new '/app/{DocumentId}' === '/global/schemaApp' doc", async () => {
   const newAppRef = await db.collection('app').doc(newIdRef.id).get();
   const newApp = newAppRef.data();
   console.log("newApp: $$$$$$$$$$$$$ ", newApp);
+
+//  const check = (((newApp || {}).message || {}).error || {}).timeout;
+  const propCheck = (obj, l1, l2, l3) => obj[l1][l2].hasOwnProperty(l3) ? true : false;
+
+  const check = propCheck(newApp, 'message', 'error', 'timeout');
+  console.log("Check $$$$$$$$$$$$$$$$$$$$$$$ ", check);
+
+//  console.log("Prop Check ", newApp.hasOwnProperty('appInfo.appName'));
+
 
   /*
   const appDoc = {
@@ -95,10 +104,9 @@ test("Expect to find a copy in 'Copies' Collection", async () => {
   await new Promise((r) => setTimeout(r, 3000))
 
   const copyDoc = await copyRef.get()
-  console.log("copyDoc", copyDoc);
-  console.log("copyDoc.id", copyDoc.id);
-  console.log("copyDoc.data()", copyDoc.data());
-//  expect(copyDoc.data());
+  //console.log("copyDoc", copyDoc);
+  //console.log("copyDoc.id", copyDoc.id);
+  //console.log("copyDoc.data()", copyDoc.data());
   expect(copyDoc.data()).toStrictEqual(testDoc);
 })
 
