@@ -23,6 +23,34 @@ test("should be 1", () => {
   expect(1).toBe(1);
 });
 
+
+// When Document written to '/TestCollection/{DocumentId}' , trigger function to copy it to '/Copies/{DocumentId}
+test("Expect to find a copy in 'Copies' Collection", async () => {
+  const testDoc = {
+      name: 'Samer',
+      age: 21,
+      city: 'Riyadh'
+  }
+
+  const ref = db.collection('TestCollection').doc()
+  await ref.set(testDoc)
+  
+  const copyId = ref.id
+
+  const copyRef = db.collection('Copies').doc(copyId)
+
+  // DELAY EXECUTION 
+  await new Promise((r) => setTimeout(r, 3000))
+
+  const copyDoc = await copyRef.get()
+  console.log("copyDoc", copyDoc);
+  console.log("copyDoc.id", copyDoc.id);
+  console.log("copyDoc.data()", copyDoc.data());
+//  expect(copyDoc.data());
+  expect(copyDoc.data()).toStrictEqual(testDoc);
+})
+
+
 /*
 const appData = appId => async () => {
   const appRef = await db.collection('app').doc(appId).get();
@@ -98,25 +126,3 @@ test("Test something", () => {
 */
 
 // When Document written to '/TestCollection/{DocumentId}' , trigger function to copy it to '/Copies/{DocumentId}
-test("Expect to find a copy in 'Copies' Collection", async ()=>{
-  const testDoc = {
-      name: 'Samer',
-      age: 21,
-      city: 'Riyadh'
-  }
-
-  const ref = db.collection('TestCollection').doc()
-  await ref.set(testDoc)
-  
-  const copyId = ref.id
-
-  const copyRef = db.collection('Copies').doc(copyId)
-
-  await new Promise((r)=>setTimeout(r, 3000))
-
-  const copyDoc = await copyRef.get()
-  console.log("copyDoc.id", copyDoc.id);
-  console.log("copyDoc.data()", copyDoc.data());
-
-  expect(copyDoc.data()).toStrictEqual(testDoc)
-})
