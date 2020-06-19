@@ -51,13 +51,26 @@ test("Expect new '/app/{DocumentId}' === '/global/schemaApp' doc", async () => {
   const newApp = newAppRef.data();
   console.log("newApp: $$$$$$$$$$$$$ ", newApp);
 
-//  const check = (((newApp || {}).message || {}).error || {}).timeout;
-  const propCheck = (obj, l1, l2, l3) => obj[l1][l2].hasOwnProperty(l3) ? true : false;
+  const propCheck = (obj, l1, l2, l3) => {
+    return (
+      l3 ? obj[l1][l2].hasOwnProperty(l3) ? true : false :
+      l2 ? obj[l1].hasOwnProperty(l2) ? true : false :
+      obj.hasOwnProperty(l1) ? true : false
+    )
+  }
 
-  const check = propCheck(newApp, 'message', 'error', 'timeout');
-  console.log("Check $$$$$$$$$$$$$$$$$$$$$$$ ", check);
+  const propsExistInAppDoc = obj => {
+    return (
+      propCheck(obj, 'appInfo', 'appName') && 
+      propCheck(obj, 'message', 'error', 'timeout') &&
+      propCheck(obj, 'condition', 'messageGlobal') &&
+      propCheck(obj, 'spamFilterAkismet', 'key') &&
+      propCheck(obj, 'spreadsheet', 'sheetId', 'contactDefault') &&
+      propCheck(obj, 'email')
+    )
+  }
 
-//  console.log("Prop Check ", newApp.hasOwnProperty('appInfo.appName'));
+  console.log("propsExist $$$$$$$$$$$$$$$$$$$$$$$ ", propsExistInAppDoc(newApp));
 
 
   /*
