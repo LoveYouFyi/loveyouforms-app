@@ -27,6 +27,8 @@ test("should be 1", () => {
   1) Get copy of /global/schemaApp
   2) Add new App doc
   3) Compare new App doc with globalSchemaApp
+      A. verify prop keys exist
+      B. verify object === object
 */
 // When Document written to '/app/{DocumentId}', trigger function to overwrite
 // it with document copied from '/global/schemaApp'
@@ -35,13 +37,19 @@ test("Expect new '/app/{DocumentId}' === '/global/schemaApp' doc", async () => {
   // 1) Get copy of /global/schemaApp
   const schemaAppRef = await db.collection('global').doc('schemaApp').get();
   const app = schemaAppRef.data();
-  console.log("app: $$$$$$$$$$$$$ ", app);
+  // console.log("app: $$$$$$$$$$$$$ ", app);
 
   // 2) Add new App doc
   // First create new doc id (so we know the id) then 'set' data
   const newIdRef = db.collection('app').doc();
   // update the new-id-record using 'set' which works for existing doc
   newIdRef.set(app);
+
+  // 3) Get copy of new '/app/{DocumentId}' 
+  await new Promise((r) => setTimeout(r, 2000));
+  const newAppRef = await db.collection('app').doc(newIdRef.id).get();
+  const newApp = newAppRef.data();
+  console.log("newApp: $$$$$$$$$$$$$ ", newApp);
 
   /*
   const appDoc = {
