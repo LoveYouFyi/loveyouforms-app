@@ -37,19 +37,21 @@ const propCheck = (obj, l1, l2, l3) => {
 test("Expect new '/app/{DocumentId}' === '/global/schemaApp' doc", async () => {
 
   // 1) Get copy of /global/schemaApp
-  const schemaAppRef = await db.collection('global').doc('schemaApp').get();
-  const app = schemaAppRef.data();
+  const schemaRef = await db.collection('global').doc('schemaApp').get();
+  const schemaRefData = schemaRef.data();
 
-  // 2) Add new App doc
+  // 2) Create new doc with single-level prop by hardcoding the object since 
+  // that's how someone would add a new app to the database 
   const newIdRef = db.collection('app').doc(); // First create new doc id (so we know the id) then 'set' data
-  newIdRef.set(app); // update the new-id-record using 'set' which works for existing doc
+  newIdRef.set({fake: "data"}); // update the new-id-record using 'set' which works for existing doc
 
-  // Manual delay so schema trigger function 'onCreate' has time to execute 
+  // Trigger Function should execute and copy 
+  // Manual delay so schema trigger function 'onCreate' has time to execute
   await new Promise((r) => setTimeout(r, 2000));
 
   // 3) Test copy of new '/app/{DocumentId}' against expected object props 
-  const newAppRef = await db.collection('app').doc(newIdRef.id).get();
-  const newApp = newAppRef.data();
+  const newRef = await db.collection('app').doc(newIdRef.id).get();
+  const newData = newRef.data();
 
   const propsExistInAppDoc = obj => {
     return (
@@ -62,10 +64,11 @@ test("Expect new '/app/{DocumentId}' === '/global/schemaApp' doc", async () => {
     )
   }
 
-  console.log("propsExist $$$$$$$$$$$$$$$$$$$$$$$ ", propsExistInAppDoc(newApp));
-
-//  expect(copyDoc.data()).toStrictEqual(appDoc)
-  expect(1).toBe(1);
+  // Test if newly created doc === global schema doc 
+  expect(newData).toStrictEqual(schemaRefData);
+  // Test if hardcoded props exist in newly created doc (because what if global 
+  // schema doc is empty or has been mutated?) 
+  expect(propsExistInAppDoc(newData)).toBe(true);
 })
 
 
