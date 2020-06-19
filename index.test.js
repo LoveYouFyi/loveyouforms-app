@@ -31,9 +31,17 @@ test("should be 1", () => {
 // When Document written to '/app/{DocumentId}', trigger function to overwrite
 // it with document copied from '/global/schemaApp'
 test("Expect new '/app/{DocumentId}' === '/global/schemaApp' doc", async () => {
+  
+  // 1) Get copy of /global/schemaApp
   const schemaAppRef = await db.collection('global').doc('schemaApp').get();
   const app = schemaAppRef.data();
   console.log("app: $$$$$$$$$$$$$ ", app);
+
+  // 2) Add new App doc
+  // First create new doc id (so we know the id) then 'set' data
+  const newIdRef = db.collection('app').doc();
+  // update the new-id-record using 'set' which works for existing doc
+  newIdRef.set(app);
 
   /*
   const appDoc = {
