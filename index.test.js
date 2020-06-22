@@ -27,7 +27,7 @@ const propCheck = (obj, l1, l2, l3) => {
   it with the document copied from '/global/schemaApp'
 ------------------------------------------------------------------------------*/
 test("Expect new '/app/{DocumentId}' === '/global/schemaApp' doc", async () => {
-  jest.setTimeout(6500); // increase jest default async timeout to time-delays have enough time 
+  jest.setTimeout(15000); // increase jest default async timeout to time-delays have enough time 
 
   // 1) Get copy of /global/schema* doc data 
   const schemaData = async (col, doc) => {
