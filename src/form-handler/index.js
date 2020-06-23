@@ -15,8 +15,8 @@ const { logErrorInfo, sortObjectsAsc, objectValuesByKey } =
 /*-- Cloud Function ----------------------------------------------------------*/
 
 module.exports = ({ admin }) => async (req, res) => {
-  const db = admin.firestore();
 
+  const db = admin.firestore();
   let messages; // declared here so catch has access to config messages
 
   try {
