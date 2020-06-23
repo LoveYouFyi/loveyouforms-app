@@ -1,5 +1,6 @@
-
-/*-- Dependencies all cloud functions ----------------------------------------*/
+/*------------------------------------------------------------------------------
+  Dependencies all cloud functions
+------------------------------------------------------------------------------*/
 
 // Firebase Functions SDK: to create Cloud Functions and setup triggers
 const functions = require('firebase-functions');

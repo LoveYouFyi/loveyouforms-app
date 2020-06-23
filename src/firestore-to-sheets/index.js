@@ -10,8 +10,9 @@ const moment = require('moment-timezone'); // Timestamp formats and timezones
 const path = require('path');
 const { logErrorInfo, sortObjectsAsc, objectValuesByKey } =
   require(path.join(__dirname, "../utility"));
-// Service Account Credentials: First manually download file using Firebase console;
-// credentials are used by functions to authenticate with Google Sheets API
+// Sheets with Credentials
+// service-account credentials: manually download file using Firebase console;
+// credentials are used by cloud function to authenticate with Google Sheets API
 const serviceAccount = require(path.join(__dirname, "../../../../", "service-account.json"));
 const { google } = require('googleapis'); // Google API
 const jwtClient = new google.auth.JWT({ // JWT Authentication (for google sheets)

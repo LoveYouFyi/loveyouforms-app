@@ -16,8 +16,8 @@ const { logErrorInfo, sortObjectsAsc, objectValuesByKey } =
 
 module.exports = ({ admin }) => async (req, res) => {
 
-  const db = admin.firestore();
   let messages; // declared here so catch has access to config messages
+  const db = admin.firestore();
 
   try {
 
