@@ -1,20 +1,22 @@
-
-/*-- Dependencies formHandler cloud function ---------------------------------*/
-// Akismet Spam Filter
-const { AkismetClient } = require('akismet-api/lib/akismet.js'); // had to hardcode path
-// Utility
-const path = require('path');
-const { logErrorInfo, sortObjectsAsc, objectValuesByKey } =
-  require(path.join(__dirname, "../", "utility.js"));
-
 /*------------------------------------------------------------------------------
   Form-Handler HTTP Cloud Function
   Receives data sent by form submission and creates database entry
   Terminate HTTP cloud functions with res.redirect(), res.send(), or res.end()
 ------------------------------------------------------------------------------*/
 
+/*-- Dependencies ------------------------------------------------------------*/
+
+const { AkismetClient } = require('akismet-api/lib/akismet.js'); // had to hardcode path
+const path = require('path');
+const { logErrorInfo, sortObjectsAsc, objectValuesByKey } =
+  require(path.join(__dirname, "../utility"));
+
+
+/*-- Cloud Function ----------------------------------------------------------*/
+
 module.exports = ({ admin }) => async (req, res) => {
   const db = admin.firestore();
+
   let messages; // declared here so catch has access to config messages
 
   try {
