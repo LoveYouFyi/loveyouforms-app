@@ -1,10 +1,10 @@
 /*------------------------------------------------------------------------------
-  Doc-Schema Trigger Cloud Functions
+  Schema-Default Trigger Cloud Functions
   When a new 'doc' is created this adds default fields/schema to it
-  Parameters: 'col' is collection type and 'schema' is from 'global' collection
+  schemaDefault(collection_name, global_schema_document_name, context)
 ------------------------------------------------------------------------------*/
 
-module.exports = (col, schema, { admin }) => async (snapshot, context) => {
+module.exports = (collection, schema, { admin }) => async (snapshot, context) => {
 
   const db = admin.firestore();
 
@@ -15,7 +15,7 @@ module.exports = (col, schema, { admin }) => async (snapshot, context) => {
     const schemaData = schemaRef.data();
 
     // Update new doc with default schema
-    const appRef = db.collection(col).doc(context.params.id);
+    const appRef = db.collection(collection).doc(context.params.id);
     appRef.set(schemaData); // update record with 'set' which is for existing doc
 
     return schemaData;
@@ -27,7 +27,3 @@ module.exports = (col, schema, { admin }) => async (snapshot, context) => {
   }
 
 }
-
-// Default schema functions for 'app' and 'formTemplate' collections
-//module.exports.schemaApp = ({ admin }) = schemaDefault('app', 'schemaApp'),
-//module.exports.schemaFormTemplate = schemaDefault('formTemplate', 'schemaFormTemplate')

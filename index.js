@@ -7,9 +7,10 @@ const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 admin.initializeApp(); // initialize firebase admin SDK
 admin.firestore().settings({ timestampsInSnapshots: true }); // to write server-timestamps to database docs
-const db = admin.firestore(); // FireStore database reference
 const context = { admin };
-// Cloud Functions
+
+/*-- Cloud Functions ---------------------------------------------------------*/
+
 const formHandler = require('./src/form-handler');
 const firestoreToSheets = require('./src/firestore-to-sheets');
 const schemaDefault = require('./src/schema-default');
@@ -33,17 +34,15 @@ module.exports.firestoreToSheets = functions.firestore.document('submitForm/{for
 
 
 /*------------------------------------------------------------------------------
-  Doc-Schema Trigger Cloud Functions
+  Schema-Default Trigger Cloud Functions
   When a new 'doc' is created this adds default fields/schema to it
-  Parameters: 'col' is collection type and 'schema' is from 'global' collection
+  schemaDefault(collection_name, global_schema_document_name, context)
 ------------------------------------------------------------------------------*/
 
+// 'app' collection default schema function
 module.exports.schemaApp = functions.firestore.document('app/{id}')
   .onCreate(schemaDefault('app', 'schemaApp', context));
 
-// Default schema functions for 'app' and 'formTemplate' collections
-//module.exports.schemaApp = schemaDefault('app', 'schemaApp'),
-//module.exports.schemaFormTemplate = schemaDefault('formTemplate', 'schemaFormTemplate')
-
+// 'formTemplate' collection default schema function
 module.exports.schemaFormTemplate = functions.firestore.document('formTemplate/{id}')
   .onCreate(schemaDefault('formTemplate', 'schemaFormTemplate', context));
