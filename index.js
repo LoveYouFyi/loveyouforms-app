@@ -12,6 +12,7 @@ const context = { admin };
 // Cloud Functions
 const formHandler = require('./src/form-handler');
 const firestoreToSheets = require('./src/firestore-to-sheets');
+const schemaDefault = require('./src/schema-default');
 
 
 /*------------------------------------------------------------------------------
@@ -37,29 +38,12 @@ module.exports.firestoreToSheets = functions.firestore.document('submitForm/{for
   Parameters: 'col' is collection type and 'schema' is from 'global' collection
 ------------------------------------------------------------------------------*/
 
-const schemaDefault = (col, schema) => functions.firestore.document(`${col}/{id}`)
-  .onCreate(async (snapshot, context) => {
-
-  try {
-
-    // Get Default Schema
-    const schemaRef = await db.collection('global').doc(schema).get();
-    const schemaData = schemaRef.data();
-
-    // Update new doc with default schema
-    const appRef = db.collection(col).doc(context.params.id);
-    appRef.set(schemaData); // update record with 'set' which is for existing doc
-
-    return schemaData;
-
-  } catch(error) {
-
-    console.error(logErrorInfo(error));
-
-  }
-
-});
+module.exports.schemaApp = functions.firestore.document('app/{id}')
+  .onCreate(schemaDefault('app', 'schemaApp', context));
 
 // Default schema functions for 'app' and 'formTemplate' collections
-module.exports.schemaApp = schemaDefault('app', 'schemaApp'),
-module.exports.schemaFormTemplate = schemaDefault('formTemplate', 'schemaFormTemplate')
+//module.exports.schemaApp = schemaDefault('app', 'schemaApp'),
+//module.exports.schemaFormTemplate = schemaDefault('formTemplate', 'schemaFormTemplate')
+
+module.exports.schemaFormTemplate = functions.firestore.document('formTemplate/{id}')
+  .onCreate(schemaDefault('formTemplate', 'schemaFormTemplate', context));
