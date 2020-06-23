@@ -9,35 +9,24 @@ admin.initializeApp(); // initialize firebase admin SDK
 admin.firestore().settings({ timestampsInSnapshots: true }); // to write server-timestamps to database docs
 const context = { admin };
 
-/*-- Cloud Functions ---------------------------------------------------------*/
-
+/*------------------------------------------------------------------------------
+  Cloud Functions
+------------------------------------------------------------------------------*/
 const formHandler = require('./src/form-handler');
 const firestoreToSheets = require('./src/firestore-to-sheets');
 const schemaDefault = require('./src/schema-default');
 
 
-/*------------------------------------------------------------------------------
-  Form-Handler HTTP Cloud Function
-  Receives data sent by form submission and creates database entry
-  Terminate HTTP cloud functions with res.redirect(), res.send(), or res.end()
-------------------------------------------------------------------------------*/
+/*-- Form-Handler HTTP Cloud Function ----------------------------------------*/
 module.exports.formHandler = functions.https.onRequest(formHandler(context));
 
 
-/*------------------------------------------------------------------------------
-  Firestore-to-Sheets Trigger Cloud Function
-  Listens for new 'submitForm' collection docs and adds data to google sheets.
-  If required, creates new sheet(tab) and row header.
-------------------------------------------------------------------------------*/
+/*-- Firestore-to-Sheets Trigger Cloud Function ------------------------------*/
 module.exports.firestoreToSheets = functions.firestore.document('submitForm/{formId}')
   .onCreate(firestoreToSheets(context));
 
 
-/*------------------------------------------------------------------------------
-  Schema-Default Trigger Cloud Functions
-  When a new 'doc' is created this adds default fields/schema to it
-  schemaDefault(collection_name, global_schema_document_name, context)
-------------------------------------------------------------------------------*/
+/*-- Schema-Default Trigger Cloud Functions ----------------------------------*/
 
 // 'app' collection default schema function
 module.exports.schemaApp = functions.firestore.document('app/{id}')
