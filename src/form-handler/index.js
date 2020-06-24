@@ -15,9 +15,15 @@ const { logErrorInfo, sortObjectsAsc, objectValuesByKey } =
 /*-- Cloud Function ----------------------------------------------------------*/
 
 module.exports = ({ admin }) => async (req, res) => {
-
-  let messages; // declared here so catch has access to config messages
   const db = admin.firestore();
+  let messages; // declared here so catch has access to config messages
+  // Stop processing if content type is undefined or not 'text/plain'
+  (typeof req.headers['content-type'] === 'undefined'
+    || req.headers['content-type'].toLowerCase() !== 'text/plain')
+    && (console.warn(`Request header 'content-type' must be 'text/plain'`)
+      && res.end());
+  // Form results as object
+  const formResults = JSON.parse(req.body); // parse req.body json-text-string
 
   try {
 
@@ -25,16 +31,6 @@ module.exports = ({ admin }) => async (req, res) => {
     // Validate: request content-type; cors authorized app; form submit disabled
     // Stop processing if checks fail
     ////////////////////////////////////////////////////////////////////////////
-
-    // Request Content-Type: stop processing if content type is not 'text/plain'
-    const contentType = req.headers['content-type'];
-    if (typeof contentType === 'undefined'
-        || contentType.toLowerCase() !== 'text/plain') {
-      console.warn(`Request header 'content-type' must be 'text/plain'`);
-      return res.end();
-    }
-
-    const formResults = JSON.parse(req.body); // parse req.body json-text-string
 
     const appRef = await db.collection('app').doc(formResults.appKey).get();
     const app = appRef.data();
