@@ -26,8 +26,6 @@ module.exports = ({ admin }) => async (req, res) => {
   // Form results as object
   const formResults = JSON.parse(req.body); // parse req.body json-text-string
 
-  console.log("req.ip $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", req);
-
   try {
 
     const validApp = await appValidate(req, res, db, formResults);
@@ -230,7 +228,7 @@ module.exports = ({ admin }) => async (req, res) => {
           : null;
 
           // Data to check for spam
-        const testData = {
+        const dataToCheck = {
           ...req.ip && { ip: req.ip },
           ...req.headers['user-agent'] && { useragent: req.headers['user-agent'] },
           ...akismetProps('content')('') && { content: akismetProps('content')('') },
@@ -238,7 +236,7 @@ module.exports = ({ admin }) => async (req, res) => {
         }
 
         // Test if data is spam: a successful test returns boolean
-        const isSpam = await client.checkSpam(testData);
+        const isSpam = await client.checkSpam(dataToCheck);
         // if spam suspected
         if (typeof isSpam === 'boolean' && isSpam) {
           props.set({spam: 'true' });
