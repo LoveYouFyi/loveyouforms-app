@@ -11,7 +11,7 @@ const appValidate = async (req, res, db, formResults) => {
   const appRef = await db.collection('app').doc(formResults.appKey).get();
   const app = appRef.data();
 
-  // App key: if exists continue with global and app condition checks
+  // If app exists continue with global and app condition checks
   if (app) {
     const globalAppRef = await db.collection('global').doc('app').get();
     globalApp = globalAppRef.data();

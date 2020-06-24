@@ -5,28 +5,29 @@
 ------------------------------------------------------------------------------*/
 
 /*-- Dependencies ------------------------------------------------------------*/
-
 const { AkismetClient } = require('akismet-api/lib/akismet.js'); // had to hardcode path
 const path = require('path');
 const { logErrorInfo, sortObjectsAsc, objectValuesByKey } =
   require(path.join(__dirname, "../utility"));
 
-const appValidate = require('./app-validate');
-
-
 /*-- Cloud Function ----------------------------------------------------------*/
+const appValidate = require('./app-validate');
 
 module.exports = ({ admin }) => async (req, res) => {
   const db = admin.firestore();
   let messages; // declared here so catch has access to config messages
   // Stop processing if content type is undefined or not 'text/plain'
-  (typeof req.headers['content-type'] === 'undefined'
-    || req.headers['content-type'].toLowerCase() !== 'text/plain')
-    && (console.warn(`Request header 'content-type' must be 'text/plain'`)
-      && res.end());
+  if (typeof req.headers['content-type'] === 'undefined'
+    || req.headers['content-type'].toLowerCase() !== 'text/plain') {
+    console.warn(`Request header 'content-type' must be 'text/plain'`);
+    res.end();
+  }
+
   // Form results as object
   const formResults = JSON.parse(req.body); // parse req.body json-text-string
-  console.log("req.ip $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", req.ip);
+
+  console.log("req.ip $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", req);
+
   try {
 
     const validApp = await appValidate(req, res, db, formResults);
