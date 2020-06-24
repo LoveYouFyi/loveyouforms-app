@@ -26,72 +26,17 @@ module.exports = ({ admin }) => async (req, res) => {
       && res.end());
   // Form results as object
   const formResults = JSON.parse(req.body); // parse req.body json-text-string
-  const temp = await appValidate(formResults);
-  console.log("temp $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", temp);
+  console.log("req.ip $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", req.ip);
   try {
 
-    ////////////////////////////////////////////////////////////////////////////
-    // Validate: request content-type; cors authorized app; form submit disabled
-    // Stop processing if checks fail
-    //
-    // Need:
-    //   globalApp
-    //   app
-    //   messages
-    ////////////////////////////////////////////////////////////////////////////
-    let globalApp; // declared here for akismet
+    const validApp = await appValidate(req, res, db, formResults);
+    const app = validApp.app;
+    const globalApp = validApp.globalApp; // declared here for akismet
+    messages = validApp.messages;
 
-//    const app = appValidate(formResults);
-  const appRef = await db.collection('app').doc(formResults.appKey).get();
-  const app = appRef.data();
-
-  // App key: if exists continue with global and app condition checks
-  if (app) {
-    const globalAppRef = await db.collection('global').doc('app').get();
-    globalApp = globalAppRef.data();
-    // Messages: use global or app-specific messages
-    // global boolean 0/false, 1/true, or '2' bypass global & use app boolean
-    if (globalApp.condition.messageGlobal === 1
-        || (globalApp.condition.messageGlobal === 2
-            && !!app.condition.messageGlobal)
-      ) {
-      messages = globalApp.message;
-    } else {
-      messages = app.message;
-    }
-    // CORS validation: stop cloud function if check does not pass
-    // global boolean 0/false, 1/true, or '2' bypass global to use app boolean
-    if (globalApp.condition.corsBypass === 0
-        || (globalApp.condition.corsBypass === 2
-            && !app.condition.corsBypass)
-      ) {
-      // url requests restricted to match the app
-      res.setHeader('Access-Control-Allow-Origin', app.appInfo.appUrl);
-      // end processing if app url does not match req.headers.origin url
-      if (req.headers.origin !== app.appInfo.appUrl) {
-        console.warn('CORS Access Control: Origin Url does not match App Url.');
-        // no error response sent because request not from approved app
-        return res.end();
-      }
-    } else {
-      // allow all so localhost (or any source) can submit requests
-      res.setHeader('Access-Control-Allow-Origin', '*');
-    }
-    // Form Submit Enabled: stop cloud function if submitForm disabled
-    // global boolean 0/false, 1/true, or '2' bypass global to use app boolean
-    if (globalApp.condition.submitForm === 0
-        || (globalApp.condition.submitForm === 2
-            && !app.condition.submitForm)
-      ) {
-      console.warn(`Form submit disabled for app "${app.appInfo.appName}"`);
-      // return error response because submit is from approved app
-      throw (messages.error.text);
-    }
-  } else {
-    console.warn('App Key does not exist.');
-    // no error response sent because submit not from approved app
-    return res.end();
-  }
+    //console.log("app $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", app);
+    //console.log("globalApp $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", globalApp);
+    //console.log("messages $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", messages);
 
     ////////////////////////////////////////////////////////////////////////////
     // Props/Fields
