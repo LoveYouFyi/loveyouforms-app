@@ -147,14 +147,28 @@ const formResultsData = async (req, admin, db, formSubmission, app, globalApp) =
         }
       };
     })();
+
+    ////////////////////////////////////////////////////////////////////////////
     // Set allowed props
+    ////////////////////////////////////////////////////////////////////////////
     props.set(propsAllowedEntries);
 
-    const propsForSpamCheck = props.get().data;
-    console.log("propsForSpam $$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", propsForSpamCheck);
-    const spamCheckResults = await spamCheckAkismet(req, formTemplateRef, propsForSpamCheck, app, globalApp);
-    console.log("spamCheck $$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", spamCheckResults);
-    props.set(spamCheckResults);
+    ////////////////////////////////////////////////////////////////////////////
+    // Spam Check Akismet
+    ////////////////////////////////////////////////////////////////////////////
+    if (globalApp.condition.spamFilterAkismet === 1
+        || (globalApp.condition.spamFilterAkismet === 2
+            && !!app.condition.spamFilterAkismet)
+    ) {
+      const propsForSpamCheck = props.get().data;
+      console.log("propsForSpam $$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", propsForSpamCheck);
+      const spamCheckResults = await spamCheckAkismet(req, formTemplateRef, propsForSpamCheck, app);
+      console.log("spamCheck $$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", spamCheckResults);
+      props.set(spamCheckResults);
+    } else {
+      props.set({ spam: 'Check not enabled'});
+    }
+
     //
     // [END] Props Set & Get
     ////////////////////////////////////////////////////////////////////////////

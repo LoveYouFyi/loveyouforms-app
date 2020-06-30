@@ -9,8 +9,9 @@
 const { AkismetClient } = require('akismet-api/lib/akismet.js'); // had to hardcode path
 
 /*-- Cloud Function ----------------------------------------------------------*/
-const spamCheckAkismet = async (req, formTemplateRef, propsForSpamCheck, app, globalApp) => {
+const spamCheckAkismet = async (req, formTemplateRef, propsForSpamCheck, app) => {
   // return object since result is added to form-results-data using props.set()
+/*
   const akismetResults = { spam: 'Check not enabled'}
 
   let akismetEnabled = false;
@@ -20,8 +21,8 @@ const spamCheckAkismet = async (req, formTemplateRef, propsForSpamCheck, app, gl
   ) {
     akismetEnabled = true;
   }
-
-  if (akismetEnabled) {
+*/
+//  if (akismetEnabled) {
     // Akismet credentials
     const key = app.spamFilterAkismet.key;
     const blog = app.appInfo.appUrl;
@@ -65,11 +66,12 @@ const spamCheckAkismet = async (req, formTemplateRef, propsForSpamCheck, app, gl
       const isSpam = await client.checkSpam(dataToCheck);
       // if spam suspected
       if (typeof isSpam === 'boolean' && isSpam) {
-        akismetResults.spam = 'true';
+        return {spam: 'true'};
       }
       // if spam not suspected
       else if (typeof isSpam === 'boolean' && !isSpam) {
-        akismetResults.spam = 'false';
+      //  akismetResults.spam = 'false';
+        return {spam: 'false'};
       }
 
     } catch(err) {
@@ -87,7 +89,7 @@ const spamCheckAkismet = async (req, formTemplateRef, propsForSpamCheck, app, gl
 
     }
 
-  }
+//  }
   //
   // [END] Akismet Spam Filter
   ////////////////////////////////////////////////////////////////////////////
