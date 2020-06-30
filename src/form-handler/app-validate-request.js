@@ -5,6 +5,7 @@
   Stop processing if checks fail
 ------------------------------------------------------------------------------*/
 
+/*-- Cloud Function ----------------------------------------------------------*/
 const appValidate = async (req, res, db, formSubmission) => {
   let messages;
   let globalApp;

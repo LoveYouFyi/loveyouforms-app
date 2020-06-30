@@ -16,15 +16,15 @@ const formResultsData = require('./form-results-data');
 module.exports = ({ admin }) => async (req, res) => {
   const db = admin.firestore();
   let messages; // declared here so catch has access to config messages
-  // Stop processing if content type is undefined or not 'text/plain'
+  // Stop processing if content-type is 'undefined' or not 'text/plain'
   if (typeof req.headers['content-type'] === 'undefined'
     || req.headers['content-type'].toLowerCase() !== 'text/plain') {
     console.warn(`Request header 'content-type' must be 'text/plain'`);
     res.end();
   }
 
-  // Form results as object
-  const formSubmission = JSON.parse(req.body); // parse req.body json-text-string
+  // Form submission string as object, req.body should be json formatted string
+  const formSubmission = JSON.parse(req.body);
 
   try {
 
@@ -33,27 +33,18 @@ module.exports = ({ admin }) => async (req, res) => {
     const globalApp = validRequest.globalApp; // declared here for akismet
     messages = validRequest.messages; // either app.messages or globalApp.messages
 
-    //console.log("app $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", app);
-    //console.log("globalApp $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", globalApp);
-    //console.log("messages $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", messages);
-
-    const databaseEntry = await formResultsData(req, admin, db, formSubmission, app, globalApp);
-    console.log("data $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", databaseEntry);
     ////////////////////////////////////////////////////////////////////////////
     // Database Entry: add form submission to database
     ////////////////////////////////////////////////////////////////////////////
-
+    const databaseEntry = await formResultsData(req, admin, db, formSubmission, app, globalApp);
     // For serverTimestamp to work must first create new doc key then 'set' data
     const newKeyRef = db.collection('submitForm').doc();
     // update the new-key-record using 'set' which works for existing doc
     newKeyRef.set(databaseEntry);
 
-
     ////////////////////////////////////////////////////////////////////////////
-    // Response to request
+    // Response: return object (even if empty) so client can finish AJAX success
     ////////////////////////////////////////////////////////////////////////////
-
-    // return response object (even if empty) so client can finish AJAX success
     return res.status(200).send({
       data: {
         redirect: databaseEntry.urlRedirect,
@@ -71,6 +62,6 @@ module.exports = ({ admin }) => async (req, res) => {
       }
     });
 
-  }
+  } // end catch
 
-}
+} // end module.exports
