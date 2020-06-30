@@ -8,8 +8,8 @@ const path = require('path');
 const { sortObjectsAsc, objectValuesByKey } =
   require(path.join(__dirname, "../utility"));
 
+/*-- Cloud Function ----------------------------------------------------------*/
 const spamCheckAkismet = require('./spam-check-akismet');
-
 
 const formResultsData = async (req, admin, db, formSubmission, app, globalApp) => {
 
@@ -105,18 +105,19 @@ const formResultsData = async (req, admin, db, formSubmission, app, globalApp) =
 
       // compare database fields with form-submitted props and build object
       const setProps = propsToParse =>
-        Object.entries(propsToParse).forEach(([prop, data]) => {
-          data = trim(data);
-          props[prop] = data;
+        Object.entries(propsToParse).forEach(([key, value]) => {
+          value = trim(value);
+          props[key] = value;
           // toUids: appKey value unless if spam flagged is [ akismet spam message ]
-          if (prop === 'appKey') {
-            props.toUids = data;
-          } else if (prop === 'toUidsSpamOverride') {
-            props.toUids = data;
+          if (key === 'appKey') {
+            props.toUids = value;
+          } else if (key === 'spam') {
+            // if spam then override toUids value so email is not sent
+            value === 'true' && (props.toUids = "SPAM_SUSPECTED_DO_NOT_EMAIL");
           }
           // Form Template Fields: Whitelist check [START]
-          if (formTemplateFieldsSorted.includes(prop)) {
-            props.templateData[prop] = data;
+          if (formTemplateFieldsSorted.includes(key)) {
+            props.templateData[key] = value;
           }
           // Form Template Fields: Whitelist check [END]
         });
@@ -149,11 +150,11 @@ const formResultsData = async (req, admin, db, formSubmission, app, globalApp) =
     // Set allowed props
     props.set(propsAllowedEntries);
 
-    const propsForSpam = props.get().data;
-    console.log("propsForSpam $$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", propsForSpam);
-    const akismetResults = await spamCheckAkismet(req, formTemplateRef, propsForSpam, app, globalApp);
-    console.log("akismetResults $$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", akismetResults);
-    props.set(akismetResults);
+    const propsForSpamCheck = props.get().data;
+    console.log("propsForSpam $$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", propsForSpamCheck);
+    const spamCheckResults = await spamCheckAkismet(req, formTemplateRef, propsForSpamCheck, app, globalApp);
+    console.log("spamCheck $$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", spamCheckResults);
+    props.set(spamCheckResults);
     //
     // [END] Props Set & Get
     ////////////////////////////////////////////////////////////////////////////
