@@ -5,10 +5,10 @@
   Stop processing if checks fail
 ------------------------------------------------------------------------------*/
 
-const appValidate = async (req, res, db, formResults) => {
+const appValidate = async (req, res, db, formSubmission) => {
   let messages;
   let globalApp;
-  const appRef = await db.collection('app').doc(formResults.appKey).get();
+  const appRef = await db.collection('app').doc(formSubmission.appKey).get();
   const app = appRef.data();
 
   // If app exists continue with global and app condition checks

@@ -9,7 +9,7 @@ const path = require('path');
 const { sortObjectsAsc, objectValuesByKey } =
   require(path.join(__dirname, "../utility"));
 
-const formFieldsData = async (req, admin, db, formResults, app, globalApp) => {
+const formResultsData = async (req, admin, db, formSubmission, app, globalApp) => {
 
     ////////////////////////////////////////////////////////////////////////////
     // Props/Fields
@@ -34,7 +34,7 @@ const formFieldsData = async (req, admin, db, formResults, app, globalApp) => {
     //
     // Props All: consolidate props and fields last-in overwrites previous
     //
-    const propsAll = { appKey, ...formFieldsDefault, ...formResults, ...appInfo };
+    const propsAll = { appKey, ...formFieldsDefault, ...formSubmission, ...appInfo };
 
     ////////////////////////////////////////////////////////////////////////////
     // Props Allowed Entries: reduce to allowed props
@@ -244,4 +244,4 @@ const formFieldsData = async (req, admin, db, formResults, app, globalApp) => {
 
 }
 
-module.exports = formFieldsData;
+module.exports = formResultsData;

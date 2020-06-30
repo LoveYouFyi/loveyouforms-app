@@ -11,7 +11,7 @@ const { logErrorInfo } =
 
 /*-- Cloud Function ----------------------------------------------------------*/
 const appValidateRequest = require('./app-validate-request');
-const formFieldsData = require('./form-fields-data');
+const formResultsData = require('./form-results-data');
 
 module.exports = ({ admin }) => async (req, res) => {
   const db = admin.firestore();
@@ -24,21 +24,21 @@ module.exports = ({ admin }) => async (req, res) => {
   }
 
   // Form results as object
-  const formResults = JSON.parse(req.body); // parse req.body json-text-string
+  const formSubmission = JSON.parse(req.body); // parse req.body json-text-string
 
   try {
 
-    const validRequest = await appValidateRequest(req, res, db, formResults);
+    const validRequest = await appValidateRequest(req, res, db, formSubmission);
     const app = validRequest.app;
     const globalApp = validRequest.globalApp; // declared here for akismet
-    messages = validRequest.messages;
+    messages = validRequest.messages; // either app.messages or globalApp.messages
 
     //console.log("app $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", app);
     //console.log("globalApp $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", globalApp);
     //console.log("messages $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", messages);
 
-    const dataResults = await formFieldsData(req, admin, db, formResults, app, globalApp);
-    console.log("data $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", dataResults);
+    const databaseEntry = await formResultsData(req, admin, db, formSubmission, app, globalApp);
+    console.log("data $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", databaseEntry);
     ////////////////////////////////////////////////////////////////////////////
     // Database Entry: add form submission to database
     ////////////////////////////////////////////////////////////////////////////
@@ -46,7 +46,7 @@ module.exports = ({ admin }) => async (req, res) => {
     // For serverTimestamp to work must first create new doc key then 'set' data
     const newKeyRef = db.collection('submitForm').doc();
     // update the new-key-record using 'set' which works for existing doc
-    newKeyRef.set(dataResults);
+    newKeyRef.set(databaseEntry);
 
 
     ////////////////////////////////////////////////////////////////////////////
@@ -56,7 +56,7 @@ module.exports = ({ admin }) => async (req, res) => {
     // return response object (even if empty) so client can finish AJAX success
     return res.status(200).send({
       data: {
-        redirect: dataResults.urlRedirect,
+        redirect: databaseEntry.urlRedirect,
         message: messages.success
       }
     });
