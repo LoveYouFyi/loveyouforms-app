@@ -10,36 +10,32 @@ const { sortObjectsAsc, objectValuesByKey } =
 /*-- Cloud Function ----------------------------------------------------------*/
 const spamCheckAkismet = require('./spam-check-akismet');
 
-const formResultsData = async (req, admin, db, formSubmission, app, globalApp) => {
+const formResults = async (req, admin, db, formSubmission, app, globalApp) => {
 
     ////////////////////////////////////////////////////////////////////////////
-    // Props/Fields
-    // Compile database and form fields to be handled as object entries, and
-    // add to structured object
+    // Props All
+    // Compile form-submission and databasae fields into single object
     ////////////////////////////////////////////////////////////////////////////
     const appKey = app.id;
     const appInfo = app.appInfo;
 
-    //
-    // Form Field Defaults: select from db all default fields
-    // Return Object of docs
-    //
+    // Form Field Defaults: select all default fields from database
     const formFieldsDefaultRef = await db.collection('formField')
       .where('default', '==', true).get();
-
+    // Return object containing default fields
     const formFieldsDefault = formFieldsDefaultRef.docs.reduce((a, doc) => {
       a[doc.id] = doc.data().value;
       return a;
     }, {});
 
-    //
-    // Props All: consolidate props and fields last-in overwrites previous
-    //
-    const propsAll = { appKey, ...formFieldsDefault, ...formSubmission, ...appInfo };
+    // Consolidate props and fields last-in overwrite previous
+    const propsAll = { appKey, ...formFieldsDefault, ...formSubmission,
+      ...appInfo };
 
     ////////////////////////////////////////////////////////////////////////////
     // Props Allowed Entries: reduce to allowed props
-    //
+    ////////////////////////////////////////////////////////////////////////////
+
     // Remove the fields not used for database or code actions to:
     // 1) prevent database errors due to querying docs using disallowed values
     //    e.g. if html <input> had name="__anything__"
@@ -52,10 +48,8 @@ const formResultsData = async (req, admin, db, formSubmission, app, globalApp) =
     //   formTemplate/'templateName'/fields --> formTemplateFields
     //   app/'appKey'/appInfo.*props --> appInfo
 
-    //
     // Form Fields Required: fields required for cloud function to work
     // Return Array of field names
-    //
     const formFieldsRequiredRef = await db.collection('formField')
       .where('required', '==', true).get();
 
@@ -64,10 +58,8 @@ const formResultsData = async (req, admin, db, formSubmission, app, globalApp) =
       return a;
     }, []);
 
-    //
-    // Form Template Fields:
-    // Array of field for submitForm/.../template.data used by 'trigger email' extension
-    //
+    // Form Template Fields Sorted:
+    // Fields array for submitForm/.../template.data used by 'trigger email' extension
     const formTemplateRef = await db.collection('formTemplate')
       .doc(propsAll.templateName).get();
 
@@ -75,28 +67,25 @@ const formResultsData = async (req, admin, db, formSubmission, app, globalApp) =
       sortObjectsAsc(formTemplateRef.data().fields, 'position'), 'id');
 
     // Props Whitelist:
-    // Array of prop keys allowed for database or code actions last-in overwrites previous
+    // Keys-allowed array for database & code actions last-in overwrite previous
     const propsWhitelist = [ ...formFieldsRequired, ...formTemplateFieldsSorted,
       ...Object.keys(appInfo)
     ];
 
-    //
-    // Props Allowed Entries: entries used for database or code actions
-    // Return Object
-    //
-    const propsAllowedEntries = Object.entries(propsAll).reduce((a, [key, value]) => {
-      if (propsWhitelist.includes(key)) {
-        a[key] = value;
-      }
-      return a;
-    }, {});
-    //
-    // [END] Props Allowed Entries: reduce to allowed props
-    ////////////////////////////////////////////////////////////////////////////
+    // Props Allowed Entries:
+    // Return Object entries used for database or code actions
+    const propsAllowedEntries = Object.entries(propsAll).reduce(
+      (a, [key, value]) => {
+        if (propsWhitelist.includes(key)) {
+          a[key] = value;
+        }
+        return a;
+      }, {});
 
     ////////////////////////////////////////////////////////////////////////////
     // Props Set & Get
-    //
+    // Props set to object structured to match 'trigger email' extension needs
+    ////////////////////////////////////////////////////////////////////////////
     const props = (() => {
 
       const trim = value => value.toString().trim();
@@ -107,7 +96,7 @@ const formResultsData = async (req, admin, db, formSubmission, app, globalApp) =
         Object.entries(propsToParse).forEach(([key, value]) => {
           value = trim(value);
           props[key] = value;
-          // toUids: appKey value unless if spam flagged is [ akismet spam message ]
+          // toUids: appKey value unless if spam true to prevent sending email
           if (key === 'appKey') {
             props.toUids = value;
           } else if (key === 'spam') {
@@ -121,21 +110,22 @@ const formResultsData = async (req, admin, db, formSubmission, app, globalApp) =
           // Form Template Fields: Whitelist check [END]
         });
 
-      const getProps = ({ templateData, urlRedirect = false, ...key } = props) => ({
-        data: {
-          appKey: key.appKey,
-          createdDateTime: admin.firestore.FieldValue.serverTimestamp(),
-          from: key.appFrom,
-          ...key.spam && { spam: key.spam }, // only defined if akismet enabled
-          toUids: [ key.toUids ],
-          replyTo: templateData.email,
-          template: {
-            name: key.templateName,
-            data: templateData
-          }
-        },
-        urlRedirect: urlRedirect
-      });
+      const getProps =
+        ({ templateData, urlRedirect = false, ...key } = props) => ({
+          data: {
+            appKey: key.appKey,
+            createdDateTime: admin.firestore.FieldValue.serverTimestamp(),
+            from: key.appFrom,
+            ...key.spam && { spam: key.spam },
+            toUids: [ key.toUids ],
+            replyTo: templateData.email,
+            template: {
+              name: key.templateName,
+              data: templateData
+            }
+          },
+          urlRedirect: urlRedirect
+        });
 
       return {
         set: props => {
@@ -160,18 +150,20 @@ const formResultsData = async (req, admin, db, formSubmission, app, globalApp) =
             && !!app.condition.spamFilterAkismet)
     ) {
       const propsForSpamCheck = props.get().data;
-      const spamCheckResults = await spamCheckAkismet(req, formTemplateRef, propsForSpamCheck, app);
-      props.set(spamCheckResults);
+      const isSpam = await spamCheckAkismet(req, formTemplateRef,
+        propsForSpamCheck, app);
+      // Add spam check results to props if spam check enabled
+      props.set(isSpam);
     } else {
+      // if spam check disabled
       props.set({ spam: 'Check not enabled'});
     }
 
-    //
-    // [END] Props Set & Get
     ////////////////////////////////////////////////////////////////////////////
-
-    return props.get().data
+    // Return all props
+    ////////////////////////////////////////////////////////////////////////////
+    return props.get();
 
 }
 
-module.exports = formResultsData;
+module.exports = formResults;

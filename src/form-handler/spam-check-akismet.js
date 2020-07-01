@@ -10,7 +10,7 @@ const { AkismetClient } = require('akismet-api/lib/akismet.js'); // had to hardc
 
 /*-- Cloud Function ----------------------------------------------------------*/
 const spamCheckAkismet = async (req, formTemplateRef, propsForSpamCheck, app) => {
-  // return object since result is added to form-results-data using props.set()
+  // return object since result is added to form-results using props.set()
   // Akismet credentials
   const key = app.spamFilterAkismet.key;
   const blog = app.appInfo.appUrl;

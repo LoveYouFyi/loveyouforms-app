@@ -10,8 +10,8 @@ const { logErrorInfo } =
   require(path.join(__dirname, "../utility"));
 
 /*-- Cloud Function ----------------------------------------------------------*/
-const appValidateRequest = require('./app-validate-request');
-const formResultsData = require('./form-results-data');
+const appValidate = require('./app-validate');
+const formResults = require('./form-results');
 
 module.exports = ({ admin }) => async (req, res) => {
   const db = admin.firestore();
@@ -28,26 +28,27 @@ module.exports = ({ admin }) => async (req, res) => {
 
   try {
 
-    const validRequest = await appValidateRequest(req, res, db, formSubmission);
+    const validRequest = await appValidate(req, res, db, formSubmission);
     const app = validRequest.app;
     const globalApp = validRequest.globalApp; // declared here for akismet
-    messages = validRequest.messages; // either app.messages or globalApp.messages
+    messages = validRequest.messages; // either 'app' or 'globalApp' messages
 
     ////////////////////////////////////////////////////////////////////////////
     // Database Entry: add form submission to database
     ////////////////////////////////////////////////////////////////////////////
-    const databaseEntry = await formResultsData(req, admin, db, formSubmission, app, globalApp);
+    const formHandlerResults = await formResults(req, admin, db, formSubmission,
+      app, globalApp);
     // For serverTimestamp to work must first create new doc key then 'set' data
     const newKeyRef = db.collection('submitForm').doc();
     // update the new-key-record using 'set' which works for existing doc
-    newKeyRef.set(databaseEntry);
+    newKeyRef.set(formHandlerResults.data);
 
     ////////////////////////////////////////////////////////////////////////////
     // Response: return object (even if empty) so client can finish AJAX success
     ////////////////////////////////////////////////////////////////////////////
     return res.status(200).send({
       data: {
-        redirect: databaseEntry.urlRedirect,
+        redirect: formHandlerResults.urlRedirect,
         message: messages.success
       }
     });
