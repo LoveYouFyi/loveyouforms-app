@@ -19,7 +19,7 @@ const spamCheckAkismet = async (req, formTemplate, propsForSpamCheck, app) => {
   try {
     // Returns akismet props either as string or {}
     // ternary with reduce
-    const akismetProps = fieldGroup => accumulatorType =>
+    const akismetProps = (fieldGroup, accumulatorType) =>
       // if database contains fieldsAkismet and [fieldGroup] array
       (typeof formTemplate.fieldsAkismet !== 'undefined'
         && typeof formTemplate.fieldsAkismet[fieldGroup] !== 'undefined'
@@ -46,8 +46,8 @@ const spamCheckAkismet = async (req, formTemplate, propsForSpamCheck, app) => {
       //...req.ip && { ip: req.ip },
       ip: '76.106.197.174',
       ...req.headers['user-agent'] && { useragent: req.headers['user-agent'] },
-      ...akismetProps('content')('') && { content: akismetProps('content')('') },
-      ...akismetProps('other')({})
+      ...akismetProps('content', '') && { content: akismetProps('content', '') },
+      ...akismetProps('other', {})
     }
 
     // Test if data is spam: a successful test returns boolean
