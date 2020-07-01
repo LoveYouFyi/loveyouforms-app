@@ -28,12 +28,12 @@ const spamCheck = async (req, app, globalApp, formTemplateData, propsData) => {
     // Returns akismet props either as string or {}
     // ternary with reduce
     const akismetProps = (fieldGroup, accumulatorType) =>
-      // if database contains fieldsAkismet and [fieldGroup] array
-      (typeof formTemplateData.fieldsAkismet !== 'undefined'
-        && typeof formTemplateData.fieldsAkismet[fieldGroup] !== 'undefined'
-        && formTemplateData.fieldsAkismet[fieldGroup].length > 0)
+      // if database contains fieldsSpamCheck and [fieldGroup] array
+      (typeof formTemplateData.fieldsSpamCheck !== 'undefined'
+        && typeof formTemplateData.fieldsSpamCheck[fieldGroup] !== 'undefined'
+        && formTemplateData.fieldsSpamCheck[fieldGroup].length > 0)
       // if true then reduce
-      ? (formTemplateData.fieldsAkismet[fieldGroup].reduce((a, field) => {
+      ? (formTemplateData.fieldsSpamCheck[fieldGroup].reduce((a, field) => {
         // skip if field not found in propsForSpam...
         if (typeof propsData.template.data[field] === 'undefined') {
           return a
