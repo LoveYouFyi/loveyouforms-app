@@ -16,57 +16,49 @@ const formResults = async (req, admin, db, formSubmission, app, globalApp) => {
   // Props All
   // Compile form-submission and databasae fields into single object
   //////////////////////////////////////////////////////////////////////////////
-
-  // Consolidate props and fields last-in overwrite previous
-  const propsAll = async () => {
+  const getPropsAll = async () => {
     // Form Field Defaults: select all default fields from database
     const formFieldsDefaultRef = await db.collection('formField')
       .where('default', '==', true).get();
+
     // Return object containing default fields
     const formFieldsDefault = formFieldsDefaultRef.docs.reduce((a, doc) => {
       a[doc.id] = doc.data().value;
       return a;
     }, {});
 
+    // Consolidate fields as props, last-in overwrite previous
     return {
       appKey: app.id, ...formFieldsDefault, ...formSubmission, ...app.appInfo
     }
   };
-  const gotPropsAll = await propsAll();
+  const propsAll = await getPropsAll();
 
   //////////////////////////////////////////////////////////////////////////////
-  // Form Template: Data and Fields IDs
-  // Array for submitForm/.../template.data used by 'trigger email' extension
+  // Form Template: Data and Fields Whitelist IDs
+  // Whitelist of Fields IDs used to identify props to add to database at
+  // submitForm/.../template.data used by 'trigger email' extensiona
   //////////////////////////////////////////////////////////////////////////////
-  const formTemplate = async () => {
+  const getFormTemplate = async () => {
     const formTemplateRef = await db.collection('formTemplate')
-      .doc(gotPropsAll.templateName).get();
+      .doc(propsAll.templateName).get();
 
     const data = formTemplateRef.data();
 
-    const fieldsWhitelistIds = objectValuesByKey(data.fields, 'id');
+    const fieldsIdWhitelist = objectValuesByKey(data.fields, 'id');
 
-    return { data, fieldsWhitelistIds }
+    return { data, fieldsIdWhitelist }
   }
-  const gotFormTemplate = await formTemplate();
+  const formTemplate = await getFormTemplate();
 
   //////////////////////////////////////////////////////////////////////////////
   // Props Allowed
+  // Excludes fields not used for database or code actions to prevent database
+  // errors due to querying docs using disallowed values
+  // e.g. if html <input> had name="__anything__"
+  // See doc limits: https://firebase.google.com/docs/firestore/quotas#limits
   //////////////////////////////////////////////////////////////////////////////
-
-  // Remove the fields not used for database or code actions to:
-  // 1) prevent database errors due to querying docs using disallowed values
-  //    e.g. if html <input> had name="__anything__"
-  //    doc limits: https://firebase.google.com/docs/firestore/quotas#limits
-  // 2) only include fields used for database or code actions
-  //
-  // Props Whitelist: compiled from database
-  // Database Schema
-  //   formField/'all required' --> formFieldsRequired
-  //   formTemplate/'templateName'/fields --> formTemplateFields
-  //   app/'appKey'/appInfo.*props --> appInfo
-
-  const propsAllowed = async () => {
+  const getPropsAllowed = async () => {
     // Form Fields Required: fields required for cloud function to work
     // Return Array of field names
     const formFieldsRequiredRef = await db.collection('formField')
@@ -77,19 +69,19 @@ const formResults = async (req, admin, db, formSubmission, app, globalApp) => {
       return a;
     }, []);
 
-    // Props Whitelist:
-    // Keys-allowed array for database & code actions last-in overwrite previous
-    const propsWhitelistKeys = [
+    // Props Keys Whitelist:
+    // Array for database & code actions last-in overwrites previous
+    const propsKeysWhitelist = [
       ...formFieldsRequired,
-      ...gotFormTemplate.fieldsWhitelistIds,
+      ...formTemplate.fieldsIdWhitelist,
       ...Object.keys(app.appInfo)
     ];
 
     // Props Allowed Entries:
     // Return Object entries used for database or code actions
-    const allowedEntries = Object.entries(gotPropsAll).reduce(
+    const allowedEntries = Object.entries(propsAll).reduce(
       (a, [key, value]) => {
-        if (propsWhitelistKeys.includes(key)) {
+        if (propsKeysWhitelist.includes(key)) {
           a[key] = value;
         }
         return a;
@@ -97,7 +89,7 @@ const formResults = async (req, admin, db, formSubmission, app, globalApp) => {
 
     return allowedEntries;
   }
-  const gotPropsAllowed = await propsAllowed();
+  const propsAllowed = await getPropsAllowed();
 
   //////////////////////////////////////////////////////////////////////////////
   // Props Set & Get
@@ -121,7 +113,7 @@ const formResults = async (req, admin, db, formSubmission, app, globalApp) => {
           (value === 'true') && (props.toUids = "SPAM_SUSPECTED_DO_NOT_EMAIL");
         }
         // Form Template Fields: Whitelist check
-        if (gotFormTemplate.fieldsWhitelistIds.includes(key)) {
+        if (formTemplate.fieldsIdWhitelist.includes(key)) {
           props.templateData[key] = value;
         }
       });
@@ -154,16 +146,15 @@ const formResults = async (req, admin, db, formSubmission, app, globalApp) => {
   })();
 
   //////////////////////////////////////////////////////////////////////////////
-  // Set allowed props
+  // Set props allowed
   //////////////////////////////////////////////////////////////////////////////
-  props.set(gotPropsAllowed);
+  props.set(propsAllowed);
 
   //////////////////////////////////////////////////////////////////////////////
-  // Set spam check result to props
+  // Set props spam check result
   //////////////////////////////////////////////////////////////////////////////
   props.set(
-    await spamCheck(req, app, globalApp, gotFormTemplate.data,
-      props.get().data)
+    await spamCheck(req, app, globalApp, formTemplate.data, props.get().data)
   );
 
   //////////////////////////////////////////////////////////////////////////////

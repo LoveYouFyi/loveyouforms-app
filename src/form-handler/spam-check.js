@@ -9,8 +9,7 @@ const { AkismetClient } = require('akismet-api/lib/akismet.js'); // had to hardc
 
 /*-- Cloud Function ----------------------------------------------------------*/
 // Returns one of {spam: 'Check disabled '} {spam: 'true'} {spam: 'false'}
-const spamCheck = async (req, app, globalApp, formTemplate,
-  propsData) => {
+const spamCheck = async (req, app, globalApp, formTemplateData, propsData) => {
 
   // If spam filter akismet disabled
   if (globalApp.condition.spamFilterAkismet === 0
@@ -30,11 +29,11 @@ const spamCheck = async (req, app, globalApp, formTemplate,
     // ternary with reduce
     const akismetProps = (fieldGroup, accumulatorType) =>
       // if database contains fieldsAkismet and [fieldGroup] array
-      (typeof formTemplate.fieldsAkismet !== 'undefined'
-        && typeof formTemplate.fieldsAkismet[fieldGroup] !== 'undefined'
-        && formTemplate.fieldsAkismet[fieldGroup].length > 0)
+      (typeof formTemplateData.fieldsAkismet !== 'undefined'
+        && typeof formTemplateData.fieldsAkismet[fieldGroup] !== 'undefined'
+        && formTemplateData.fieldsAkismet[fieldGroup].length > 0)
       // if true then reduce
-      ? (formTemplate.fieldsAkismet[fieldGroup].reduce((a, field) => {
+      ? (formTemplateData.fieldsAkismet[fieldGroup].reduce((a, field) => {
         // skip if field not found in propsForSpam...
         if (typeof propsData.template.data[field] === 'undefined') {
           return a
