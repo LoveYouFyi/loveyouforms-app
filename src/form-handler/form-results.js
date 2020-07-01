@@ -4,7 +4,7 @@
 
 /*-- Dependencies ------------------------------------------------------------*/
 const path = require('path');
-const { sortObjectsAsc, objectValuesByKey } =
+const { objectValuesByKey } =
   require(path.join(__dirname, "../utility"));
 
 /*-- Cloud Function ----------------------------------------------------------*/
