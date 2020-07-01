@@ -9,8 +9,8 @@
 const { AkismetClient } = require('akismet-api/lib/akismet.js'); // had to hardcode path
 
 /*-- Cloud Function ----------------------------------------------------------*/
-const spamCheckAkismet = async (req, formTemplateRef, propsForSpamCheck, app) => {
-  // return object since result is added to form-results using props.set()
+const spamCheckAkismet = async (req, formTemplate, propsForSpamCheck, app) => {
+
   // Akismet credentials
   const key = app.spamFilterAkismet.key;
   const blog = app.appInfo.appUrl;
@@ -21,11 +21,11 @@ const spamCheckAkismet = async (req, formTemplateRef, propsForSpamCheck, app) =>
     // ternary with reduce
     const akismetProps = fieldGroup => accumulatorType =>
       // if database contains fieldsAkismet and [fieldGroup] array
-      (typeof formTemplateRef.data().fieldsAkismet !== 'undefined'
-        && typeof formTemplateRef.data().fieldsAkismet[fieldGroup] !== 'undefined'
-        && formTemplateRef.data().fieldsAkismet[fieldGroup].length > 0)
+      (typeof formTemplate.fieldsAkismet !== 'undefined'
+        && typeof formTemplate.fieldsAkismet[fieldGroup] !== 'undefined'
+        && formTemplate.fieldsAkismet[fieldGroup].length > 0)
       // if true then reduce
-      ? (formTemplateRef.data().fieldsAkismet[fieldGroup].reduce((a, field) => {
+      ? (formTemplate.fieldsAkismet[fieldGroup].reduce((a, field) => {
         // skip if field not found in propsForSpam...
         if (typeof propsForSpamCheck.template.data[field] === 'undefined') {
           return a
@@ -52,6 +52,7 @@ const spamCheckAkismet = async (req, formTemplateRef, propsForSpamCheck, app) =>
 
     // Test if data is spam: a successful test returns boolean
     const isSpam = await client.checkSpam(dataToCheck);
+    // return object since form-results props.set() expects {} entries
     return typeof isSpam === 'boolean' ?
       isSpam ? {spam: 'true'} : {spam: 'false'} :
       "Check failed"
