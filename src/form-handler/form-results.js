@@ -8,7 +8,7 @@ const { sortObjectsAsc, objectValuesByKey } =
   require(path.join(__dirname, "../utility"));
 
 /*-- Cloud Function ----------------------------------------------------------*/
-const spamCheckAkismet = require('./spam-check-akismet');
+const spamCheck = require('./spam-check');
 
 const formResults = async (req, admin, db, formSubmission, app, globalApp) => {
 
@@ -154,21 +154,12 @@ const formResults = async (req, admin, db, formSubmission, app, globalApp) => {
   props.set(allowedProps.entries);
 
   //////////////////////////////////////////////////////////////////////////////
-  // Spam Check Akismet
+  // Set spam check result to props
   //////////////////////////////////////////////////////////////////////////////
-  if (globalApp.condition.spamFilterAkismet === 1
-      || (globalApp.condition.spamFilterAkismet === 2
-          && !!app.condition.spamFilterAkismet)
-  ) {
-    const propsForSpamCheck = props.get().data;
-    const isSpam = await spamCheckAkismet(req, allowedProps.formTemplate,
-      propsForSpamCheck, app);
-    // Add spam check results to props if spam check enabled
-    props.set(isSpam);
-  } else {
-    // if spam check disabled
-    props.set({ spam: 'Check not enabled'});
-  }
+  props.set(
+    await spamCheck(req, app, globalApp, allowedProps.formTemplate,
+      props.get().data)
+  );
 
   //////////////////////////////////////////////////////////////////////////////
   // Return all props

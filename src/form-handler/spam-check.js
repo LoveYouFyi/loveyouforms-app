@@ -1,20 +1,29 @@
 /*------------------------------------------------------------------------------
-  Spam Check Akismet
-  If enabled,
-    a. minimally checks IP Address and User Agent
-    b. checks fields defined as 'content' and 'other' based on config
+  Spam Check Akismet: If enabled...
+  a. minimally checks IP Address and User Agent
+  b. checks fields defined as 'content' and 'other' based on config
 ------------------------------------------------------------------------------*/
 
 /*-- Dependencies ------------------------------------------------------------*/
 const { AkismetClient } = require('akismet-api/lib/akismet.js'); // had to hardcode path
 
 /*-- Cloud Function ----------------------------------------------------------*/
-const spamCheckAkismet = async (req, formTemplate, propsForSpamCheck, app) => {
+// Returns one of {spam: 'Check disabled '} {spam: 'true'} {spam: 'false'}
+const spamCheck = async (req, app, globalApp, formTemplate,
+  propsData) => {
+
+  // If spam filter akismet disabled
+  if (globalApp.condition.spamFilterAkismet === 0
+      || (globalApp.condition.spamFilterAkismet === 2
+          && !app.condition.spamFilterAkismet)
+  ) {
+    return { spam: 'Check disabled' };
+  }
 
   // Akismet credentials
   const key = app.spamFilterAkismet.key;
   const blog = app.appInfo.appUrl;
-  const client = new AkismetClient({ key, blog })
+  const client = new AkismetClient({ key, blog });
 
   try {
     // Returns akismet props either as string or {}
@@ -27,21 +36,21 @@ const spamCheckAkismet = async (req, formTemplate, propsForSpamCheck, app) => {
       // if true then reduce
       ? (formTemplate.fieldsAkismet[fieldGroup].reduce((a, field) => {
         // skip if field not found in propsForSpam...
-        if (typeof propsForSpamCheck.template.data[field] === 'undefined') {
+        if (typeof propsData.template.data[field] === 'undefined') {
           return a
         }
         // accumulate as 'string' or {} based on accumulatorType
         if (typeof accumulatorType === 'string') {
-          return a + propsForSpamCheck.template.data[field] + " ";
+          return a + propsData.template.data[field] + " ";
         } else if (accumulatorType.constructor === Object) {
-          a[field] = propsForSpamCheck.template.data[field];
+          a[field] = propsData.template.data[field];
           return a;
         }
       }, accumulatorType))
       // if false then null
       : null;
 
-      // Data to check for spam
+    // Data to check for spam
     const dataToCheck = {
       //...req.ip && { ip: req.ip },
       ip: '76.106.197.174',
@@ -74,4 +83,4 @@ const spamCheckAkismet = async (req, formTemplate, propsForSpamCheck, app) => {
 
 }
 
-module.exports = spamCheckAkismet;
+module.exports = spamCheck;
