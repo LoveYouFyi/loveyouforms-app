@@ -16,21 +16,24 @@ const formResults = async (req, admin, db, formSubmission, app, globalApp) => {
   // Props All
   // Compile form-submission and databasae fields into single object
   //////////////////////////////////////////////////////////////////////////////
-  const appKey = app.id;
-  const appInfo = app.appInfo;
-
-  // Form Field Defaults: select all default fields from database
-  const formFieldsDefaultRef = await db.collection('formField')
-    .where('default', '==', true).get();
-  // Return object containing default fields
-  const formFieldsDefault = formFieldsDefaultRef.docs.reduce((a, doc) => {
-    a[doc.id] = doc.data().value;
-    return a;
-  }, {});
 
   // Consolidate props and fields last-in overwrite previous
-  const propsAll = { appKey, ...formFieldsDefault, ...formSubmission,
-    ...appInfo };
+  const propsConsolidated = async () => {
+    // Form Field Defaults: select all default fields from database
+    const formFieldsDefaultRef = await db.collection('formField')
+      .where('default', '==', true).get();
+    // Return object containing default fields
+    const formFieldsDefault = formFieldsDefaultRef.docs.reduce((a, doc) => {
+      a[doc.id] = doc.data().value;
+      return a;
+    }, {});
+
+    return {
+      appKey: app.id, ...formFieldsDefault, ...formSubmission, ...app.appInfo
+    }
+  };
+  const propsAll = await propsConsolidated();
+//  console.log("propsAll $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", propsAll);
 
   //////////////////////////////////////////////////////////////////////////////
   // Props Allowed Entries: reduce to allowed props
@@ -71,7 +74,7 @@ const formResults = async (req, admin, db, formSubmission, app, globalApp) => {
   // Props Whitelist:
   // Keys-allowed array for database & code actions last-in overwrite previous
   const propsWhitelist = [ ...formFieldsRequired, ...formTemplateFieldsSorted,
-    ...Object.keys(appInfo)
+    ...Object.keys(app.appInfo)
   ];
 
   // Props Allowed Entries:
