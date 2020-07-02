@@ -102,8 +102,8 @@ module.exports = ({ admin }) => async (snapshot, context) => {
     ////////////////////////////////////////////////////////////////////////////
 
     // Get app spreadsheetId and sheetId(s)
-    const spreadsheetId = app.spreadsheet.id; // one spreadsheet per app
-    const sheetId = app.spreadsheet.sheetId[templateName]; // multiple possible sheets
+    const spreadsheetId = app.service.googleSheets.spreadsheetId; // one spreadsheet per app
+    const sheetId = app.service.googleSheets.sheetId[templateName]; // multiple possible sheets
 
     // Authorize with google sheets
     await jwtClient.authorize();

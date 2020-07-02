@@ -20,7 +20,7 @@ const spamCheck = async (req, app, globalApp, formTemplateData, propsData) => {
   }
 
   // Akismet credentials
-  const key = app.spamFilterAkismet.key;
+  const key = app.service.spamFilterAkismet.key;
   const blog = app.appInfo.appUrl;
   const client = new AkismetClient({ key, blog });
 
