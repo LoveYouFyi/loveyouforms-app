@@ -8,8 +8,7 @@ const { objectValuesByKey } = require("./../utility");
 /*-- Cloud Function ----------------------------------------------------------*/
 const spamCheck = require('./spam-check');
 
-const formResults = async (req, admin, db, formSubmission, app, globalApp,
-  envKeys) => {
+const formResults = async (req, admin, db, formSubmission, app, globalApp) => {
 
   //////////////////////////////////////////////////////////////////////////////
   // Props All
@@ -153,9 +152,7 @@ const formResults = async (req, admin, db, formSubmission, app, globalApp,
   // Set props spam check result
   //////////////////////////////////////////////////////////////////////////////
   props.set(
-    await spamCheck(
-      envKeys, req, app, globalApp, formTemplate.data, props.get().data
-    )
+    await spamCheck(req, app, globalApp, formTemplate.data, props.get().data)
   );
 
   //////////////////////////////////////////////////////////////////////////////

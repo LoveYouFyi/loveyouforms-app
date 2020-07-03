@@ -9,8 +9,7 @@ const { AkismetClient } = require('akismet-api/lib/akismet.js'); // had to hardc
 
 /*-- Cloud Function ----------------------------------------------------------*/
 // Returns one of {spam: 'Check disabled '} {spam: 'true'} {spam: 'false'}
-const spamCheck = async (envKeys, req, app, globalApp, formTemplateData,
-  propsData) => {
+const spamCheck = async (req, app, globalApp, formTemplateData, propsData) => {
 
   // If spam filter akismet disabled
   if (globalApp.condition.spamFilterAkismet === 0
@@ -49,17 +48,12 @@ const spamCheck = async (envKeys, req, app, globalApp, formTemplateData,
     // if false then null
     : null;
 
-  // IP Address: if environment key does not exist use request header
-  const ipForSpamCheck =
-    typeof envKeys.ipAddressForSpamCheck !== 'undefined'
-      ? envKeys.ipAddressForSpamCheck
-      : typeof req.ip !== 'undefined'
-        ? req.ip
-        : null; // if neither environment key nor request header exist with ip
-
   // Data to check for spam
+  // IP Address: Akismet requires req.ip value so if undefined set to null;
+  // the conditional is needed because firebase emulator (dev environment)
+  // does not provide req.ip so we prevent unacceptable undefined IP property
   const dataToCheck = {
-    ip: ipForSpamCheck,
+    ip: (typeof req.ip !== 'undefined' ? req.ip : null),
     ...req.headers['user-agent'] && { useragent: req.headers['user-agent'] },
     ...akismetProps('content', '') && { content: akismetProps('content', '') },
     ...akismetProps('other', {})
