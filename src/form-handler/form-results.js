@@ -3,14 +3,13 @@
 ------------------------------------------------------------------------------*/
 
 /*-- Dependencies ------------------------------------------------------------*/
-const path = require('path');
-const { objectValuesByKey } =
-  require(path.join(__dirname, "../utility"));
+const { objectValuesByKey } = require("./../utility");
 
 /*-- Cloud Function ----------------------------------------------------------*/
 const spamCheck = require('./spam-check');
 
-const formResults = async (req, admin, db, formSubmission, app, globalApp) => {
+const formResults = async (req, admin, db, formSubmission, app, globalApp,
+  envKeys) => {
 
   //////////////////////////////////////////////////////////////////////////////
   // Props All
@@ -154,7 +153,9 @@ const formResults = async (req, admin, db, formSubmission, app, globalApp) => {
   // Set props spam check result
   //////////////////////////////////////////////////////////////////////////////
   props.set(
-    await spamCheck(req, app, globalApp, formTemplate.data, props.get().data)
+    await spamCheck(
+      envKeys, req, app, globalApp, formTemplate.data, props.get().data
+    )
   );
 
   //////////////////////////////////////////////////////////////////////////////

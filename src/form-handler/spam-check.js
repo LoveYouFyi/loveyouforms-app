@@ -9,7 +9,8 @@ const { AkismetClient } = require('akismet-api/lib/akismet.js'); // had to hardc
 
 /*-- Cloud Function ----------------------------------------------------------*/
 // Returns one of {spam: 'Check disabled '} {spam: 'true'} {spam: 'false'}
-const spamCheck = async (req, app, globalApp, formTemplateData, propsData) => {
+const spamCheck = async (envKeys, req, app, globalApp, formTemplateData,
+  propsData) => {
 
   // If spam filter akismet disabled
   if (globalApp.condition.spamFilterAkismet === 0
@@ -24,39 +25,47 @@ const spamCheck = async (req, app, globalApp, formTemplateData, propsData) => {
   const blog = app.appInfo.appUrl;
   const client = new AkismetClient({ key, blog });
 
-  try {
-    // Returns akismet props either as string or {}
-    // ternary with reduce
-    const akismetProps = (fieldGroup, accumulatorType) =>
-      // if database contains fieldsSpamCheck and [fieldGroup] array
-      (typeof formTemplateData.fieldsSpamCheck !== 'undefined'
-        && typeof formTemplateData.fieldsSpamCheck[fieldGroup] !== 'undefined'
-        && formTemplateData.fieldsSpamCheck[fieldGroup].length > 0)
-      // if true then reduce
-      ? (formTemplateData.fieldsSpamCheck[fieldGroup].reduce((a, field) => {
-        // skip if field not found in propsForSpam...
-        if (typeof propsData.template.data[field] === 'undefined') {
-          return a
-        }
-        // accumulate as 'string' or {} based on accumulatorType
-        if (typeof accumulatorType === 'string') {
-          return a + propsData.template.data[field] + " ";
-        } else if (accumulatorType.constructor === Object) {
-          a[field] = propsData.template.data[field];
-          return a;
-        }
-      }, accumulatorType))
-      // if false then null
-      : null;
+  // Returns akismet props either as string or {}
+  // ternary with reduce
+  const akismetProps = (fieldGroup, accumulatorType) =>
+    // if database contains fieldsSpamCheck and [fieldGroup] array
+    (typeof formTemplateData.fieldsSpamCheck !== 'undefined'
+      && typeof formTemplateData.fieldsSpamCheck[fieldGroup] !== 'undefined'
+      && formTemplateData.fieldsSpamCheck[fieldGroup].length > 0)
+    // if true then reduce
+    ? (formTemplateData.fieldsSpamCheck[fieldGroup].reduce((a, field) => {
+      // skip if field not found in propsForSpam...
+      if (typeof propsData.template.data[field] === 'undefined') {
+        return a
+      }
+      // accumulate as 'string' or {} based on accumulatorType
+      if (typeof accumulatorType === 'string') {
+        return a + propsData.template.data[field] + " ";
+      } else if (accumulatorType.constructor === Object) {
+        a[field] = propsData.template.data[field];
+        return a;
+      }
+    }, accumulatorType))
+    // if false then null
+    : null;
 
-    // Data to check for spam
-    const dataToCheck = {
-      //...req.ip && { ip: req.ip },
-      ip: '76.106.197.174',
-      ...req.headers['user-agent'] && { useragent: req.headers['user-agent'] },
-      ...akismetProps('content', '') && { content: akismetProps('content', '') },
-      ...akismetProps('other', {})
-    }
+  // IP Address: if environment key does not exist use request header
+  const ipForSpamCheck =
+    typeof envKeys.ipAddressForSpamCheck !== 'undefined'
+      ? envKeys.ipAddressForSpamCheck
+      : typeof req.ip !== 'undefined'
+        ? req.ip
+        : null; // if neither environment key nor request header exist with ip
+
+  // Data to check for spam
+  const dataToCheck = {
+    ip: ipForSpamCheck,
+    ...req.headers['user-agent'] && { useragent: req.headers['user-agent'] },
+    ...akismetProps('content', '') && { content: akismetProps('content', '') },
+    ...akismetProps('other', {})
+  }
+
+  try {
 
     // Test if data is spam: a successful test returns boolean
     const isSpam = await client.checkSpam(dataToCheck);

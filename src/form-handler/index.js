@@ -5,15 +5,13 @@
 ------------------------------------------------------------------------------*/
 
 /*-- Dependencies ------------------------------------------------------------*/
-const path = require('path');
-const { logErrorInfo } =
-  require(path.join(__dirname, "../utility"));
+const { logErrorInfo } = require("./../utility");
 
 /*-- Cloud Function ----------------------------------------------------------*/
 const appValidate = require('./app-validate');
 const formResults = require('./form-results');
 
-module.exports = ({ admin }) => async (req, res) => {
+module.exports = ({ admin, envKeys }) => async (req, res) => {
   const db = admin.firestore();
   let messages; // declared here so catch has access to config messages
   // Stop processing if content-type is 'undefined' or not 'text/plain'
@@ -37,7 +35,7 @@ module.exports = ({ admin }) => async (req, res) => {
     // Database Entry: add form submission to database
     ////////////////////////////////////////////////////////////////////////////
     const formHandlerResults = await formResults(req, admin, db, formSubmission,
-      app, globalApp);
+      app, globalApp, envKeys);
     // For serverTimestamp to work must first create new doc key then 'set' data
     const newKeyRef = db.collection('submitForm').doc();
     // update the new-key-record using 'set' which works for existing doc
