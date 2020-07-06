@@ -8,10 +8,10 @@ const { objectValuesByKey } = require("./../utility");
 /*-- Cloud Function ----------------------------------------------------------*/
 const spamCheck = require('./spam-check');
 
-//////////////////////////////////////////////////////////////////////////////
-// Props All
-// Compile form-submission and relevant database fields into single object
-//////////////////////////////////////////////////////////////////////////////
+/*------------------------------------------------------------------------------
+  Props All:
+  Compile 1) form-submission fields, and 2) relevant database fields into object
+------------------------------------------------------------------------------*/
 const getPropsAll = async (db, formSubmission, app) => {
   // Form Field Defaults: select all default fields from database
   const gotFormFieldDefaults = await db.collection('formField')
@@ -29,11 +29,11 @@ const getPropsAll = async (db, formSubmission, app) => {
   }
 };
 
-//////////////////////////////////////////////////////////////////////////////
-// Form Template: Data and Fields Whitelist IDs
-// Whitelist of Fields IDs used to identify props to add to database at
-// submitForm/.../template.data used by 'trigger email' extensiona
-//////////////////////////////////////////////////////////////////////////////
+/*------------------------------------------------------------------------------
+  Form Template: Data and Fields IDs
+  Whitelist of Fields IDs used to identify props to add to database at
+  submitForm/.../template.data used by 'trigger email' extensiona
+------------------------------------------------------------------------------*/
 const getFormTemplate = async (db, propsAll) => {
   const gotFormTemplate = await db.collection('formTemplate')
     .doc(propsAll.templateName).get();
@@ -45,13 +45,13 @@ const getFormTemplate = async (db, propsAll) => {
   return { data, fieldsIds }
 }
 
-//////////////////////////////////////////////////////////////////////////////
-// Props Allowed
-// Excludes fields not used for database or code actions to prevent database
-// errors due to querying docs using disallowed values
-// e.g. if html <input> had name="__anything__"
-// See doc limits: https://firebase.google.com/docs/firestore/quotas#limits
-//////////////////////////////////////////////////////////////////////////////
+/*------------------------------------------------------------------------------
+  Props Allowed:
+  Excludes fields not used for database or code actions to prevent database
+  errors due to querying docs using disallowed values
+  e.g. if html <input> had name="__anything__"
+  See doc limits: https://firebase.google.com/docs/firestore/quotas#limits
+------------------------------------------------------------------------------*/
 const getPropsAllowed = async (db, app, propsAll, formTemplate) => {
   // Form Fields Required: fields required for cloud function to work
   // Return Array of field names
@@ -84,14 +84,17 @@ const getPropsAllowed = async (db, app, propsAll, formTemplate) => {
   return allowedEntries;
 }
 
+/*------------------------------------------------------------------------------
+  Form Results:
 
+------------------------------------------------------------------------------*/
 const formResults = async (req, admin, db, formSubmission, app, globalApp) => {
   const propsAll = await getPropsAll(db, formSubmission, app);
   const formTemplate = await getFormTemplate(db, propsAll);
   const propsAllowed = await getPropsAllowed(db, app, propsAll, formTemplate);
 
   //////////////////////////////////////////////////////////////////////////////
-  // Props Set & Get
+  // Props Set & Get:
   // Props set to object structured to match 'trigger email' extension needs
   //////////////////////////////////////////////////////////////////////////////
   const props = (() => {
@@ -157,7 +160,7 @@ const formResults = async (req, admin, db, formSubmission, app, globalApp) => {
   );
 
   //////////////////////////////////////////////////////////////////////////////
-  // Return all props
+  // Return props
   //////////////////////////////////////////////////////////////////////////////
   return props.get();
 
