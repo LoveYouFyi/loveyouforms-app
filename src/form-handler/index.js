@@ -4,10 +4,8 @@
   Terminate HTTP cloud functions with res.redirect(), res.send(), or res.end()
 ------------------------------------------------------------------------------*/
 
-/*-- Dependencies ------------------------------------------------------------*/
-const { logErrorInfo } = require("./../utility");
-
 /*-- Cloud Function ----------------------------------------------------------*/
+const { logErrorInfo } = require("./../utility");
 const appValidate = require('./app-validate');
 const formResults = require('./form-results');
 

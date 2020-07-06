@@ -5,10 +5,11 @@
   b. checks fields defined as 'content' and 'other' based on config
 ------------------------------------------------------------------------------*/
 
-/*-- Dependencies ------------------------------------------------------------*/
+/*-- External Dependencies ---------------------------------------------------*/
 const { AkismetClient } = require('akismet-api/lib/akismet.js'); // had to hardcode path
 
 /*-- Cloud Function ----------------------------------------------------------*/
+
 // Returns one of {spam: 'Check disabled '} {spam: 'true'} {spam: 'false'}
 const spamCheck = async (req, app, globalApp, formTemplateData, propsData) => {
 

@@ -1,11 +1,11 @@
 /*------------------------------------------------------------------------------
   Form Results
+  Returns form submission results as props on object structured to match
+  'trigger email' extension requirements
 ------------------------------------------------------------------------------*/
 
-/*-- Dependencies ------------------------------------------------------------*/
-const { objectValuesByKey } = require("./../utility");
-
 /*-- Cloud Function ----------------------------------------------------------*/
+const { objectValuesByKey } = require("./../utility");
 const spamCheck = require('./spam-check');
 
 /*------------------------------------------------------------------------------
@@ -86,7 +86,8 @@ const getPropsAllowed = async (db, app, propsAll, formTemplate) => {
 
 /*------------------------------------------------------------------------------
   Form Results:
-
+  Returns form submission results as props on object structured to match
+  'trigger email' extension requirements
 ------------------------------------------------------------------------------*/
 const formResults = async (req, admin, db, formSubmission, app, globalApp) => {
   const propsAll = await getPropsAll(db, formSubmission, app);
@@ -95,7 +96,6 @@ const formResults = async (req, admin, db, formSubmission, app, globalApp) => {
 
   //////////////////////////////////////////////////////////////////////////////
   // Props Set & Get:
-  // Props set to object structured to match 'trigger email' extension needs
   //////////////////////////////////////////////////////////////////////////////
   const props = (() => {
 

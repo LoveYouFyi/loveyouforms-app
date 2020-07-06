@@ -1,29 +1,32 @@
 /*------------------------------------------------------------------------------
   App Validate
-  Returns object: { app, globalApp, messages }
-  Check if cors authorized app, and form submit enabled
-  Stop processing if checks fail
+  Processes validations, and if all pass returns object with app, globalApp,
+  and messages
 ------------------------------------------------------------------------------*/
 
 /*-- Cloud Function ----------------------------------------------------------*/
 
 /*------------------------------------------------------------------------------
-  Messages
+  Messages:
   Returns global or app-specific messages based on config settings
 ------------------------------------------------------------------------------*/
 const messagesAppVsGlobal = (app, globalApp) => {
   // global boolean 0/false, 1/true, or '2' bypass global & use app boolean
-  if (globalApp.condition.messageGlobal === 1
+  return (
+    (globalApp.condition.messageGlobal === 1
       || (globalApp.condition.messageGlobal === 2
           && !!app.condition.messageGlobal)
-    ) {
-    return globalApp.message;
-  } else {
-    return app.message;
-  }
+    ) ? globalApp.message
+      : app.message
+  )
 }
 
-
+/*------------------------------------------------------------------------------
+  App Validate:
+  Returns object { app, globalApp, messages }
+  Check if cors authorized app, and form submit enabled
+  Stop processing if checks fail
+------------------------------------------------------------------------------*/
 const appValidate = async (req, res, db, formSubmission) => {
   // App
   const gotApp = await db.collection('app').doc(formSubmission.appKey).get();
@@ -44,9 +47,11 @@ const appValidate = async (req, res, db, formSubmission) => {
   // App-specific or Global App messages based on config
   const messages = messagesAppVsGlobal(app, globalApp);
 
+  //////////////////////////////////////////////////////////////////////////////
   // CORS Validation
   // Stop cloud function if check does not pass
   // Global boolean 0/false, 1/true, or '2' bypass global to use app boolean
+  //////////////////////////////////////////////////////////////////////////////
   if (globalApp.condition.corsBypass === 0
       || (globalApp.condition.corsBypass === 2
           && !app.condition.corsBypass)
@@ -63,8 +68,11 @@ const appValidate = async (req, res, db, formSubmission) => {
     // allow all so localhost (or any source) can submit requests
     res.setHeader('Access-Control-Allow-Origin', '*');
   }
-  // Form Submit Enabled: stop cloud function if submitForm disabled
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Form Submit Enabled: throw error if submitForm disabled
   // global boolean 0/false, 1/true, or '2' bypass global to use app boolean
+  //////////////////////////////////////////////////////////////////////////////
   if (globalApp.condition.submitForm === 0
       || (globalApp.condition.submitForm === 2
           && !app.condition.submitForm)
@@ -74,6 +82,9 @@ const appValidate = async (req, res, db, formSubmission) => {
     throw (messages.error.text);
   }
 
+  //////////////////////////////////////////////////////////////////////////////
+  // Return
+  //////////////////////////////////////////////////////////////////////////////
   return ({
     app,
     globalApp,
