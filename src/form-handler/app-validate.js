@@ -8,7 +8,6 @@
 /*-- Cloud Function ----------------------------------------------------------*/
 const appValidate = async (req, res, db, formSubmission) => {
   let messages;
-  let globalApp;
   const appRef = await db.collection('app').doc(formSubmission.appKey).get();
   const app = appRef.data();
 
@@ -21,7 +20,7 @@ const appValidate = async (req, res, db, formSubmission) => {
 
   // Global and app condition checks
   const globalAppRef = await db.collection('global').doc('app').get();
-  globalApp = globalAppRef.data();
+  const globalApp = globalAppRef.data();
   // Messages: use global or app-specific messages
   // global boolean 0/false, 1/true, or '2' bypass global & use app boolean
   if (globalApp.condition.messageGlobal === 1
