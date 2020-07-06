@@ -4,11 +4,14 @@
   Terminate HTTP cloud functions with res.redirect(), res.send(), or res.end()
 ------------------------------------------------------------------------------*/
 
-/*-- Cloud Function ----------------------------------------------------------*/
+/*-- Dependencies ------------------------------------------------------------*/
 const { logErrorInfo } = require("./../utility");
 const appValidate = require('./app-validate');
 const formResults = require('./form-results');
 
+/*------------------------------------------------------------------------------
+  Export Form Handler Function
+------------------------------------------------------------------------------*/
 module.exports = ({ admin }) => async (req, res) => {
   const db = admin.firestore();
   let messages; // declared here so catch has access to config messages

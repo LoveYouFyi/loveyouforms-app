@@ -4,7 +4,7 @@
   'trigger email' extension requirements
 ------------------------------------------------------------------------------*/
 
-/*-- Cloud Function ----------------------------------------------------------*/
+/*-- Dependencies ------------------------------------------------------------*/
 const { objectValuesByKey } = require("./../utility");
 const spamCheck = require('./spam-check');
 

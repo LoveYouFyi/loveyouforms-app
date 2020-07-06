@@ -4,11 +4,32 @@
   and messages
 ------------------------------------------------------------------------------*/
 
-/*-- Cloud Function ----------------------------------------------------------*/
+/*------------------------------------------------------------------------------
+  App & App Check
+------------------------------------------------------------------------------*/
+const getApp = async (res, db, formSubmission) => {
+  const gotApp = await db.collection('app').doc(formSubmission.appKey).get();
+  const app = gotApp.data();
+  // If app does not exist then stop processing
+  if (!app) {
+    console.warn('App Key does not exist.');
+    // no error message sent to client because submit not from approved app
+    return res.end();
+  }
+  return app;
+}
+
+/*------------------------------------------------------------------------------
+  Global App
+------------------------------------------------------------------------------*/
+const getGlobalApp = async (db) => {
+  const gotGlobalApp = await db.collection('global').doc('app').get();
+  return gotGlobalApp.data();
+}
 
 /*------------------------------------------------------------------------------
   Messages:
-  Returns global or app-specific messages based on config settings
+  Returns app-specific or globalApp messages based on config settings
 ------------------------------------------------------------------------------*/
 const messagesAppVsGlobal = (app, globalApp) => {
   // global boolean 0/false, 1/true, or '2' bypass global & use app boolean
@@ -28,23 +49,9 @@ const messagesAppVsGlobal = (app, globalApp) => {
   Stop processing if checks fail
 ------------------------------------------------------------------------------*/
 const appValidate = async (req, res, db, formSubmission) => {
-  // App
-  const gotApp = await db.collection('app').doc(formSubmission.appKey).get();
-  const app = gotApp.data();
 
-  // App Check: if app does not exist then stop processing
-  if (!app) {
-    console.warn('App Key does not exist.');
-    // no error message response sent because submit not from approved app
-    return res.end();
-  }
-
-  // Global App
-  const gotGlobalApp = await db.collection('global').doc('app').get();
-  const globalApp = gotGlobalApp.data();
-
-  // Messages
-  // App-specific or Global App messages based on config
+  const app = await getApp(res, db, formSubmission);
+  const globalApp = await getGlobalApp(db);
   const messages = messagesAppVsGlobal(app, globalApp);
 
   //////////////////////////////////////////////////////////////////////////////
