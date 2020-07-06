@@ -28,6 +28,10 @@ module.exports = ({ admin }) => async (req, res) => {
   try {
 
     const validRequest = await appValidate(req, res, db, formSubmission);
+    console.log("validRequest $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", validRequest);
+    if (!validRequest) {
+      return res.end();
+    }
     const app = validRequest.app;
     const globalApp = validRequest.globalApp; // declared here for akismet
     messages = validRequest.messages; // either 'app' or 'globalApp' messages
