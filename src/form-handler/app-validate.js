@@ -5,8 +5,13 @@
   Stop processing if checks fail
 ------------------------------------------------------------------------------*/
 
-// Messages: Returns global or app-specific messages based on config settings
-const getMessages = (globalApp, app) => {
+/*-- Cloud Function ----------------------------------------------------------*/
+
+/*------------------------------------------------------------------------------
+  Messages
+  Returns global or app-specific messages based on config settings
+------------------------------------------------------------------------------*/
+const messagesAppVsGlobal = (app, globalApp) => {
   // global boolean 0/false, 1/true, or '2' bypass global & use app boolean
   if (globalApp.condition.messageGlobal === 1
       || (globalApp.condition.messageGlobal === 2
@@ -18,7 +23,7 @@ const getMessages = (globalApp, app) => {
   }
 }
 
-/*-- Cloud Function ----------------------------------------------------------*/
+
 const appValidate = async (req, res, db, formSubmission) => {
   const gotApp = await db.collection('app').doc(formSubmission.appKey).get();
   const app = gotApp.data();
@@ -32,13 +37,13 @@ const appValidate = async (req, res, db, formSubmission) => {
 
   // Global and app condition checks
   const gotGlobalApp = await db.collection('global').doc('app').get();
-  const dataGlobalApp = gotGlobalApp.data();
+  const globalApp = gotGlobalApp.data();
 
-  const messages = getMessages(dataGlobalApp, app);
+  const messages = messagesAppVsGlobal(app, globalApp);
   // CORS validation: stop cloud function if check does not pass
   // global boolean 0/false, 1/true, or '2' bypass global to use app boolean
-  if (dataGlobalApp.condition.corsBypass === 0
-      || (dataGlobalApp.condition.corsBypass === 2
+  if (globalApp.condition.corsBypass === 0
+      || (globalApp.condition.corsBypass === 2
           && !app.condition.corsBypass)
     ) {
     // url requests restricted to match the app
@@ -55,8 +60,8 @@ const appValidate = async (req, res, db, formSubmission) => {
   }
   // Form Submit Enabled: stop cloud function if submitForm disabled
   // global boolean 0/false, 1/true, or '2' bypass global to use app boolean
-  if (dataGlobalApp.condition.submitForm === 0
-      || (dataGlobalApp.condition.submitForm === 2
+  if (globalApp.condition.submitForm === 0
+      || (globalApp.condition.submitForm === 2
           && !app.condition.submitForm)
     ) {
     console.warn(`Form submit disabled for app "${app.appInfo.appName}"`);
@@ -66,7 +71,7 @@ const appValidate = async (req, res, db, formSubmission) => {
 
   return ({
     app,
-    globalApp: dataGlobalApp,
+    globalApp,
     messages
   })
 
