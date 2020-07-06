@@ -28,7 +28,7 @@ module.exports = ({ admin }) => async (req, res) => {
   try {
 
     const validRequest = await appValidate(req, res, db, formSubmission);
-    console.log("validRequest $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", validRequest);
+    // Stop processing if not valid request
     if (!validRequest) {
       return res.end();
     }

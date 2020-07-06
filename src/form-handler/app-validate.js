@@ -9,14 +9,7 @@
 ------------------------------------------------------------------------------*/
 const getApp = async (db, formSubmission) => {
   const gotApp = await db.collection('app').doc(formSubmission.appKey).get();
-  const app = gotApp.data();
-  // If app does not exist then stop processing
-  if (!app) {
-    console.warn('App Key does not exist.');
-    // no error message sent to client because submit not from approved app
-    return false;
-  }
-  return app;
+  return gotApp.data();
 }
 
 /*------------------------------------------------------------------------------
@@ -49,19 +42,14 @@ const messagesAppVsGlobal = (app, globalApp) => {
   Stop processing if checks fail
 ------------------------------------------------------------------------------*/
 const appValidate = async (req, res, db, formSubmission) => {
-
+  // App & App Check
   const app = await getApp(db, formSubmission);
-  console.log("app 1111111 $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ", app);
- // const gotApp = await db.collection('app').doc(formSubmission.appKey).get();
-//  const app = gotApp.data();
   // If app does not exist then stop processing
   if (!app) {
     console.warn('App Key does not exist.');
     // no error message sent to client because submit not from approved app
     return false;
   }
-
-
 
   const globalApp = await getGlobalApp(db);
   const messages = messagesAppVsGlobal(app, globalApp);
