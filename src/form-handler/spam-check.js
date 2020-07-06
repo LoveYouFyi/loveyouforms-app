@@ -12,7 +12,7 @@ const { AkismetClient } = require('akismet-api/lib/akismet.js'); // had to hardc
 // Returns one of {spam: 'Check disabled '} {spam: 'true'} {spam: 'false'}
 const spamCheck = async (req, app, globalApp, formTemplateData, propsData) => {
 
-  // If spam filter akismet disabled
+  // If spam filter akismet disabled then return object with prop
   if (globalApp.condition.spamFilterAkismet === 0
       || (globalApp.condition.spamFilterAkismet === 2
           && !app.condition.spamFilterAkismet)
