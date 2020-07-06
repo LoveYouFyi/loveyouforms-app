@@ -25,23 +25,28 @@ const messagesAppVsGlobal = (app, globalApp) => {
 
 
 const appValidate = async (req, res, db, formSubmission) => {
+  // App
   const gotApp = await db.collection('app').doc(formSubmission.appKey).get();
   const app = gotApp.data();
 
-  // If app does not exist, stop processing
+  // App Check: if app does not exist then stop processing
   if (!app) {
     console.warn('App Key does not exist.');
     // no error message response sent because submit not from approved app
     return res.end();
   }
 
-  // Global and app condition checks
+  // Global App
   const gotGlobalApp = await db.collection('global').doc('app').get();
   const globalApp = gotGlobalApp.data();
 
+  // Messages
+  // App-specific or Global App messages based on config
   const messages = messagesAppVsGlobal(app, globalApp);
-  // CORS validation: stop cloud function if check does not pass
-  // global boolean 0/false, 1/true, or '2' bypass global to use app boolean
+
+  // CORS Validation
+  // Stop cloud function if check does not pass
+  // Global boolean 0/false, 1/true, or '2' bypass global to use app boolean
   if (globalApp.condition.corsBypass === 0
       || (globalApp.condition.corsBypass === 2
           && !app.condition.corsBypass)
