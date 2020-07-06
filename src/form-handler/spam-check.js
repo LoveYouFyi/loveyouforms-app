@@ -1,5 +1,6 @@
 /*------------------------------------------------------------------------------
-  Spam Check Akismet: If enabled...
+  Spam Check
+  If Akismet enabled...
   a. minimally checks IP Address and User Agent
   b. checks fields defined as 'content' and 'other' based on config
 ------------------------------------------------------------------------------*/
