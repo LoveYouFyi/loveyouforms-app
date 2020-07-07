@@ -6,7 +6,7 @@
 
 /*-- Dependencies ------------------------------------------------------------*/
 const { logErrorInfo } = require("./../utility");
-const getAppSettings = require('./app-settings');
+const getAppConfig = require('./app-config');
 const getFormResults = require('./form-results');
 
 /*------------------------------------------------------------------------------
@@ -27,27 +27,27 @@ module.exports = ({ admin }) => async (req, res) => {
   const messages = {}; // declared here so catch has access to config messages
 
   try {
-    // Settings returns {} props
-    const appSettings = await getAppSettings(req, res, db, formSubmission);
+    ////////////////////////////////////////////////////////////////////////////
+    // App Config: returns {} props
+    ////////////////////////////////////////////////////////////////////////////
+    const appConfig = await getAppConfig(req, res, db, formSubmission);
     // If app does not exist stop processing
-    if (!appSettings) {
+    if (!appConfig) {
       return res.end();
     }
-    // Set messages (taken from 'app' or 'globalApp' based on config)
-    Object.assign(messages, appSettings.messages);
-//    messages = appSettings.messages;
+    // Messages set (app vs globalApp based on config)
+    Object.assign(messages, appConfig.messages);
 
-    //////////////////////////////////////////////////////////////////////////////
-    // CORS Validation
-    // Stop cloud function if check does not pass
+    ////////////////////////////////////////////////////////////////////////////
+    // CORS Validation: stop processing if check does not pass
     // Global boolean 0/false, 1/true, or '2' bypass global to use app boolean
-    //////////////////////////////////////////////////////////////////////////////
-    if (appSettings.globalApp.condition.corsBypass === 0
-        || (appSettings.globalApp.condition.corsBypass === 2
-            && !appSettings.app.condition.corsBypass)
+    ////////////////////////////////////////////////////////////////////////////
+    if (appConfig.globalApp.condition.corsBypass === 0
+        || (appConfig.globalApp.condition.corsBypass === 2
+            && !appConfig.app.condition.corsBypass)
       ) {
       // url requests restricted to match the app
-      res.setHeader('Access-Control-Allow-Origin', appSettings.app.appInfo.appUrl);
+      res.setHeader('Access-Control-Allow-Origin', appConfig.app.appInfo.appUrl);
       // end processing if app url does not match req.headers.origin url
       if (req.headers.origin !== app.appInfo.appUrl) {
         console.warn('CORS Access Control: Origin Url does not match App Url.');
@@ -59,12 +59,12 @@ module.exports = ({ admin }) => async (req, res) => {
       res.setHeader('Access-Control-Allow-Origin', '*');
     }
 
-
-    // If submit form disabled
-    if (!appSettings.submitForm) {
-      console.log("error $$$$$$$$$$$$$$$$$$$$$$$$$$$ ", messages.error);
-      return res.status(200).send({
-        data: {
+    ////////////////////////////////////////////////////////////////////////////
+    // Submit Form Enabled: if disabled return error message
+    ////////////////////////////////////////////////////////////////////////////
+    if (!appConfig.submitFormEnabled) {
+      return res.status(500).send({
+        error: {
           message: messages.error
         }
       });
@@ -74,7 +74,7 @@ module.exports = ({ admin }) => async (req, res) => {
     // Database Entry: add form submission to database
     ////////////////////////////////////////////////////////////////////////////
     const formResults = await getFormResults(req, admin, db, formSubmission,
-      appSettings.app, appSettings.globalApp);
+      appConfig.app, appConfig.globalApp);
     // For serverTimestamp to work must first create new doc key then 'set' data
     const newKeyRef = db.collection('submitForm').doc();
     // update the new-key-record using 'set' which works for existing doc
@@ -83,9 +83,6 @@ module.exports = ({ admin }) => async (req, res) => {
     ////////////////////////////////////////////////////////////////////////////
     // Response: return object (even if empty) so client can finish AJAX success
     ////////////////////////////////////////////////////////////////////////////
-    console.log("formResults $$$$$$$$$$$$$$$$$$$$$$$$$$$ ", formResults.urlRedirect);
-    console.log("success $$$$$$$$$$$$$$$$$$$$$$$$$$$ ", messages.success);
-
     return res.status(200).send({
       data: {
         redirect: formResults.urlRedirect,

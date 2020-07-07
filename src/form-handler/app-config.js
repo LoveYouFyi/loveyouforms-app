@@ -1,11 +1,11 @@
 /*------------------------------------------------------------------------------
-  App Validate
+  App Config
   Processes validations, and if all pass returns object with app, globalApp,
   and messages
 ------------------------------------------------------------------------------*/
 
 /*------------------------------------------------------------------------------
-  App & App Check
+  App
 ------------------------------------------------------------------------------*/
 const getApp = async (db, formSubmission) => {
   const gotApp = await db.collection('app').doc(formSubmission.appKey).get();
@@ -35,10 +35,10 @@ const messagesAppVsGlobal = (app, globalApp) => {
 }
 
 /*------------------------------------------------------------------------------
-  Submit Form Enabled:
+  Submit Form Boolean (enabled/disabled):
   global boolean 0/false, 1/true, or '2' bypass global to use app boolean
 ------------------------------------------------------------------------------*/
-const submitFormEnabled = (app, globalApp) => {
+const submitFormBoolean = (app, globalApp) => {
   // If disabled
   if (globalApp.condition.submitForm === 0
       || (globalApp.condition.submitForm === 2
@@ -52,11 +52,11 @@ const submitFormEnabled = (app, globalApp) => {
 }
 
 /*------------------------------------------------------------------------------
-  App Validate:
+  App Config:
   If app does not exist return false... Else return app settings object { }
   Check if cors authorized app, and form submit enabled
 ------------------------------------------------------------------------------*/
-const appSettings = async (req, res, db, formSubmission) => {
+const appConfig = async (req, res, db, formSubmission) => {
 
   // App & App Check
   const app = await getApp(db, formSubmission);
@@ -69,10 +69,7 @@ const appSettings = async (req, res, db, formSubmission) => {
 
   const globalApp = await getGlobalApp(db);
   const messages = messagesAppVsGlobal(app, globalApp);
-
-
-
-  const submitForm = submitFormEnabled(app, globalApp);
+  const submitFormEnabled = submitFormBoolean(app, globalApp);
 
   //////////////////////////////////////////////////////////////////////////////
   // If above returns were not triggered then return object
@@ -81,9 +78,9 @@ const appSettings = async (req, res, db, formSubmission) => {
     app,
     globalApp,
     messages,
-    submitForm
+    submitFormEnabled
   });
 
 }
 
-module.exports = appSettings;
+module.exports = appConfig;
