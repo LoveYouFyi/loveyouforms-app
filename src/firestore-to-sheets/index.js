@@ -5,7 +5,6 @@
 ------------------------------------------------------------------------------*/
 
 /*-- Dependencies ------------------------------------------------------------*/
-
 const moment = require('moment-timezone'); // Timestamp formats and timezones
 const path = require('path');
 const { logErrorInfo, sortObjectsAsc, objectValuesByKey } =
@@ -23,8 +22,9 @@ const jwtClient = new google.auth.JWT({ // JWT Authentication (for google sheets
 const sheets = google.sheets('v4'); // Google Sheets
 
 
-/*-- Cloud Function ----------------------------------------------------------*/
-
+/*------------------------------------------------------------------------------
+  Export Firestore To Sheets Function
+------------------------------------------------------------------------------*/
 module.exports = ({ admin }) => async (snapshot, context) => {
 
   const db = admin.firestore();
