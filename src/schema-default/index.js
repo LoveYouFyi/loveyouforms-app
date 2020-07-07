@@ -4,6 +4,12 @@
   schemaDefault(collection_name, global_schema_document_name, context)
 ------------------------------------------------------------------------------*/
 
+/*-- Dependencies ------------------------------------------------------------*/
+const { logErrorInfo } = require("./../utility");
+
+/*------------------------------------------------------------------------------
+  Export Schema Default Function
+------------------------------------------------------------------------------*/
 module.exports = (collection, schema, { admin }) => async (snapshot, context) => {
 
   const db = admin.firestore();
