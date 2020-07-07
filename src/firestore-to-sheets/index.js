@@ -6,13 +6,12 @@
 
 /*-- Dependencies ------------------------------------------------------------*/
 const moment = require('moment-timezone'); // Timestamp formats and timezones
-const path = require('path');
 const { logErrorInfo, sortObjectsAsc, objectValuesByKey } =
-  require(path.join(__dirname, "../utility"));
+  require("./../utility");
 // Sheets with Credentials
 // service-account credentials: manually download file using Firebase console;
 // credentials are used by cloud function to authenticate with Google Sheets API
-const serviceAccount = require(path.join(__dirname, "../../../../", "service-account.json"));
+const serviceAccount = require('./../../../../service-account.json');
 const { google } = require('googleapis'); // Google API
 const jwtClient = new google.auth.JWT({ // JWT Authentication (for google sheets)
   email: serviceAccount.client_email, // <--- CREDENTIALS
@@ -20,7 +19,6 @@ const jwtClient = new google.auth.JWT({ // JWT Authentication (for google sheets
   scopes: ['https://www.googleapis.com/auth/spreadsheets'] // read and write sheets
 });
 const sheets = google.sheets('v4'); // Google Sheets
-
 
 /*------------------------------------------------------------------------------
   Export Firestore To Sheets Function
