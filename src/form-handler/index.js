@@ -30,7 +30,7 @@ module.exports = ({ admin }) => async (req, res) => {
     ////////////////////////////////////////////////////////////////////////////
     // App Config: returns {} props
     ////////////////////////////////////////////////////////////////////////////
-    const appConfig = await getAppConfig(req, res, db, formSubmission);
+    const appConfig = await getAppConfig(db, formSubmission);
     // If app does not exist stop processing
     if (!appConfig) {
       return res.end();
