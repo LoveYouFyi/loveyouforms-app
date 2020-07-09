@@ -12,15 +12,23 @@ const { logErrorInfo, sortObjectsAsc, objectValuesByKey } =
 // credentials are used by cloud function to authenticate with Google Sheets API
 const serviceAccount = require('./../../../../service-account.json');
 const { google } = require('googleapis'); // Google API
-const jwtClient = new google.auth.JWT({ // JWT Authentication (for google sheets)
+const googleAuth = new google.auth.JWT({ // JWT Authentication (for google sheets)
   email: serviceAccount.client_email, // <--- CREDENTIALS
   key: serviceAccount.private_key, // <--- CREDENTIALS
   scopes: ['https://www.googleapis.com/auth/spreadsheets'] // read and write sheets
 });
-const sheets = google.sheets('v4'); // Google Sheets
-const api = { jwtClient, sheets  };
+const googleSheets = google.sheets('v4'); // Google Sheets
+const googleAPI = { googleAuth, googleSheets  };
 
 const getFormDataAndSheetHeaderRows = require('./form-data-and-sheet-header-rows');
+
+/*------------------------------------------------------------------------------
+  App
+------------------------------------------------------------------------------*/
+const getApp = async (db, appKey) => {
+  const gotApp = await db.collection('app').doc(appKey).get();
+  return gotApp.data();
+}
 
 /*------------------------------------------------------------------------------
   Export Firestore To Sheets Function
@@ -34,16 +42,16 @@ module.exports = ({ admin }) => async (snapshot, context) => {
 
   try {
 
+    const app = await getApp(db, appKey);
+
     ////////////////////////////////////////////////////////////////////////////
     // Prepare data row values and sheet header
     ////////////////////////////////////////////////////////////////////////////
-    const formDataAndSheetHeaderRows = await getFormDataAndSheetHeaderRows(db, snapshot);
+    const formDataAndSheetHeaderRows = await getFormDataAndSheetHeaderRows(snapshot, db, app);
     const headerRow = formDataAndSheetHeaderRows.sheetHeaderRowSorted;
     const dataRow = formDataAndSheetHeaderRows.formDataRowSorted;
 
-    // App Data
-    const appRef = await db.collection('app').doc(appKey).get();
-    const app = appRef.data();
+
 
     ////////////////////////////////////////////////////////////////////////////
     // Prepare to insert data-row into app spreadsheet
@@ -54,14 +62,14 @@ module.exports = ({ admin }) => async (snapshot, context) => {
     const sheetId = app.service.googleSheets.sheetId[templateName]; // multiple possible sheets
 
     // Authorize with google sheets
-    await jwtClient.authorize();
+    await googleAuth.authorize();
 
     // Row: Add to sheet (header or data)
     const rangeHeader =  `${templateName}!A1`; // e.g. "contactDefault!A1"
     const rangeData =  `${templateName}!A2`; // e.g. "contactDefault!A2"
 
     const addRow = range => values => ({
-      auth: jwtClient,
+      auth: googleAuth,
       spreadsheetId: spreadsheetId,
       ...range && { range }, // e.g. "contactDefault!A2"
       valueInputOption: "RAW",
@@ -72,7 +80,7 @@ module.exports = ({ admin }) => async (snapshot, context) => {
 
     // Row: Blank insert (sheetId argument: existing vs new sheet)
     const blankRowInsertAfterHeader = sheetId => ({
-      auth: jwtClient,
+      auth: googleAuth,
       spreadsheetId: spreadsheetId,
       resource: {
         requests: [
@@ -98,11 +106,11 @@ module.exports = ({ admin }) => async (snapshot, context) => {
 
     // Check if sheet name exists for data insert
     const sheetObjectRequest = () => ({
-      auth: jwtClient,
+      auth: googleAuth,
       spreadsheetId: spreadsheetId,
       includeGridData: false
     });
-    const sheetDetails = await sheets.spreadsheets.get(sheetObjectRequest());
+    const sheetDetails = await googleSheets.spreadsheets.get(sheetObjectRequest());
     const sheetNameExists = sheetDetails.data.sheets.find(sheet => {
       // if sheet name exists returns sheet 'properties' object, else is undefined
       return sheet.properties.title === templateName;
@@ -112,15 +120,15 @@ module.exports = ({ admin }) => async (snapshot, context) => {
     // Else, create new sheet + insert header + insert data
     if (sheetNameExists) {
       // Insert into spreadsheet a blank row and the new data row
-      await sheets.spreadsheets.batchUpdate(blankRowInsertAfterHeader(sheetId));
-      await sheets.spreadsheets.values.update(addRow(rangeData)(dataRow));
+      await googleSheets.spreadsheets.batchUpdate(blankRowInsertAfterHeader(sheetId));
+      await googleSheets.spreadsheets.values.update(addRow(rangeData)(dataRow));
 
     } else {
       // Create new sheet, insert heder and new row data
 
       // Request object for adding sheet to existing spreadsheet
       const addSheet = () => ({
-        auth: jwtClient,
+        auth: googleAuth,
         spreadsheetId: spreadsheetId,
         resource: {
           requests: [
@@ -147,7 +155,7 @@ module.exports = ({ admin }) => async (snapshot, context) => {
       //   prop: spreadsheetId
       //   prop: replies[0].addSheet.properties (
       //     sheetId, title, index, sheetType, gridProperties { rowCount, columnCount } )
-      const newSheet = await sheets.spreadsheets.batchUpdate(addSheet());
+      const newSheet = await googleSheets.spreadsheets.batchUpdate(addSheet());
       // Map 'replies' array to get sheetId
       const newSheetId = sheet => {
         const newSheet = {};
@@ -161,10 +169,10 @@ module.exports = ({ admin }) => async (snapshot, context) => {
       });
 
       // New Sheet Actions: add row header then row data
-      await sheets.spreadsheets.values.update(
+      await googleSheets.spreadsheets.values.update(
         addRow(rangeHeader)(headerRow)
       );
-      await sheets.spreadsheets.values.update(addRow(rangeData)(dataRow));
+      await googleSheets.spreadsheets.values.update(addRow(rangeData)(dataRow));
 
     } // end 'else' add new sheet
 

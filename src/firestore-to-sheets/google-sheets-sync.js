@@ -3,7 +3,6 @@
 ------------------------------------------------------------------------------*/
 
 /*-- Dependencies ------------------------------------------------------------*/
-const moment = require('moment-timezone'); // Timestamp formats and timezones
 const { logErrorInfo, sortObjectsAsc, objectValuesByKey } =
   require("../utility");
 
