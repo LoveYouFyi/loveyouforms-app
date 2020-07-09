@@ -33,15 +33,15 @@ module.exports = ({ admin }) => async (snapshot, context) => {
     // Prepare row data values and sheet header
     ////////////////////////////////////////////////////////////////////////////
 
-    // Form Submission: values from Snapshot.data()
+    // Form Rusults: values from Snapshot.data()
     const { appKey, createdDateTime, template: { data: { ...templateData },
       name: templateName  } } = snapshot.data();
 
-    // App Doc
+    // App Data
     const appRef = await db.collection('app').doc(appKey).get();
     const app = appRef.data();
 
-    // Template Field Ids and Header Row Sheet Columns
+    // Form Template for Template Field Ids and Header Row Sheet Columns
     // Database needs to have Fields Ids and Header Columns sorted to match
     // templateData array is sorted to match the order of headerRowSheet
     const formTemplateRef = await db.collection('formTemplate').doc(templateName).get();

@@ -1,7 +1,7 @@
 /*------------------------------------------------------------------------------
   App Config
-  Processes validations, and if all pass returns object with app, globalApp,
-  and messages
+  Processes validations, and if all pass, returns object with:
+    app data, globalApp data, and messages
 ------------------------------------------------------------------------------*/
 
 /*------------------------------------------------------------------------------
@@ -21,7 +21,7 @@ const getGlobalApp = async (db) => {
 }
 
 /*------------------------------------------------------------------------------
-  Messages: app-specific or globalApp based on config settings
+  Messages: returns app-specific or globalApp based on config settings
 ------------------------------------------------------------------------------*/
 const messagesAppVsGlobal = (app, globalApp) => {
   // global boolean 0/false, 1/true, or '2' bypass global & use app boolean
@@ -35,7 +35,7 @@ const messagesAppVsGlobal = (app, globalApp) => {
 }
 
 /*------------------------------------------------------------------------------
-  Submit Form Boolean (enabled/disabled):
+  Submit Form Boolean: To check if submit form is enabled/disabled
   global boolean 0/false, 1/true, or '2' bypass global to use app boolean
 ------------------------------------------------------------------------------*/
 const submitFormBoolean = (app, globalApp) => {
