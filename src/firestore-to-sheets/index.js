@@ -7,20 +7,21 @@
 /*-- Dependencies ------------------------------------------------------------*/
 const { logErrorInfo, sortObjectsAsc, objectValuesByKey } =
   require("./../utility");
+
 // Sheets with Credentials
 // service-account credentials: manually download file using Firebase console;
 // credentials are used by cloud function to authenticate with Google Sheets API
-const serviceAccount = require('./../../../../service-account.json');
-const { google } = require('googleapis'); // Google API
-const googleAuth = new google.auth.JWT({ // JWT Authentication (for google sheets)
-  email: serviceAccount.client_email, // <--- CREDENTIALS
-  key: serviceAccount.private_key, // <--- CREDENTIALS
-  scopes: ['https://www.googleapis.com/auth/spreadsheets'] // read and write sheets
-});
-const googleSheets = google.sheets('v4'); // Google Sheets
-const googleAPI = { googleAuth, googleSheets  };
+//const serviceAccount = require('./../../../../service-account.json');
+//const { google } = require('googleapis'); // Google API
+//const googleAuth = new google.auth.JWT({ // JWT Authentication (for google sheets)
+  //email: serviceAccount.client_email, // <--- CREDENTIALS
+  //key: serviceAccount.private_key, // <--- CREDENTIALS
+  //scopes: ['https://www.googleapis.com/auth/spreadsheets'] // read and write sheets
+//});
+//const googleSheets = google.sheets('v4'); // Google Sheets
 
 const getFormDataAndSheetHeaderRows = require('./form-data-and-sheet-header-rows');
+const processGoogleSheetSync = require('./google-sheet-sync');
 
 /*------------------------------------------------------------------------------
   App
@@ -49,6 +50,12 @@ module.exports = ({ admin }) => async (snapshot, context) => {
     const sheetHeaderRow = formDataAndSheetHeaderRows.sheetHeaderRowSorted;
     const formDataRow = formDataAndSheetHeaderRows.formDataRowSorted;
 
+    ////////////////////////////////////////////////////////////////////////////
+    // Process Google Sheets Sync
+    ////////////////////////////////////////////////////////////////////////////
+    await processGoogleSheetSync(snapshot, db, app, sheetHeaderRow, formDataRow);
+
+/*
     ////////////////////////////////////////////////////////////////////////////
     // Prepare to insert data-row into app spreadsheet
     ////////////////////////////////////////////////////////////////////////////
@@ -171,6 +178,7 @@ module.exports = ({ admin }) => async (snapshot, context) => {
       await googleSheets.spreadsheets.values.update(addRow(rangeData)(formDataRow));
 
     } // end 'else' add new sheet
+  */
 
   } catch(error) {
 
