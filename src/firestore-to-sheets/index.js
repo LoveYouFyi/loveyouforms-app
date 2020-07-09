@@ -5,7 +5,7 @@
 ------------------------------------------------------------------------------*/
 
 /*-- Dependencies ------------------------------------------------------------*/
-const moment = require('moment-timezone'); // Timestamp formats and timezones
+//const moment = require('moment-timezone'); // Timestamp formats and timezones
 const { logErrorInfo, sortObjectsAsc, objectValuesByKey } =
   require("./../utility");
 // Sheets with Credentials
@@ -19,6 +19,7 @@ const jwtClient = new google.auth.JWT({ // JWT Authentication (for google sheets
   scopes: ['https://www.googleapis.com/auth/spreadsheets'] // read and write sheets
 });
 const sheets = google.sheets('v4'); // Google Sheets
+const context = { jwtClient, sheets  };
 
 /*------------------------------------------------------------------------------
   Export Firestore To Sheets Function
@@ -30,7 +31,7 @@ module.exports = ({ admin }) => async (snapshot, context) => {
   try {
 
     ////////////////////////////////////////////////////////////////////////////
-    // Prepare row data values and sheet header
+    // Prepare data row values and sheet header
     ////////////////////////////////////////////////////////////////////////////
 
     // Form Rusults: values from Snapshot.data()
