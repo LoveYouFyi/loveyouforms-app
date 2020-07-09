@@ -44,14 +44,10 @@ module.exports = ({ admin }) => async (snapshot, context) => {
 
     const app = await getApp(db, appKey);
 
-    ////////////////////////////////////////////////////////////////////////////
-    // Prepare data row values and sheet header
-    ////////////////////////////////////////////////////////////////////////////
+    // Form Data and Sheet Header Rows
     const formDataAndSheetHeaderRows = await getFormDataAndSheetHeaderRows(snapshot, db, app);
-    const headerRow = formDataAndSheetHeaderRows.sheetHeaderRowSorted;
-    const dataRow = formDataAndSheetHeaderRows.formDataRowSorted;
-
-
+    const sheetHeaderRow = formDataAndSheetHeaderRows.sheetHeaderRowSorted;
+    const formDataRow = formDataAndSheetHeaderRows.formDataRowSorted;
 
     ////////////////////////////////////////////////////////////////////////////
     // Prepare to insert data-row into app spreadsheet
@@ -121,7 +117,7 @@ module.exports = ({ admin }) => async (snapshot, context) => {
     if (sheetNameExists) {
       // Insert into spreadsheet a blank row and the new data row
       await googleSheets.spreadsheets.batchUpdate(blankRowInsertAfterHeader(sheetId));
-      await googleSheets.spreadsheets.values.update(addRow(rangeData)(dataRow));
+      await googleSheets.spreadsheets.values.update(addRow(rangeData)(formDataRow));
 
     } else {
       // Create new sheet, insert heder and new row data
@@ -170,9 +166,9 @@ module.exports = ({ admin }) => async (snapshot, context) => {
 
       // New Sheet Actions: add row header then row data
       await googleSheets.spreadsheets.values.update(
-        addRow(rangeHeader)(headerRow)
+        addRow(rangeHeader)(sheetHeaderRow)
       );
-      await googleSheets.spreadsheets.values.update(addRow(rangeData)(dataRow));
+      await googleSheets.spreadsheets.values.update(addRow(rangeData)(formDataRow));
 
     } // end 'else' add new sheet
 
