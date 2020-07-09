@@ -41,7 +41,7 @@ const formDataAndSheetHeaderRows = async (db, snapshot) => {
     // Fields Sheet Headers Sorted: required for spreadsheet column headers when
     // adding a new sheet to a spreadsheet
     // Sheets requires a nested array of strings [ [ 'Date', 'Time', etc ] ]
-    const formTemplateFieldsSheetHeaderSorted = [
+    const sheetHeaderRowSorted = [
       [
         'Date', 'Time',
         ...objectValuesByKey(
@@ -69,7 +69,7 @@ const formDataAndSheetHeaderRows = async (db, snapshot) => {
 
     // Merge objects in sort-order and return only values
     // Data-row for sheet requires nested array of strings [ [ 'John Smith', etc ] ]
-    const sheetDataRow = [(
+    const formDataRowSorted = [(
       Object.values({
         createdDate,
         createdTime,
@@ -81,8 +81,8 @@ const formDataAndSheetHeaderRows = async (db, snapshot) => {
     ////////////////////////////////////////////////////////////////////////////
 
     return ({
-      formTemplateFieldsSheetHeaderSorted,
-      sheetDataRow
+      sheetHeaderRowSorted,
+      formDataRowSorted
     })
 
 

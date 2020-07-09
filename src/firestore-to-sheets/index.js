@@ -21,7 +21,7 @@ const jwtClient = new google.auth.JWT({ // JWT Authentication (for google sheets
 const sheets = google.sheets('v4'); // Google Sheets
 const api = { jwtClient, sheets  };
 
-const getDataAndHeaderRows = require('./data-and-header-rows');
+const getFormDataAndSheetHeaderRows = require('./form-data-and-sheet-header-rows');
 
 /*------------------------------------------------------------------------------
   Export Firestore To Sheets Function
@@ -38,9 +38,9 @@ module.exports = ({ admin }) => async (snapshot, context) => {
     ////////////////////////////////////////////////////////////////////////////
     // Prepare data row values and sheet header
     ////////////////////////////////////////////////////////////////////////////
-    const dataAndHeaderRows = await getDataAndHeaderRows(db, snapshot)
-    const headerRow = dataAndHeaderRows.formTemplateFieldsSheetHeaderSorted;
-    const dataRow = dataAndHeaderRows.sheetDataRow;
+    const formDataAndSheetHeaderRows = await getFormDataAndSheetHeaderRows(db, snapshot);
+    const headerRow = formDataAndSheetHeaderRows.sheetHeaderRowSorted;
+    const dataRow = formDataAndSheetHeaderRows.formDataRowSorted;
 
     // App Data
     const appRef = await db.collection('app').doc(appKey).get();
