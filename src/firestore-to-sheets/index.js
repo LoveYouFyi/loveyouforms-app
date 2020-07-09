@@ -55,7 +55,7 @@ module.exports = ({ admin }) => async (snapshot, context) => {
     // Fields Sheet Headers Sorted: required for spreadsheet column headers when
     // adding a new sheet to a spreadsheet
     // Sheets requires a nested array of strings [ [ 'Date', 'Time', etc ] ]
-    const formTemplateFieldsSheetHeadersSorted = [
+    const formTemplateFieldsSheetHeaderSorted = [
       [
         'Date', 'Time',
         ...objectValuesByKey(
@@ -212,7 +212,7 @@ module.exports = ({ admin }) => async (snapshot, context) => {
 
       // New Sheet Actions: add row header then row data
       await sheets.spreadsheets.values.update(
-        addRow(rangeHeader)(formTemplateFieldsSheetHeadersSorted)
+        addRow(rangeHeader)(formTemplateFieldsSheetHeaderSorted)
       );
       await sheets.spreadsheets.values.update(addRow(rangeData)(sheetDataRow));
 

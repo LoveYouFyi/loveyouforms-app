@@ -33,6 +33,7 @@ module.exports = ({ admin }) => async (req, res) => {
     const appConfig = await getAppConfig(db, formSubmission);
     // If app does not exist stop processing
     if (!appConfig) {
+      // no error message sent to client because submit not from valid app
       return res.end();
     }
     // Messages set (app vs globalApp based on config)

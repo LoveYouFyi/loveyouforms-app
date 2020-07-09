@@ -60,10 +60,9 @@ const appConfig = async (db, formSubmission) => {
 
   // App & App Check
   const app = await getApp(db, formSubmission);
-  // If app key does not exist...
+  // Stop processing if app key does not exist
   if (!app) {
     console.warn('App Key does not exist.');
-    // no error message sent to client because submit not from approved app
     return false;
   }
 
@@ -72,7 +71,7 @@ const appConfig = async (db, formSubmission) => {
   const submitFormEnabled = submitFormBoolean(app, globalApp);
 
   //////////////////////////////////////////////////////////////////////////////
-  // If above returns were not triggered then return object
+  // Return object
   //////////////////////////////////////////////////////////////////////////////
   return ({
     app,
