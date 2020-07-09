@@ -1,7 +1,5 @@
 /*------------------------------------------------------------------------------
-  Firestore-to-Sheets Trigger Cloud Function
-  Listens for new 'submitForm' collection docs and adds data to google sheets.
-  If required, creates new sheet(tab) and row header.
+  Form Data and Sheet Header Rows
 ------------------------------------------------------------------------------*/
 
 /*-- Dependencies ------------------------------------------------------------*/
@@ -10,21 +8,20 @@ const { logErrorInfo, sortObjectsAsc, objectValuesByKey } =
   require("../utility");
 
 /*------------------------------------------------------------------------------
-  Export Firestore To Sheets Function
+  Form Data and Sheet Header Rows:
+  ...
 ------------------------------------------------------------------------------*/
-module.exports = ({ admin }) => async (snapshot, context) => {
+const formDataAndSheetHeaderRows = async (db, snapshot) => {
 
-  const db = admin.firestore();
+  // Form Results
+  const { appKey, createdDateTime, template: { data: { ...templateData },
+    name: templateName  } } = snapshot.data();
 
   try {
 
     ////////////////////////////////////////////////////////////////////////////
     // Prepare data row values and sheet header
     ////////////////////////////////////////////////////////////////////////////
-
-    // Form Rusults: values from Snapshot.data()
-    const { appKey, createdDateTime, template: { data: { ...templateData },
-      name: templateName  } } = snapshot.data();
 
     // App Data
     const appRef = await db.collection('app').doc(appKey).get();
@@ -83,6 +80,10 @@ module.exports = ({ admin }) => async (snapshot, context) => {
     // [END] Row Data: Sort and Merge
     ////////////////////////////////////////////////////////////////////////////
 
+    return ({
+      formTemplateFieldsSheetHeaderSorted,
+      sheetDataRow
+    })
 
 
   } catch(error) {
@@ -92,3 +93,5 @@ module.exports = ({ admin }) => async (snapshot, context) => {
   }
 
 }
+
+module.exports = formDataAndSheetHeaderRows;

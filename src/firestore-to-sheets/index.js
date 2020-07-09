@@ -5,7 +5,7 @@
 ------------------------------------------------------------------------------*/
 
 /*-- Dependencies ------------------------------------------------------------*/
-//const moment = require('moment-timezone'); // Timestamp formats and timezones
+const moment = require('moment-timezone'); // Timestamp formats and timezones
 const { logErrorInfo, sortObjectsAsc, objectValuesByKey } =
   require("./../utility");
 // Sheets with Credentials
@@ -19,7 +19,9 @@ const jwtClient = new google.auth.JWT({ // JWT Authentication (for google sheets
   scopes: ['https://www.googleapis.com/auth/spreadsheets'] // read and write sheets
 });
 const sheets = google.sheets('v4'); // Google Sheets
-const context = { jwtClient, sheets  };
+const api = { jwtClient, sheets  };
+
+const getDataAndHeaderRows = require('./data-and-header-rows');
 
 /*------------------------------------------------------------------------------
   Export Firestore To Sheets Function
@@ -27,21 +29,23 @@ const context = { jwtClient, sheets  };
 module.exports = ({ admin }) => async (snapshot, context) => {
 
   const db = admin.firestore();
+  // Form Results
+  const { appKey, createdDateTime, template: { data: { ...templateData },
+    name: templateName  } } = snapshot.data();
 
   try {
 
     ////////////////////////////////////////////////////////////////////////////
     // Prepare data row values and sheet header
     ////////////////////////////////////////////////////////////////////////////
-
-    // Form Rusults: values from Snapshot.data()
-    const { appKey, createdDateTime, template: { data: { ...templateData },
-      name: templateName  } } = snapshot.data();
+    const dataAndHeaderRows = await getDataAndHeaderRows(db, snapshot)
+    const headerRow = dataAndHeaderRows.formTemplateFieldsSheetHeaderSorted;
+    const dataRow = dataAndHeaderRows.sheetDataRow;
 
     // App Data
     const appRef = await db.collection('app').doc(appKey).get();
     const app = appRef.data();
-
+/*
     // Form Template for Template Field Ids and Header Row Sheet Columns
     // Database needs to have Fields Ids and Header Columns sorted to match
     // templateData array is sorted to match the order of headerRowSheet
@@ -94,7 +98,7 @@ module.exports = ({ admin }) => async (snapshot, context) => {
     //
     // [END] Row Data: Sort and Merge
     ////////////////////////////////////////////////////////////////////////////
-
+*/
 
     ////////////////////////////////////////////////////////////////////////////
     // Prepare to insert data-row into app spreadsheet
@@ -164,7 +168,7 @@ module.exports = ({ admin }) => async (snapshot, context) => {
     if (sheetNameExists) {
       // Insert into spreadsheet a blank row and the new data row
       await sheets.spreadsheets.batchUpdate(blankRowInsertAfterHeader(sheetId));
-      await sheets.spreadsheets.values.update(addRow(rangeData)(sheetDataRow));
+      await sheets.spreadsheets.values.update(addRow(rangeData)(dataRow));
 
     } else {
       // Create new sheet, insert heder and new row data
@@ -213,9 +217,9 @@ module.exports = ({ admin }) => async (snapshot, context) => {
 
       // New Sheet Actions: add row header then row data
       await sheets.spreadsheets.values.update(
-        addRow(rangeHeader)(formTemplateFieldsSheetHeaderSorted)
+        addRow(rangeHeader)(headerRow)
       );
-      await sheets.spreadsheets.values.update(addRow(rangeData)(sheetDataRow));
+      await sheets.spreadsheets.values.update(addRow(rangeData)(dataRow));
 
     } // end 'else' add new sheet
 
