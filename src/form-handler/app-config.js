@@ -4,22 +4,8 @@
     app data, globalApp data, and messages
 ------------------------------------------------------------------------------*/
 
+/*-- Dependencies ------------------------------------------------------------*/
 const { queryDoc } = require("./../utility");
-/*------------------------------------------------------------------------------
-  App
-------------------------------------------------------------------------------*/
-const getApp = async (db, formSubmission) => {
-  const gotApp = await db.collection('app').doc(formSubmission.appKey).get();
-  return gotApp.data();
-}
-
-/*------------------------------------------------------------------------------
-  Global App
-------------------------------------------------------------------------------*/
-const getGlobalApp = async (db) => {
-  const gotGlobalApp = await db.collection('global').doc('app').get();
-  return gotGlobalApp.data();
-}
 
 /*------------------------------------------------------------------------------
   Messages: returns app-specific or globalApp based on config settings
@@ -60,7 +46,7 @@ const submitFormBoolean = (app, globalApp) => {
 const appConfig = async (db, formSubmission) => {
 
   // App & App Check
-  const app = await getApp(db, formSubmission);
+  const app = await queryDoc(db, 'app', formSubmission.appKey);
   // Stop processing if app key does not exist
   if (!app) {
     console.warn('App Key does not exist.');
