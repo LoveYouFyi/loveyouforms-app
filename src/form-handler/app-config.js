@@ -4,6 +4,7 @@
     app data, globalApp data, and messages
 ------------------------------------------------------------------------------*/
 
+const { queryDoc } = require("./../utility");
 /*------------------------------------------------------------------------------
   App
 ------------------------------------------------------------------------------*/
@@ -66,7 +67,7 @@ const appConfig = async (db, formSubmission) => {
     return false;
   }
 
-  const globalApp = await getGlobalApp(db);
+  const globalApp = await queryDoc(db, 'global', 'app');
   const messages = messagesAppVsGlobal(app, globalApp);
   const submitFormEnabled = submitFormBoolean(app, globalApp);
 

@@ -2,6 +2,11 @@
   Utility helpers for use by cloud functions
 ------------------------------------------------------------------------------*/
 
+const queryDoc = async (db, collection, docId) => {
+  const gotDoc = await db.collection(collection).doc(docId).get();
+  return gotDoc.data();
+}
+
 /*------------------------------------------------------------------------------
  Log Error Info
 ------------------------------------------------------------------------------*/
@@ -42,6 +47,7 @@ const objectValuesByKey = (array, propKey) => array.reduce((a, c) => {
  Exports
 ------------------------------------------------------------------------------*/
 module.exports = {
+  queryDoc,
   logErrorInfo,
   sortObjectsAsc,
   objectValuesByKey
