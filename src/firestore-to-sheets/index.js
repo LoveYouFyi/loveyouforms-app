@@ -21,7 +21,7 @@ const getApp = async (db, appKey) => {
 /*------------------------------------------------------------------------------
   Export Firestore To Sheets Function
 ------------------------------------------------------------------------------*/
-module.exports = ({ admin }) => async (snapshot, context) => {
+module.exports = () => async (snapshot, context) => {
 
   const db = admin.firestore();
   // Form Results

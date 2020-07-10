@@ -43,7 +43,7 @@ const submitFormBoolean = (app, globalApp) => {
   If app does not exist return false... Else return app settings object { }
   Check if cors authorized app, and form submit enabled
 ------------------------------------------------------------------------------*/
-const appConfig = async (db, formSubmission) => {
+const appConfig = async (formSubmission) => {
 
   // App & App Check
   const app = await queryDoc('app', formSubmission.appKey);

@@ -5,14 +5,14 @@
 ------------------------------------------------------------------------------*/
 
 /*-- Dependencies ------------------------------------------------------------*/
-const { queryDoc, objectValuesByKey } = require("./../utility");
+const { admin, db, queryDoc, objectValuesByKey } = require("./../utility");
 const spamCheck = require('./spam-check');
 
 /*------------------------------------------------------------------------------
   Props All:
   Compile 1) form-submission fields, and 2) relevant database fields into object
 ------------------------------------------------------------------------------*/
-const getPropsAll = async (db, formSubmission, app) => {
+const getPropsAll = async (formSubmission, app) => {
   // Form Field Defaults: select all default fields from database
   const gotFormFieldDefaults = await db.collection('formField')
     .where('default', '==', true).get();
@@ -34,7 +34,7 @@ const getPropsAll = async (db, formSubmission, app) => {
   Whitelist of Fields IDs used to identify props to add to database at
   submitForm/.../template.data used by 'trigger email' extensiona
 ------------------------------------------------------------------------------*/
-const getFormTemplate = async (db, propsAll) => {
+const getFormTemplate = async (propsAll) => {
   //const formTemplate = queryDoc(db, 'formTemplate', propsAll.templateName);
   const gotFormTemplate = await db.collection('formTemplate')
     .doc(propsAll.templateName).get();
@@ -53,7 +53,7 @@ const getFormTemplate = async (db, propsAll) => {
   e.g. if html <input> had name="__anything__"
   See doc limits: https://firebase.google.com/docs/firestore/quotas#limits
 ------------------------------------------------------------------------------*/
-const getPropsAllowed = async (db, app, propsAll, formTemplate) => {
+const getPropsAllowed = async (app, propsAll, formTemplate) => {
   // Form Fields Required: fields required for cloud function to work
   // Return Array of field names
   const gotFormFieldsRequired = await db.collection('formField')
@@ -90,10 +90,10 @@ const getPropsAllowed = async (db, app, propsAll, formTemplate) => {
   Returns form submission results as props on object structured to match
   'trigger email' extension requirements
 ------------------------------------------------------------------------------*/
-const formResults = async (req, admin, db, formSubmission, app, globalApp) => {
-  const propsAll = await getPropsAll(db, formSubmission, app);
-  const formTemplate = await getFormTemplate(db, propsAll);
-  const propsAllowed = await getPropsAllowed(db, app, propsAll, formTemplate);
+const formResults = async (req, formSubmission, app, globalApp) => {
+  const propsAll = await getPropsAll(formSubmission, app);
+  const formTemplate = await getFormTemplate(propsAll);
+  const propsAllowed = await getPropsAllowed(app, propsAll, formTemplate);
 
   //////////////////////////////////////////////////////////////////////////////
   // Props Set & Get:

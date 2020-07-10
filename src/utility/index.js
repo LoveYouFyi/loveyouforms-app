@@ -3,6 +3,7 @@
  Exports
 ------------------------------------------------------------------------------*/
 module.exports = {
+  ...require('./init'),
   ...require('./helpers'),
   ...require('./query-firestore')
 }

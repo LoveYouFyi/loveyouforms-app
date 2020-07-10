@@ -5,26 +5,23 @@
 ------------------------------------------------------------------------------*/
 
 /*-- Dependencies ------------------------------------------------------------*/
-const { logErrorInfo } = require("./../utility");
+const { db, queryDoc, logErrorInfo } = require("./../utility");
 
 /*------------------------------------------------------------------------------
   Export Schema Default Function
 ------------------------------------------------------------------------------*/
-module.exports = (collection, schema, { admin }) => async (snapshot, context) => {
-
-  const db = admin.firestore();
+module.exports = (collection, schemaType, env) => async (snapshot, context) => {
 
   try {
 
     // Get Default Schema
-    const schemaRef = await db.collection('global').doc(schema).get();
-    const schemaData = schemaRef.data();
+    const schema = await queryDoc('global', schemaType);
 
     // Update new doc with default schema
     const appRef = db.collection(collection).doc(context.params.id);
-    appRef.set(schemaData); // update record with 'set' which is for existing doc
+    appRef.set(schema); // update record with 'set' which is for existing doc
 
-    return schemaData;
+    return schema;
 
   } catch(error) {
 

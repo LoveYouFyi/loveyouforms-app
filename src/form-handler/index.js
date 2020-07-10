@@ -5,15 +5,14 @@
 ------------------------------------------------------------------------------*/
 
 /*-- Dependencies ------------------------------------------------------------*/
-const { logErrorInfo } = require("./../utility");
+const { db, logErrorInfo } = require("./../utility");
 const getAppConfig = require('./app-config');
 const getFormResults = require('./form-results');
 
 /*------------------------------------------------------------------------------
   Export Form Handler Function
 ------------------------------------------------------------------------------*/
-module.exports = ({ admin }) => async (req, res) => {
-  const db = admin.firestore();
+module.exports = (env) => async (req, res) => {
   // Stop processing if content-type is 'undefined' or not 'text/plain'
   if (typeof req.headers['content-type'] === 'undefined'
     || req.headers['content-type'].toLowerCase() !== 'text/plain') {
@@ -30,7 +29,7 @@ module.exports = ({ admin }) => async (req, res) => {
     ////////////////////////////////////////////////////////////////////////////
     // App Config: returns {} props
     ////////////////////////////////////////////////////////////////////////////
-    const appConfig = await getAppConfig(db, formSubmission);
+    const appConfig = await getAppConfig(formSubmission);
     // If app does not exist stop processing
     if (!appConfig) {
       // no error message sent to client because submit not from valid app
@@ -74,8 +73,8 @@ module.exports = ({ admin }) => async (req, res) => {
     ////////////////////////////////////////////////////////////////////////////
     // Database Entry: add form submission to database
     ////////////////////////////////////////////////////////////////////////////
-    const formResults = await getFormResults(req, admin, db, formSubmission,
-      appConfig.app, appConfig.globalApp);
+    const formResults = await getFormResults(req, formSubmission, appConfig.app,
+      appConfig.globalApp);
     // For serverTimestamp to work must first create new doc key then 'set' data
     const newKeyRef = db.collection('submitForm').doc();
     // update the new-key-record using 'set' which works for existing doc
