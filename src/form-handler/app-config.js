@@ -46,14 +46,14 @@ const submitFormBoolean = (app, globalApp) => {
 const appConfig = async (db, formSubmission) => {
 
   // App & App Check
-  const app = await queryDoc(db, 'app', formSubmission.appKey);
+  const app = await queryDoc('app', formSubmission.appKey);
   // Stop processing if app key does not exist
   if (!app) {
     console.warn('App Key does not exist.');
     return false;
   }
 
-  const globalApp = await queryDoc(db, 'global', 'app');
+  const globalApp = await queryDoc('global', 'app');
   const messages = messagesAppVsGlobal(app, globalApp);
   const submitFormEnabled = submitFormBoolean(app, globalApp);
 

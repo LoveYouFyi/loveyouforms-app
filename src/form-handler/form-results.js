@@ -5,7 +5,7 @@
 ------------------------------------------------------------------------------*/
 
 /*-- Dependencies ------------------------------------------------------------*/
-const { objectValuesByKey } = require("./../utility");
+const { queryDoc, objectValuesByKey } = require("./../utility");
 const spamCheck = require('./spam-check');
 
 /*------------------------------------------------------------------------------
@@ -35,6 +35,7 @@ const getPropsAll = async (db, formSubmission, app) => {
   submitForm/.../template.data used by 'trigger email' extensiona
 ------------------------------------------------------------------------------*/
 const getFormTemplate = async (db, propsAll) => {
+  //const formTemplate = queryDoc(db, 'formTemplate', propsAll.templateName);
   const gotFormTemplate = await db.collection('formTemplate')
     .doc(propsAll.templateName).get();
 
