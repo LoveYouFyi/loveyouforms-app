@@ -1,11 +1,8 @@
-/*------------------------------------------------------------------------------
-  Utility helpers for use by cloud functions
-------------------------------------------------------------------------------*/
 
 /*------------------------------------------------------------------------------
  Log Error Info
 ------------------------------------------------------------------------------*/
-const logErrorInfo = error => ({
+module.exports.logErrorInfo = error => ({
   Error: 'Description and source line:',
   description: error,
   break: '**************************************************************',
@@ -18,7 +15,7 @@ const logErrorInfo = error => ({
  Sort Objects Ascending
 ------------------------------------------------------------------------------*/
 // argument 'propKey' value must be of type 'string' or 'number'
-const sortObjectsAsc = (array, propKey) => array.sort((a, b) => {
+module.exports.sortObjectsAsc = (array, propKey) => array.sort((a, b) => {
   const value = val => typeof val === 'string' ? val.toUpperCase() : val;
   const valueA = value(a[propKey]);
   const valueB = value(b[propKey]);
@@ -32,17 +29,8 @@ const sortObjectsAsc = (array, propKey) => array.sort((a, b) => {
 /*------------------------------------------------------------------------------
  Object Values by Key
 ------------------------------------------------------------------------------*/
-const objectValuesByKey = (array, propKey) => array.reduce((a, c) => {
+module.exports.objectValuesByKey = (array, propKey) => array.reduce((a, c) => {
   a.push(c[propKey]);
   return a;
 }, []);
 
-
-/*------------------------------------------------------------------------------
- Exports
-------------------------------------------------------------------------------*/
-module.exports = {
-  logErrorInfo,
-  sortObjectsAsc,
-  objectValuesByKey
-}
