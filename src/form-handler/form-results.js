@@ -5,7 +5,8 @@
 ------------------------------------------------------------------------------*/
 
 /*-- Dependencies ------------------------------------------------------------*/
-const { admin, db, queryDoc, objectValuesByKey } = require("./../utility");
+const { admin, queryDoc, queryDocWhere, objectValuesByKey }
+  = require("./../utility");
 const spamCheck = require('./spam-check');
 
 /*------------------------------------------------------------------------------
@@ -14,11 +15,11 @@ const spamCheck = require('./spam-check');
 ------------------------------------------------------------------------------*/
 const getPropsAll = async (formSubmission, app) => {
   // Form Field Defaults: select all default fields from database
-  const gotFormFieldDefaults = await db.collection('formField')
-    .where('default', '==', true).get();
+  const formFieldDefaults =
+    await queryDocWhere('formField', 'default', '==', true);
 
   // Return object containing default fields as props
-  const propsFormFieldDefaults = gotFormFieldDefaults.docs.reduce((a, doc) => {
+  const propsFormFieldDefaults = formFieldDefaults.docs.reduce((a, doc) => {
     a[doc.id] = doc.data().value;
     return a;
   }, {});
@@ -34,16 +35,12 @@ const getPropsAll = async (formSubmission, app) => {
   Whitelist of Fields IDs used to identify props to add to database at
   submitForm/.../template.data used by 'trigger email' extensiona
 ------------------------------------------------------------------------------*/
-const getFormTemplate = async (propsAll) => {
-  //const formTemplate = queryDoc(db, 'formTemplate', propsAll.templateName);
-  const gotFormTemplate = await db.collection('formTemplate')
-    .doc(propsAll.templateName).get();
+const getFormTemplateInfo = async (propsAll) => {
+  const formTemplate = await queryDoc('formTemplate', propsAll.templateName);
 
-  const data = gotFormTemplate.data();
+  const fieldsIds = objectValuesByKey(formTemplate.fields, 'id');
 
-  const fieldsIds = objectValuesByKey(data.fields, 'id');
-
-  return { data, fieldsIds }
+  return { data: formTemplate, fieldsIds }
 }
 
 /*------------------------------------------------------------------------------
@@ -56,10 +53,10 @@ const getFormTemplate = async (propsAll) => {
 const getPropsAllowed = async (app, propsAll, formTemplate) => {
   // Form Fields Required: fields required for cloud function to work
   // Return Array of field names
-  const gotFormFieldsRequired = await db.collection('formField')
-    .where('required', '==', true).get();
+  const formFieldsRequired =
+    await queryDocWhere('formField', 'required', '==', true);
 
-  const formFieldsRequiredIds = gotFormFieldsRequired.docs.reduce((a, doc) => {
+  const formFieldsRequiredIds = formFieldsRequired.docs.reduce((a, doc) => {
     a.push(doc.id);
     return a;
   }, []);
@@ -92,7 +89,7 @@ const getPropsAllowed = async (app, propsAll, formTemplate) => {
 ------------------------------------------------------------------------------*/
 const formResults = async (req, formSubmission, app, globalApp) => {
   const propsAll = await getPropsAll(formSubmission, app);
-  const formTemplate = await getFormTemplate(propsAll);
+  const formTemplate = await getFormTemplateInfo(propsAll);
   const propsAllowed = await getPropsAllowed(app, propsAll, formTemplate);
 
   //////////////////////////////////////////////////////////////////////////////
