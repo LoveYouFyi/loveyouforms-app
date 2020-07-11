@@ -25,3 +25,10 @@ module.exports.queryDocWhere = async (collection, field, comparison, value) => {
 
   return doc;
 }
+
+/*------------------------------------------------------------------------------
+  Update Document... update() method
+  Update some fields of a document without overwriting the entire document
+------------------------------------------------------------------------------*/
+module.exports.queryDocUpdate = (collection, docId, object) =>
+  db.collection(collection).doc(docId).update({...object});

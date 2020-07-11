@@ -3,34 +3,28 @@
 ------------------------------------------------------------------------------*/
 
 /*-- Dependencies ------------------------------------------------------------*/
+const { queryDoc, sortObjectsAsc, objectValuesByKey } = require("../utility");
 const moment = require('moment-timezone'); // Timestamp formats and timezones
-const { logErrorInfo, sortObjectsAsc, objectValuesByKey } =
-  require("../utility");
-
-/*------------------------------------------------------------------------------
-  Form Template: For Template Field Ids and Header Row Sheet Columns.
-  Database needs to have Fields Ids and Header Columns sorted to match
-  templateData array is sorted to match the order of headerRowSheet
-------------------------------------------------------------------------------*/
-const getFormTemplate = async (db, templateName) => {
- const gotFormTemplate = await db.collection('formTemplate').doc(templateName).get();
-  return gotFormTemplate.data();
-}
 
 /*------------------------------------------------------------------------------
   Form Data and Sheet Header Rows:
   ...
 ------------------------------------------------------------------------------*/
-const formDataAndSheetHeaderRows = async (snapshot, db, app) => {
+const formDataAndSheetHeaderRows = async (snapshot, app) => {
 
   // Form Results
   const { appKey, createdDateTime, template: { data: { ...templateData },
     name: templateName  } } = snapshot.data();
 
-  const formTemplate = await getFormTemplate(db, templateName);
+  //////////////////////////////////////////////////////////////////////////////
+  // Form Template: Use for 'Form Data Row Sorted' and 'Sheet Header Row Sorted'
+  // Database needs to have Fields Ids and Header Columns sorted to match
+  // templateData array which is sorted to match the order of headerRowSheet
+  //////////////////////////////////////////////////////////////////////////////
+  const formTemplate = await queryDoc('formTemplate', templateName);
 
   //////////////////////////////////////////////////////////////////////////////
-  // Form Data Row:
+  // Form Data Row Sorted:
   // Sort and merge data row to be sent to sheets
   //////////////////////////////////////////////////////////////////////////////
 
@@ -62,10 +56,6 @@ const formDataAndSheetHeaderRows = async (snapshot, db, app) => {
       ...templateDataSorted
     })
   )];
-  //
-  // [END] Row Data: Sort and Merge
-  //////////////////////////////////////////////////////////////////////////////
-
 
   //////////////////////////////////////////////////////////////////////////////
   // Sheet Header Row Sorted: required for spreadsheet column headers when

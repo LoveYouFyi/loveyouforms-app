@@ -4,8 +4,7 @@
 ------------------------------------------------------------------------------*/
 
 /*-- Dependencies ------------------------------------------------------------*/
-const { logErrorInfo, sortObjectsAsc, objectValuesByKey } =
-  require('../utility');
+const { queryDocUpdate } = require('../utility');
 // Google Sheets Auth + API
 // service-account credentials: manually download file using Firebase console;
 // credentials are used by cloud function to authenticate with Google Sheets API
@@ -18,12 +17,11 @@ const googleAuth = new google.auth.JWT({ // JWT Authentication (for google sheet
 });
 const googleSheets = google.sheets('v4'); // Google Sheets
 
-
 /*------------------------------------------------------------------------------
   Google Sheet Sync
   Process sync with app's google sheet
 ------------------------------------------------------------------------------*/
-const googleSheetSync = async (snapshot, db, app, sheetHeaderRow, formDataRow) => {
+const googleSheetSync = async (snapshot, app, sheetHeaderRow, formDataRow) => {
 
   const { appKey, createdDateTime, template: { data: { ...templateData },
     name: templateName  } } = snapshot.data();
@@ -138,10 +136,12 @@ const googleSheetSync = async (snapshot, db, app, sheetHeaderRow, formDataRow) =
       return newSheet.addSheet.properties.sheetId;
     };
 
-    // Add new sheetId to app spreadsheet info
-    db.collection('app').doc(appKey).update({
-      ['spreadsheet.sheetId.' + templateName]: newSheetId(newSheet)
-    });
+    // Add new sheetId to app spreadsheet info (or update existing of same name)
+    queryDocUpdate(
+      'app',
+      appKey,
+      {['service.googleSheets.sheetId.' + templateName]: newSheetId(newSheet)}
+    )
 
     // New Sheet Actions: add row header then row data
     await googleSheets.spreadsheets.values.update(

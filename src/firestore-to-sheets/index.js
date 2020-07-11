@@ -5,42 +5,32 @@
 ------------------------------------------------------------------------------*/
 
 /*-- Dependencies ------------------------------------------------------------*/
-const { logErrorInfo, sortObjectsAsc, objectValuesByKey } =
-  require("./../utility");
+const { queryDoc, logErrorInfo } = require("./../utility");
 const getFormDataAndSheetHeaderRows = require('./form-data-and-sheet-header-rows');
 const processGoogleSheetSync = require('./google-sheet-sync');
-
-/*------------------------------------------------------------------------------
-  App: used in multiple child files so get once here
-------------------------------------------------------------------------------*/
-const getApp = async (db, appKey) => {
-  const gotApp = await db.collection('app').doc(appKey).get();
-  return gotApp.data();
-}
 
 /*------------------------------------------------------------------------------
   Export Firestore To Sheets Function
 ------------------------------------------------------------------------------*/
 module.exports = () => async (snapshot, context) => {
 
-  const db = admin.firestore();
   // Form Results
   const { appKey, createdDateTime, template: { data: { ...templateData },
     name: templateName  } } = snapshot.data();
 
   try {
-
-    const app = await getApp(db, appKey);
+    // App: used in multiple child files so get once here
+    const app = await queryDoc('app', appKey);
 
     // Form Data and Sheet Header Rows
-    const formDataAndSheetHeaderRows = await getFormDataAndSheetHeaderRows(snapshot, db, app);
+    const formDataAndSheetHeaderRows = await getFormDataAndSheetHeaderRows(snapshot, app);
     const sheetHeaderRow = formDataAndSheetHeaderRows.sheetHeaderRowSorted;
     const formDataRow = formDataAndSheetHeaderRows.formDataRowSorted;
 
     ////////////////////////////////////////////////////////////////////////////
     // Process Google Sheets Sync
     ////////////////////////////////////////////////////////////////////////////
-    await processGoogleSheetSync(snapshot, db, app, sheetHeaderRow, formDataRow);
+    await processGoogleSheetSync(snapshot, app, sheetHeaderRow, formDataRow);
 
   } catch(error) {
 
