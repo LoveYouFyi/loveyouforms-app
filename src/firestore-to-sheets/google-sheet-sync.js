@@ -21,7 +21,7 @@ const googleSheets = google.sheets('v4'); // Google Sheets
   Google Sheet Sync
   Process sync with app's google sheet
 ------------------------------------------------------------------------------*/
-const googleSheetSync = async (snapshot, app, sheetHeaderRow, formDataRow) => {
+const googleSheetSync = async (snapshot, app, formDataRow, sheetHeaderRow) => {
 
   const { appKey, createdDateTime, template: { data: { ...templateData },
     name: templateName  } } = snapshot.data();

@@ -24,13 +24,13 @@ module.exports = () => async (snapshot, context) => {
 
     // Form Data and Sheet Header Rows
     const formDataAndSheetHeaderRows = await getFormDataAndSheetHeaderRows(snapshot, app);
+    const formDataRow = formDataAndSheetHeaderRows.formDataRowSorted();
     const sheetHeaderRow = formDataAndSheetHeaderRows.sheetHeaderRowSorted;
-    const formDataRow = formDataAndSheetHeaderRows.formDataRowSorted;
 
     ////////////////////////////////////////////////////////////////////////////
     // Process Google Sheets Sync
     ////////////////////////////////////////////////////////////////////////////
-    await processGoogleSheetSync(snapshot, app, sheetHeaderRow, formDataRow);
+    await processGoogleSheetSync(snapshot, app, formDataRow, sheetHeaderRow);
 
   } catch(error) {
 

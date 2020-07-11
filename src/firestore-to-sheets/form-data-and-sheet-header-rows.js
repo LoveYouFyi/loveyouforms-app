@@ -27,35 +27,36 @@ const formDataAndSheetHeaderRows = async (snapshot, app) => {
   // Form Data Row Sorted:
   // Sort and merge data row to be sent to sheets
   //////////////////////////////////////////////////////////////////////////////
+  const formDataRowSorted = () => {
+    // Fields Ids Sorted: required for sorting templateData so data row that is sent
+    // to sheets will be sorted in the same order as the sheet's column header
+    const formTemplateFieldsIdsSorted = objectValuesByKey(
+      sortObjectsAsc(formTemplate.fields, "position"), "id");
 
-  // Fields Ids Sorted: required for sorting templateData so data row that is sent
-  // to sheets will be sorted in the same order as the sheet's column header
-  const formTemplateFieldsIdsSorted = objectValuesByKey(
-    sortObjectsAsc(formTemplate.fields, "position"), "id");
+    // timezone 'tz' string defined by momentjs.com/timezone:
+    // https://github.com/moment/moment-timezone/blob/develop/data/packed/latest.json
+    const dateTime = createdDateTime.toDate(); // toDate() is firebase method
+    const createdDate = moment(dateTime).tz(app.appInfo.appTimeZone).format('L');
+    const createdTime = moment(dateTime).tz(app.appInfo.appTimeZone).format('h:mm A z');
 
-  // timezone 'tz' string defined by momentjs.com/timezone:
-  // https://github.com/moment/moment-timezone/blob/develop/data/packed/latest.json
-  const dateTime = createdDateTime.toDate(); // toDate() is firebase method
-  const createdDate = moment(dateTime).tz(app.appInfo.appTimeZone).format('L');
-  const createdTime = moment(dateTime).tz(app.appInfo.appTimeZone).format('h:mm A z');
+    // Template Data Sorted: returns an object that contains the new
+    // formSubmit record's data sort-ordered to match formTemplate fields positions
+    const templateDataSorted = formTemplateFieldsIdsSorted.reduce((a, fieldName) => {
+      // if fieldName data not exist set empty string since config sort order requires it
+      templateData[fieldName] ? a[fieldName] = templateData[fieldName] : a[fieldName] = "";
+      return a
+    }, {});
 
-  // Template Data Sorted: returns an object that contains the new
-  // formSubmit record's data sort-ordered to match formTemplate fields positions
-  const templateDataSorted = formTemplateFieldsIdsSorted.reduce((a, fieldName) => {
-    // if fieldName data not exist set empty string since config sort order requires it
-    templateData[fieldName] ? a[fieldName] = templateData[fieldName] : a[fieldName] = "";
-    return a
-  }, {});
-
-  // Merge objects in sort-order and return only values
-  // Data-row for sheet requires nested array of strings [ [ 'John Smith', etc ] ]
-  const formDataRowSorted = [(
-    Object.values({
-      createdDate,
-      createdTime,
-      ...templateDataSorted
-    })
-  )];
+    // Merge objects in sort-order and return only values
+    // Data-row for sheet requires nested array of strings [ [ 'John Smith', etc ] ]
+    return [(
+      Object.values({
+        createdDate,
+        createdTime,
+        ...templateDataSorted
+      })
+    )];
+  }
 
   //////////////////////////////////////////////////////////////////////////////
   // Sheet Header Row Sorted: required for spreadsheet column headers when
@@ -70,7 +71,9 @@ const formDataAndSheetHeaderRows = async (snapshot, app) => {
     ]
   ];
 
-
+  //////////////////////////////////////////////////////////////////////////////
+  // Return object
+  //////////////////////////////////////////////////////////////////////////////
   return ({
     sheetHeaderRowSorted,
     formDataRowSorted
