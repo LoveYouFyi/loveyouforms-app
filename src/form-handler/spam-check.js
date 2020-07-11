@@ -43,7 +43,7 @@ const akismetProps = (formTemplateData, propsData, fieldGroup,
   Spam Check:
   Returns one of {spam: 'Check disabled '} {spam: 'true'} {spam: 'false'}
 ------------------------------------------------------------------------------*/
-const spamCheck = async (req, app, globalApp, formTemplateData, propsData) => {
+module.exports = async (req, app, globalApp, formTemplateData, propsData) => {
 
   // If spam filter akismet disabled then return object with prop
   if (globalApp.condition.spamFilterAkismet === 0
@@ -103,5 +103,3 @@ const spamCheck = async (req, app, globalApp, formTemplateData, propsData) => {
   }
 
 }
-
-module.exports = spamCheck;

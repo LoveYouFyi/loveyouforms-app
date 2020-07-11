@@ -87,10 +87,11 @@ const getPropsAllowed = async (app, propsAll, formTemplate) => {
   Returns form submission results as props on object structured to match
   'trigger email' extension requirements
 ------------------------------------------------------------------------------*/
-const formResults = async (req, formSubmission, app, globalApp) => {
+module.exports = async (req, formSubmission, app, globalApp) => {
+  // Aggregate info used for setting props
   const propsAll = await getPropsAll(formSubmission, app);
-  const formTemplate = await getFormTemplateInfo(propsAll);
-  const propsAllowed = await getPropsAllowed(app, propsAll, formTemplate);
+  const formTemplateInfo = await getFormTemplateInfo(propsAll);
+  const propsAllowed = await getPropsAllowed(app, propsAll, formTemplateInfo);
 
   //////////////////////////////////////////////////////////////////////////////
   // Props Set & Get:
@@ -113,7 +114,7 @@ const formResults = async (req, formSubmission, app, globalApp) => {
           (value === 'true') && (props.toUids = "SPAM_SUSPECTED_DO_NOT_EMAIL");
         }
         // Form Template Fields: Whitelist check
-        if (formTemplate.fieldsIds.includes(key)) {
+        if (formTemplateInfo.fieldsIds.includes(key)) {
           props.templateData[key] = value;
         }
       });
@@ -154,7 +155,7 @@ const formResults = async (req, formSubmission, app, globalApp) => {
   // Set props spam check result
   //////////////////////////////////////////////////////////////////////////////
   props.set(
-    await spamCheck(req, app, globalApp, formTemplate.data, props.get().data)
+    await spamCheck(req, app, globalApp, formTemplateInfo.data, props.get().data)
   );
 
   //////////////////////////////////////////////////////////////////////////////
@@ -163,5 +164,3 @@ const formResults = async (req, formSubmission, app, globalApp) => {
   return props.get();
 
 }
-
-module.exports = formResults;
