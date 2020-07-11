@@ -10,7 +10,7 @@ const moment = require('moment-timezone'); // Timestamp formats and timezones
   Form Data and Sheet Header Rows:
   ...
 ------------------------------------------------------------------------------*/
-const formDataAndSheetHeaderRows = async (snapshot, app) => {
+module.exports = async (snapshot, app) => {
 
   // Form Results
   const { appKey, createdDateTime, template: { data: { ...templateData },
@@ -80,5 +80,3 @@ const formDataAndSheetHeaderRows = async (snapshot, app) => {
   })
 
 }
-
-module.exports = formDataAndSheetHeaderRows;
