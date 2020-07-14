@@ -4,14 +4,8 @@
 
 // Firebase Functions SDK: to create Cloud Functions and setup triggers
 const functions = require('firebase-functions');
-// Firebase Admin SDK: to interact with the Firestore database
-//const admin = require('firebase-admin');
-//admin.initializeApp(); // initialize firebase admin sdk without parameters
-//admin.firestore().settings({ timestampsInSnapshots: true }); // to write server-timestamps to database docs
-//const { admin } = require('./src/init.js');
-// Environment Keys: see keys.public.js for comments, examples, and usage
+// Environment Keys: to set variables based on environments dev vs prod
 const env = require('./../../env/keys.public.js');
-//const context = { envKeys };
 
 /*------------------------------------------------------------------------------
   Cloud Functions
