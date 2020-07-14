@@ -4,7 +4,7 @@
 
 // Firebase Functions SDK: to create Cloud Functions and setup triggers
 const functions = require('firebase-functions');
-// Environment Keys: see keys.public.js for comments, examples, and usage
+// Environment Keys: to set variables based on environments dev vs prod
 const env = require('./../../env/keys.public.js');
 
 /*------------------------------------------------------------------------------
