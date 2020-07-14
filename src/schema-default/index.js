@@ -1,7 +1,6 @@
 /*------------------------------------------------------------------------------
   Schema-Default Trigger Cloud Functions
-  When a new 'doc' is created this adds default fields/schema to it
-  schemaDefault(collection_name, global_schema_document_name, context)
+  When a new 'doc' is created this adds default fields/schema to it.
 ------------------------------------------------------------------------------*/
 
 /*-- Dependencies ------------------------------------------------------------*/

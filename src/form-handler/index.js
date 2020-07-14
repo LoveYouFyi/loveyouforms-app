@@ -1,6 +1,6 @@
 /*------------------------------------------------------------------------------
   Form-Handler HTTP Cloud Function
-  Receives data sent by form submission and creates database entry
+  Receives data sent by form submission and creates database entry.
   Terminate HTTP cloud functions with res.redirect(), res.send(), or res.end()
 ------------------------------------------------------------------------------*/
 
