@@ -6,7 +6,8 @@
 
 /*-- Dependencies ------------------------------------------------------------*/
 const { queryDoc, logErrorInfo } = require("./../utility");
-const getFormDataAndSheetHeaderRows = require('./form-data-and-sheet-header-rows');
+const getFormDataAndSheetHeaderRows =
+  require('./form-data-and-sheet-header-rows');
 const processGoogleSheetSync = require('./google-sheet-sync');
 
 /*------------------------------------------------------------------------------
@@ -23,7 +24,8 @@ module.exports = () => async (snapshot, context) => {
     const app = await queryDoc('app', appKey);
 
     // Form Data and Sheet Header Rows
-    const formDataAndSheetHeaderRows = await getFormDataAndSheetHeaderRows(snapshot, app);
+    const formDataAndSheetHeaderRows =
+      await getFormDataAndSheetHeaderRows(snapshot, app);
     const formDataRow = formDataAndSheetHeaderRows.formDataRowSorted();
     const sheetHeaderRow = formDataAndSheetHeaderRows.sheetHeaderRowSorted;
 
