@@ -16,10 +16,7 @@ const processGoogleSheetSync = require('./google-sheet-sync');
 module.exports = () => async (snapshot, context) => {
 
   // Form Results
-  const { appKey, createdDateTime, template: { data: { ...templateData },
-    name: templateName  } } = snapshot.data();
-
-  const snapshotData = { appKey, createdDateTime, templateData, templateName }
+  const { appKey } = snapshot.data();
 
   try {
     // App: used in multiple child files so get once here
@@ -27,14 +24,14 @@ module.exports = () => async (snapshot, context) => {
 
     // Form Data and Sheet Header Rows
     const formDataAndSheetHeaderRows =
-      await getFormDataAndSheetHeaderRows(snapshotData, app);
+      await getFormDataAndSheetHeaderRows(snapshot, app);
     const formDataRow = formDataAndSheetHeaderRows.formDataRowSorted();
     const sheetHeaderRow = formDataAndSheetHeaderRows.sheetHeaderRowSorted;
 
     ////////////////////////////////////////////////////////////////////////////
     // Process Google Sheets Sync
     ////////////////////////////////////////////////////////////////////////////
-    await processGoogleSheetSync(snapshotData, app, formDataRow, sheetHeaderRow);
+    await processGoogleSheetSync(snapshot, app, formDataRow, sheetHeaderRow);
 
   } catch(error) {
 
