@@ -7,7 +7,7 @@
 /*-- Dependencies ------------------------------------------------------------*/
 const { admin, queryDoc, queryDocWhere, objectValuesByKey }
   = require("./../utility");
-const spamCheck = require('./spam-check');
+const getSpamCheck = require('./spam-check');
 
 /*------------------------------------------------------------------------------
   Props All:
@@ -87,6 +87,59 @@ const getPropsAllowed = async (app, propsAll, formTemplate) => {
 }
 
 /*------------------------------------------------------------------------------
+  Props Set & Get:
+------------------------------------------------------------------------------*/
+const props = (() => {
+
+  const trim = value => value.toString().trim();
+  const props =  { toUids: '', templateData: {} }
+
+  // compare database fields with form-submitted props and build object
+  const setProps = (formTemplateFieldsIds, propsToParse) =>
+    Object.entries(propsToParse).forEach(([key, value]) => {
+      value = trim(value);
+      props[key] = value;
+      // toUids: appKey value unless if spam true to prevent sending email
+      if (key === 'appKey') {
+        props.toUids = value;
+      } else if (key === 'spam') {
+        // if spam then override toUids value so email is not sent
+        (value === 'true') && (props.toUids = "SPAM_SUSPECTED_DO_NOT_EMAIL");
+      }
+      // Form Template Fields: Whitelist check
+      if (formTemplateFieldsIds.includes(key)) {
+        props.templateData[key] = value;
+      }
+    });
+
+  const getProps =
+    ({ templateData, urlRedirect = false, ...key } = props) => ({
+      data: {
+        appKey: key.appKey,
+        createdDateTime: admin.firestore.FieldValue.serverTimestamp(),
+        from: key.appFrom,
+        ...key.spam && { spam: key.spam },
+        toUids: [ key.toUids ],
+        replyTo: templateData.email,
+        template: {
+          name: key.templateName,
+          data: templateData
+        }
+      },
+      urlRedirect: urlRedirect
+    });
+
+  return {
+    set: (formTemplateFieldsIds, props) => {
+      setProps(formTemplateFieldsIds, props);
+    },
+    get: () => {
+      return getProps();
+    }
+  };
+})();
+
+/*------------------------------------------------------------------------------
   Form Results:
   Returns form submission results as props on object structured to match
   'trigger email' extension requirements
@@ -95,72 +148,20 @@ module.exports = async (req, formSubmission, app, globalApp) => {
   // Aggregate info used for setting props
   const propsAll = await getPropsAll(formSubmission, app);
   const formTemplate = await getFormTemplate(propsAll.templateName);
-  const propsAllowed = await getPropsAllowed(app, propsAll, formTemplate);
-
-  //////////////////////////////////////////////////////////////////////////////
-  // Props Set & Get:
-  //////////////////////////////////////////////////////////////////////////////
-  const props = (() => {
-
-    const trim = value => value.toString().trim();
-    const props =  { toUids: '', templateData: {} }
-
-    // compare database fields with form-submitted props and build object
-    const setProps = propsToParse =>
-      Object.entries(propsToParse).forEach(([key, value]) => {
-        value = trim(value);
-        props[key] = value;
-        // toUids: appKey value unless if spam true to prevent sending email
-        if (key === 'appKey') {
-          props.toUids = value;
-        } else if (key === 'spam') {
-          // if spam then override toUids value so email is not sent
-          (value === 'true') && (props.toUids = "SPAM_SUSPECTED_DO_NOT_EMAIL");
-        }
-        // Form Template Fields: Whitelist check
-        if (formTemplate.fieldsIds.includes(key)) {
-          props.templateData[key] = value;
-        }
-      });
-
-    const getProps =
-      ({ templateData, urlRedirect = false, ...key } = props) => ({
-        data: {
-          appKey: key.appKey,
-          createdDateTime: admin.firestore.FieldValue.serverTimestamp(),
-          from: key.appFrom,
-          ...key.spam && { spam: key.spam },
-          toUids: [ key.toUids ],
-          replyTo: templateData.email,
-          template: {
-            name: key.templateName,
-            data: templateData
-          }
-        },
-        urlRedirect: urlRedirect
-      });
-
-    return {
-      set: props => {
-        setProps(props);
-      },
-      get: () => {
-        return getProps();
-      }
-    };
-  })();
 
   //////////////////////////////////////////////////////////////////////////////
   // Set props allowed
   //////////////////////////////////////////////////////////////////////////////
-  props.set(propsAllowed);
+  const propsAllowed = await getPropsAllowed(app, propsAll, formTemplate);
+  props.set(formTemplate.fieldsIds, propsAllowed);
 
   //////////////////////////////////////////////////////////////////////////////
-  // Set props spam check result
+  // Set props spam check result boolean
   //////////////////////////////////////////////////////////////////////////////
-  props.set(
-    await spamCheck(req, app, globalApp, formTemplate.data, props.get().data)
-  );
+  const spamCheck =
+    await getSpamCheck(req, app, globalApp, formTemplate.data, props.get().data)
+
+  props.set(formTemplate.fieldsIds, spamCheck);
 
   //////////////////////////////////////////////////////////////////////////////
   // Return props
