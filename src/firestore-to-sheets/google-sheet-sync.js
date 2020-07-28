@@ -21,10 +21,10 @@ const googleSheets = google.sheets('v4'); // Google Sheets
   Google Sheet Sync
   Process sync with app's google sheet
 ------------------------------------------------------------------------------*/
-module.exports = async (snapshot, app, formDataRow, sheetHeaderRow) => {
+module.exports = async (snapshotData, app, formDataRow, sheetHeaderRow) => {
 
-  const { appKey, createdDateTime, template: { data: { ...templateData },
-    name: templateName  } } = snapshot.data();
+//  const { appKey, createdDateTime, template: { data: { ...templateData },
+    //name: templateName  } } = snapshot.data();
 
   ////////////////////////////////////////////////////////////////////////////
   // Prepare to insert data-row into app spreadsheet
@@ -32,14 +32,14 @@ module.exports = async (snapshot, app, formDataRow, sheetHeaderRow) => {
 
   // Get app spreadsheetId and sheetId(s)
   const spreadsheetId = app.service.googleSheets.spreadsheetId; // one spreadsheet per app
-  const sheetId = app.service.googleSheets.sheetId[templateName]; // multiple possible sheets
+  const sheetId = app.service.googleSheets.sheetId[snapshotData.templateName]; // multiple possible sheets
 
   // Authorize with google sheets
   await googleAuth.authorize();
 
   // Row: Add to sheet (header or data)
-  const rangeHeader =  `${templateName}!A1`; // e.g. "contactDefault!A1"
-  const rangeData =  `${templateName}!A2`; // e.g. "contactDefault!A2"
+  const rangeHeader =  `${snapshotData.templateName}!A1`; // e.g. "contactDefault!A1"
+  const rangeData =  `${snapshotData.templateName}!A2`; // e.g. "contactDefault!A2"
 
   const addRow = range => values => ({
     auth: googleAuth,
@@ -86,7 +86,7 @@ module.exports = async (snapshot, app, formDataRow, sheetHeaderRow) => {
   const sheetDetails = await googleSheets.spreadsheets.get(sheetObjectRequest());
   const sheetNameExists = sheetDetails.data.sheets.find(sheet => {
     // if sheet name exists returns sheet 'properties' object, else is undefined
-    return sheet.properties.title === templateName;
+    return sheet.properties.title === snapshotData.templateName;
   });
 
   // If sheet name exists, insert data
@@ -108,7 +108,7 @@ module.exports = async (snapshot, app, formDataRow, sheetHeaderRow) => {
           {
             "addSheet": {
               "properties": {
-                "title": templateName,
+                "title": snapshotData.templateName,
                 "index": 0,
                 "gridProperties": {
                   "rowCount": 1000,
@@ -139,8 +139,8 @@ module.exports = async (snapshot, app, formDataRow, sheetHeaderRow) => {
     // Add new sheetId to app spreadsheet info (or update existing of same name)
     queryDocUpdate(
       'app',
-      appKey,
-      {['service.googleSheets.sheetId.' + templateName]: newSheetId(newSheet)}
+      snapshotData.appKey,
+      {['service.googleSheets.sheetId.' + snapshotData.templateName]: newSheetId(newSheet)}
     )
 
     // New Sheet Actions: add row header then row data

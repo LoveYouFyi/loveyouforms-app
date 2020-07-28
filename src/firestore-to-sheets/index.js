@@ -19,20 +19,22 @@ module.exports = () => async (snapshot, context) => {
   const { appKey, createdDateTime, template: { data: { ...templateData },
     name: templateName  } } = snapshot.data();
 
+  const snapshotData = { appKey, createdDateTime, templateData, templateName }
+
   try {
     // App: used in multiple child files so get once here
     const app = await queryDoc('app', appKey);
 
     // Form Data and Sheet Header Rows
     const formDataAndSheetHeaderRows =
-      await getFormDataAndSheetHeaderRows(snapshot, app);
+      await getFormDataAndSheetHeaderRows(snapshotData, app);
     const formDataRow = formDataAndSheetHeaderRows.formDataRowSorted();
     const sheetHeaderRow = formDataAndSheetHeaderRows.sheetHeaderRowSorted;
 
     ////////////////////////////////////////////////////////////////////////////
     // Process Google Sheets Sync
     ////////////////////////////////////////////////////////////////////////////
-    await processGoogleSheetSync(snapshot, app, formDataRow, sheetHeaderRow);
+    await processGoogleSheetSync(snapshotData, app, formDataRow, sheetHeaderRow);
 
   } catch(error) {
 
