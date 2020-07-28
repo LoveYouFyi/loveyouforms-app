@@ -35,8 +35,8 @@ const getPropsAll = async (formSubmission, app) => {
   Whitelist of Fields IDs used to identify props to add to database at
   submitForm/.../template.data used by 'trigger email' extensiona
 ------------------------------------------------------------------------------*/
-const getFormTemplateInfo = async (propsAll) => {
-  const formTemplate = await queryDoc('formTemplate', propsAll.templateName);
+const getFormTemplateInfo = async (templateName) => {
+  const formTemplate = await queryDoc('formTemplate', templateName);
 
   const fieldsIds = objectValuesByKey(formTemplate.fields, 'id');
 
@@ -90,7 +90,7 @@ const getPropsAllowed = async (app, propsAll, formTemplate) => {
 module.exports = async (req, formSubmission, app, globalApp) => {
   // Aggregate info used for setting props
   const propsAll = await getPropsAll(formSubmission, app);
-  const formTemplateInfo = await getFormTemplateInfo(propsAll);
+  const formTemplateInfo = await getFormTemplateInfo(propsAll.templateName);
   const propsAllowed = await getPropsAllowed(app, propsAll, formTemplateInfo);
 
   //////////////////////////////////////////////////////////////////////////////
