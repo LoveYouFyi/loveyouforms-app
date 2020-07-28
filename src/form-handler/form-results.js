@@ -35,12 +35,16 @@ const getPropsAll = async (formSubmission, app) => {
   Whitelist of Fields IDs used to identify props to add to database at
   submitForm/.../template.data used by 'trigger email' extensiona
 ------------------------------------------------------------------------------*/
-const getFormTemplateInfo = async (templateName) => {
-  const formTemplate = await queryDoc('formTemplate', templateName);
+const getFormTemplate = async (templateName) => {
 
-  const fieldsIds = objectValuesByKey(formTemplate.fields, 'id');
+  const data = await queryDoc('formTemplate', templateName);
 
-  return { data: formTemplate, fieldsIds }
+  const fieldsIds = objectValuesByKey(data.fields, 'id');
+
+  return {
+    data,
+    fieldsIds
+  }
 }
 
 /*------------------------------------------------------------------------------
@@ -90,8 +94,8 @@ const getPropsAllowed = async (app, propsAll, formTemplate) => {
 module.exports = async (req, formSubmission, app, globalApp) => {
   // Aggregate info used for setting props
   const propsAll = await getPropsAll(formSubmission, app);
-  const formTemplateInfo = await getFormTemplateInfo(propsAll.templateName);
-  const propsAllowed = await getPropsAllowed(app, propsAll, formTemplateInfo);
+  const formTemplate = await getFormTemplate(propsAll.templateName);
+  const propsAllowed = await getPropsAllowed(app, propsAll, formTemplate);
 
   //////////////////////////////////////////////////////////////////////////////
   // Props Set & Get:
@@ -114,7 +118,7 @@ module.exports = async (req, formSubmission, app, globalApp) => {
           (value === 'true') && (props.toUids = "SPAM_SUSPECTED_DO_NOT_EMAIL");
         }
         // Form Template Fields: Whitelist check
-        if (formTemplateInfo.fieldsIds.includes(key)) {
+        if (formTemplate.fieldsIds.includes(key)) {
           props.templateData[key] = value;
         }
       });
@@ -155,7 +159,7 @@ module.exports = async (req, formSubmission, app, globalApp) => {
   // Set props spam check result
   //////////////////////////////////////////////////////////////////////////////
   props.set(
-    await spamCheck(req, app, globalApp, formTemplateInfo.data, props.get().data)
+    await spamCheck(req, app, globalApp, formTemplate.data, props.get().data)
   );
 
   //////////////////////////////////////////////////////////////////////////////
