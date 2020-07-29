@@ -34,13 +34,31 @@ const getFormDataRowSorted = (app, formTemplate, createdDateTime,
 
   // Merge objects in sort-order and return only values
   // Sheets requires a nested array of strings [ [ 'John Smith', 'etc' ] ]
-  return [(
+  // Fyi Object.values returns an array
+  return [
     Object.values({
       date: dateTimeFormSubmitted.date,
       time: dateTimeFormSubmitted.time,
       ...templateDataSorted
     })
-  )];
+  ];
+}
+
+/*------------------------------------------------------------------------------
+ Sheet Header Row Sorted: required for spreadsheet column headers when
+ adding a new sheet to a spreadsheet
+ Sheets requires a nested array of strings [ [ 'Date', 'Time', etc ] ]
+------------------------------------------------------------------------------*/
+const getSheetHeaderRowSorted = formTemplate => {
+
+  const sheetHeaderSorted = objectValuesByKey(
+      sortObjectsAsc(formTemplate.fields, "position"), "sheetHeader");
+
+  return [[
+      'Date',
+      'Time',
+      ...sheetHeaderSorted
+  ]];
 }
 
 /*------------------------------------------------------------------------------
@@ -54,28 +72,15 @@ module.exports = async (snapshot, app) => {
   const { createdDateTime, template: { data: { ...templateData },
     name: templateName  } } = snapshot.data();
 
-  //////////////////////////////////////////////////////////////////////////////
-  // Form Template: Use for 'Form Data Row Sorted' and 'Sheet Header Row Sorted'
-  // to sort by order of 'fields' 'position'
-  //////////////////////////////////////////////////////////////////////////////
+  // Form Template: to sort by order of 'fields' 'position'
   const formTemplate = await queryDoc('formTemplate', templateName);
 
   // Form Data Row Sorted
   const formDataRowSorted = getFormDataRowSorted(app, formTemplate,
     createdDateTime, templateData);
 
-  //////////////////////////////////////////////////////////////////////////////
-  // Sheet Header Row Sorted: required for spreadsheet column headers when
-  // adding a new sheet to a spreadsheet
-  // Sheets requires a nested array of strings [ [ 'Date', 'Time', etc ] ]
-  //////////////////////////////////////////////////////////////////////////////
-  const sheetHeaderRowSorted = [
-    [
-      'Date', 'Time',
-      ...objectValuesByKey(
-        sortObjectsAsc(formTemplate.fields, "position"), "sheetHeader")
-    ]
-  ];
+  // Sheet Header Row Sorted
+  const sheetHeaderRowSorted = getSheetHeaderRowSorted(formTemplate);
 
   //////////////////////////////////////////////////////////////////////////////
   // Return object
@@ -83,6 +88,6 @@ module.exports = async (snapshot, app) => {
   return ({
     formDataRowSorted,
     sheetHeaderRowSorted
-  })
+  });
 
 }
