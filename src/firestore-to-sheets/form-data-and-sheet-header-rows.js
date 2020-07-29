@@ -9,6 +9,7 @@ const { dateTime, queryDoc, sortObjectsAsc, objectValuesByKey } =
 /*------------------------------------------------------------------------------
  Form Data Row Sorted:
  Sort and merge data row to be sent to sheets
+ Return nested array of strings [ [ 'John Smith', 'etc' ] ]
 ------------------------------------------------------------------------------*/
 const getFormDataRowSorted = (app, formTemplate, createdDateTime,
   templateData) => {
@@ -32,7 +33,7 @@ const getFormDataRowSorted = (app, formTemplate, createdDateTime,
   }, {});
 
   // Merge objects in sort-order and return only values
-  // Data-row for sheet requires nested array of strings [ [ 'John Smith', etc ] ]
+  // Sheets requires a nested array of strings [ [ 'John Smith', 'etc' ] ]
   return [(
     Object.values({
       date: dateTimeFormSubmitted.date,
@@ -55,14 +56,13 @@ module.exports = async (snapshot, app) => {
 
   //////////////////////////////////////////////////////////////////////////////
   // Form Template: Use for 'Form Data Row Sorted' and 'Sheet Header Row Sorted'
-  // Database needs to have Fields Ids and Header Columns sorted to match
-  // templateData array which is sorted to match the order of headerRowSheet
+  // to sort by order of 'fields' 'position'
   //////////////////////////////////////////////////////////////////////////////
   const formTemplate = await queryDoc('formTemplate', templateName);
 
   // Form Data Row Sorted
-  const formDataRowSorted =
-    getFormDataRowSorted(app, formTemplate, createdDateTime, templateData);
+  const formDataRowSorted = getFormDataRowSorted(app, formTemplate,
+    createdDateTime, templateData);
 
   //////////////////////////////////////////////////////////////////////////////
   // Sheet Header Row Sorted: required for spreadsheet column headers when
@@ -81,8 +81,8 @@ module.exports = async (snapshot, app) => {
   // Return object
   //////////////////////////////////////////////////////////////////////////////
   return ({
-    sheetHeaderRowSorted,
-    formDataRowSorted
+    formDataRowSorted,
+    sheetHeaderRowSorted
   })
 
 }
