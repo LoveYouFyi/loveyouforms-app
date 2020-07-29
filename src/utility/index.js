@@ -5,5 +5,6 @@
 module.exports = {
   ...require('./init'),
   ...require('./helpers'),
-  ...require('./query-firestore')
+  ...require('./firestore-derivative'),
+  ...require('./firestore-query')
 }

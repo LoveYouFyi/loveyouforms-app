@@ -3,8 +3,8 @@
 ------------------------------------------------------------------------------*/
 
 /*-- Dependencies ------------------------------------------------------------*/
-const { queryDoc, sortObjectsAsc, objectValuesByKey } = require("../utility");
-const moment = require('moment-timezone'); // Timestamp formats and timezones
+const { dateTime, queryDoc, sortObjectsAsc, objectValuesByKey } =
+  require("../utility");
 
 /*------------------------------------------------------------------------------
  Form Data Row Sorted:
@@ -17,12 +17,8 @@ const getFormDataRowSorted = (app, formTemplate, createdDateTime,
   const formTemplateFieldsIdsSorted = objectValuesByKey(
     sortObjectsAsc(formTemplate.fields, "position"), "id");
 
-  // timezone 'tz' string defined by momentjs.com/timezone:
-  // https://github.com/moment/moment-timezone/blob/develop/data/packed/latest.json
-  const dateTime = createdDateTime.toDate(); // toDate() is firebase method
-  const createdDate = moment(dateTime).tz(app.appInfo.appTimeZone).format('L');
-  const createdTime =
-    moment(dateTime).tz(app.appInfo.appTimeZone).format('h:mm A z');
+  // Date and time when form submission was saved to the database
+  const dateTimeFormSubmitted = dateTime(createdDateTime, app);
 
   // Template Data Sorted: returns an object that contains the new
   // formSubmit record's data sort-ordered to match formTemplate fields positions
@@ -39,8 +35,8 @@ const getFormDataRowSorted = (app, formTemplate, createdDateTime,
   // Data-row for sheet requires nested array of strings [ [ 'John Smith', etc ] ]
   return [(
     Object.values({
-      createdDate,
-      createdTime,
+      date: dateTimeFormSubmitted.date,
+      time: dateTimeFormSubmitted.time,
       ...templateDataSorted
     })
   )];
