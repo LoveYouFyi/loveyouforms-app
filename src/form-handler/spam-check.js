@@ -11,32 +11,36 @@ const { AkismetClient } = require('akismet-api/lib/akismet.js'); // had to hardc
 /*------------------------------------------------------------------------------
   Akismet Props:
   Returns 'string' or object {} to accommodate Akismet required data format
-  FYI: Ternary with reduce
 ------------------------------------------------------------------------------*/
-const akismetProps = (formTemplateData, propsData, fieldGroup,
-  accumulatorType) => {
-  // if database contains fieldsSpamCheck and [fieldGroup] array
-  return (
-    (typeof formTemplateData.fieldsSpamCheck !== 'undefined'
+const akismetProps = (formTemplateData, propsData, fieldGroup, accumulator) => {
+
+  // If database contains fieldsSpamCheck and [fieldGroup] array
+  if (typeof formTemplateData.fieldsSpamCheck !== 'undefined'
     && typeof formTemplateData.fieldsSpamCheck[fieldGroup] !== 'undefined'
-    && formTemplateData.fieldsSpamCheck[fieldGroup].length > 0)
-      // if true then reduce
-      ? (formTemplateData.fieldsSpamCheck[fieldGroup].reduce((a, field) => {
-        // skip if field not found in propsForSpam...
+    && formTemplateData.fieldsSpamCheck[fieldGroup].length > 0) {
+
+    // Then reduce to return aggregated fields based on accumulator type
+    const props =
+      formTemplateData.fieldsSpamCheck[fieldGroup].reduce((a, field) => {
+        // skip if field not found
         if (typeof propsData.template.data[field] === 'undefined') {
           return a
         }
-        // accumulate as 'string' or {} based on accumulatorType
-        if (typeof accumulatorType === 'string') {
+        // accumulate as 'string' or {} based on accumulator type
+        if (typeof accumulator === 'string') {
           return a + propsData.template.data[field] + " ";
-        } else if (accumulatorType.constructor === Object) {
+        } else if (accumulator.constructor === Object) {
           a[field] = propsData.template.data[field];
           return a;
         }
-      }, accumulatorType))
-      // if false then null
-      : null
-  )
+      }, accumulator);
+
+    return props;
+
+  } else {
+     // if false then null
+     return null;
+  }
 }
 
 /*------------------------------------------------------------------------------
