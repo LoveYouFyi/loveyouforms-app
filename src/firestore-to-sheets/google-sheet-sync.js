@@ -30,8 +30,11 @@ const addRow = (spreadsheetId, range, values) => ({
   }
 });
 
-// Row: Blank insert (sheetId argument: existing vs new sheet)
-const blankRowInsertAfterHeader = (spreadsheetId, sheetId) => ({
+/*------------------------------------------------------------------------------
+  Insert Blank Row After Header
+  Row: Blank insert (sheetId argument: existing vs new sheet)
+------------------------------------------------------------------------------*/
+const addBlankRowAfterHeader = (spreadsheetId, sheetId) => ({
   auth: googleAuth,
   spreadsheetId: spreadsheetId,
   resource: {
@@ -51,7 +54,16 @@ const blankRowInsertAfterHeader = (spreadsheetId, sheetId) => ({
   }
 });
 
-// Request object for adding sheet to existing spreadsheet
+/*------------------------------------------------------------------------------
+  Add Sheet:
+  Request object for adding sheet to existing spreadsheet
+  'addSheet' request object returns new sheet properties
+  Get new sheetId and add to app spreadsheet info
+  newSheet returns 'data' object with properties:
+    prop: spreadsheetId
+    prop: replies[0].addSheet.properties (
+    sheetId, title, index, sheetType, gridProperties { rowCount, columnCount } )
+------------------------------------------------------------------------------*/
 const addSheet = (spreadsheetId, templateName) => ({
   auth: googleAuth,
   spreadsheetId: spreadsheetId,
@@ -73,19 +85,35 @@ const addSheet = (spreadsheetId, templateName) => ({
   }
 });
 
+const checkIfSheetNameExists = async (spreadsheetId, templateName) => {
+  // Sheet object to check
+  const sheetObjectRequest = {
+    auth: googleAuth,
+    spreadsheetId: spreadsheetId,
+    includeGridData: false
+  };
+  // Check if sheet name exists for data insert
+  const sheetDetails = await googleSheets.spreadsheets.get(sheetObjectRequest);
+  const sheetNameExists = sheetDetails.data.sheets.find(sheet => {
+    // if sheet name exists returns sheet 'properties' object, else is undefined
+    return sheet.properties.title === templateName;
+  });
+
+  return sheetNameExists ? true : false;
+}
 
 /*------------------------------------------------------------------------------
   Google Sheet Sync
-  Process sync with app's google sheet
+  Process sync with application corresponding google sheet
 ------------------------------------------------------------------------------*/
 module.exports = async (snapshot, app, formDataRow, sheetHeaderRow) => {
 
   // Form Results
   const { appKey, template: { name: templateName  } } = snapshot.data();
 
-  ////////////////////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////////////
   // Prepare to insert data-row into app spreadsheet
-  ////////////////////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////////////
 
   // Get app spreadsheetId and sheetId(s)
   const spreadsheetId = app.service.googleSheets.spreadsheetId; // one spreadsheet per app
@@ -98,39 +126,22 @@ module.exports = async (snapshot, app, formDataRow, sheetHeaderRow) => {
   const rangeHeader =  `${templateName}!A1`; // e.g. "contactDefault!A1"
   const rangeData =  `${templateName}!A2`; // e.g. "contactDefault!A2"
 
-  ////////////////////////////////////////////////////////////////////////////
-  // Insert row data into sheet that matches template name
-  ////////////////////////////////////////////////////////////////////////////
-
-  // Check if sheet name exists for data insert
-  const sheetObjectRequest = () => ({
-    auth: googleAuth,
-    spreadsheetId: spreadsheetId,
-    includeGridData: false
-  });
-  const sheetDetails = await googleSheets.spreadsheets.get(sheetObjectRequest());
-  const sheetNameExists = sheetDetails.data.sheets.find(sheet => {
-    // if sheet name exists returns sheet 'properties' object, else is undefined
-    return sheet.properties.title === templateName;
-  });
-
+  //////////////////////////////////////////////////////////////////////////////
+  // Insert data-row into sheet that matches template name
+  //////////////////////////////////////////////////////////////////////////////
+  const sheetNameExists = await checkIfSheetNameExists(spreadsheetId,
+    templateName);
   // If sheet name exists, insert data
   // Else, create new sheet + insert header + insert data
   if (sheetNameExists) {
     // Insert into spreadsheet a blank row and the new data row
-    await googleSheets.spreadsheets.batchUpdate(blankRowInsertAfterHeader(spreadsheetId, sheetId));
+    await googleSheets.spreadsheets.batchUpdate(addBlankRowAfterHeader(spreadsheetId, sheetId));
     await googleSheets.spreadsheets.values.update(addRow(spreadsheetId, rangeData, formDataRow));
 
   } else {
     // Create new sheet, insert heder and new row data
 
     // Add new sheet:
-    // 'addSheet' request object returns new sheet properties
-    // Get new sheetId and add to app spreadsheet info
-    // newSheet returns 'data' object with properties:
-    //   prop: spreadsheetId
-    //   prop: replies[0].addSheet.properties (
-    //     sheetId, title, index, sheetType, gridProperties { rowCount, columnCount } )
     const newSheet = await googleSheets.spreadsheets.batchUpdate(addSheet(spreadsheetId, templateName));
     // Map 'replies' array to get sheetId
     const newSheetId = sheet => {
