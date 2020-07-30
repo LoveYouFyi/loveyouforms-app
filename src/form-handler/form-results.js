@@ -6,7 +6,7 @@
 
 /*-- Dependencies ------------------------------------------------------------*/
 const { admin, queryDoc, queryDocWhere, objectValuesByKey }
-  = require("./../utility");
+  = require('./../utility');
 const getSpamCheck = require('./spam-check');
 
 /*------------------------------------------------------------------------------

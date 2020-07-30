@@ -5,7 +5,7 @@
 ------------------------------------------------------------------------------*/
 
 /*-- Dependencies ------------------------------------------------------------*/
-const { queryDoc } = require("./../utility");
+const { queryDoc } = require('./../utility');
 
 /*------------------------------------------------------------------------------
   Messages: returns app-specific or globalApp based on config settings

@@ -5,7 +5,7 @@
 ------------------------------------------------------------------------------*/
 
 /*-- Dependencies ------------------------------------------------------------*/
-const { db, logErrorInfo } = require("./../utility");
+const { db, logErrorInfo } = require('./../utility');
 const getAppConfig = require('./app-config');
 const getFormResults = require('./form-results');
 

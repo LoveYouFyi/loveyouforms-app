@@ -4,7 +4,7 @@
 ------------------------------------------------------------------------------*/
 
 /*-- Dependencies ------------------------------------------------------------*/
-const { queryDocUpdate } = require('../utility');
+const { queryDocUpdate } = require('./../utility');
 // Google Sheets Auth + API
 // service-account credentials: manually download file using Firebase console;
 // credentials are used by cloud function to authenticate with Google Sheets API

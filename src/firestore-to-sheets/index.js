@@ -5,7 +5,7 @@
 ------------------------------------------------------------------------------*/
 
 /*-- Dependencies ------------------------------------------------------------*/
-const { queryDoc, logErrorInfo } = require("./../utility");
+const { queryDoc, logErrorInfo } = require('./../utility');
 const getFormDataAndSheetHeaderRows =
   require('./form-data-and-sheet-header-rows');
 const processGoogleSheetSync = require('./google-sheet-sync');
