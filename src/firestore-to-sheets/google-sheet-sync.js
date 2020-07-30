@@ -18,17 +18,24 @@ const googleAuth = new google.auth.JWT({ // JWT Authentication (for google sheet
 const googleSheets = google.sheets('v4'); // Google Sheets
 
 /*------------------------------------------------------------------------------
-  Add Row Values to Google Sheet
+  Check if Sheet Name Exists
 ------------------------------------------------------------------------------*/
-const addRowValues = (spreadsheetId, range, values) => ({
-  auth: googleAuth,
-  spreadsheetId: spreadsheetId,
-  ...range && { range }, // e.g. "contactDefault!A2"
-  valueInputOption: "RAW",
-  requestBody: {
-    ...values && { values }
-  }
-});
+const checkIfSheetNameExists = async (spreadsheetId, templateName) => {
+  // Sheet object to check
+  const sheetObjectRequest = {
+    auth: googleAuth,
+    spreadsheetId: spreadsheetId,
+    includeGridData: false
+  };
+  // Check if sheet name exists for data insert
+  const sheetDetails = await googleSheets.spreadsheets.get(sheetObjectRequest);
+  const sheetNameExists = sheetDetails.data.sheets.find(sheet => {
+    // if sheet name exists returns sheet 'properties' object, else is undefined
+    return sheet.properties.title === templateName;
+  });
+
+  return sheetNameExists ? true : false;
+}
 
 /*------------------------------------------------------------------------------
   Add Blank Row After Header
@@ -51,6 +58,19 @@ const addBlankRowAfterHeader = (spreadsheetId, sheetId) => ({
         }
       }
     ]
+  }
+});
+
+/*------------------------------------------------------------------------------
+  Add Row Values to Google Sheet
+------------------------------------------------------------------------------*/
+const addRowValues = (spreadsheetId, range, values) => ({
+  auth: googleAuth,
+  spreadsheetId: spreadsheetId,
+  ...range && { range }, // e.g. "contactDefault!A2"
+  valueInputOption: "RAW",
+  requestBody: {
+    ...values && { values }
   }
 });
 
@@ -84,26 +104,6 @@ const addSheet = (spreadsheetId, templateName) => ({
     ]
   }
 });
-
-/*------------------------------------------------------------------------------
-  Check if Sheet Name Exists
-------------------------------------------------------------------------------*/
-const checkIfSheetNameExists = async (spreadsheetId, templateName) => {
-  // Sheet object to check
-  const sheetObjectRequest = {
-    auth: googleAuth,
-    spreadsheetId: spreadsheetId,
-    includeGridData: false
-  };
-  // Check if sheet name exists for data insert
-  const sheetDetails = await googleSheets.spreadsheets.get(sheetObjectRequest);
-  const sheetNameExists = sheetDetails.data.sheets.find(sheet => {
-    // if sheet name exists returns sheet 'properties' object, else is undefined
-    return sheet.properties.title === templateName;
-  });
-
-  return sheetNameExists ? true : false;
-}
 
 /*------------------------------------------------------------------------------
   Sheet Id
