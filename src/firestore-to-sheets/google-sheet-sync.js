@@ -18,6 +18,19 @@ const googleAuth = new google.auth.JWT({ // JWT Authentication (for google sheet
 const googleSheets = google.sheets('v4'); // Google Sheets
 
 /*------------------------------------------------------------------------------
+  Add Row to Google Sheet
+------------------------------------------------------------------------------*/
+const addRow = (spreadsheetId, range, values) => ({
+  auth: googleAuth,
+  spreadsheetId: spreadsheetId,
+  ...range && { range }, // e.g. "contactDefault!A2"
+  valueInputOption: "RAW",
+  requestBody: {
+    ...values && { values }
+  }
+});
+
+/*------------------------------------------------------------------------------
   Google Sheet Sync
   Process sync with app's google sheet
 ------------------------------------------------------------------------------*/
@@ -41,15 +54,6 @@ module.exports = async (snapshot, app, formDataRow, sheetHeaderRow) => {
   const rangeHeader =  `${templateName}!A1`; // e.g. "contactDefault!A1"
   const rangeData =  `${templateName}!A2`; // e.g. "contactDefault!A2"
 
-  const addRow = range => values => ({
-    auth: googleAuth,
-    spreadsheetId: spreadsheetId,
-    ...range && { range }, // e.g. "contactDefault!A2"
-    valueInputOption: "RAW",
-    requestBody: {
-      ...values && { values }
-    }
-  });
 
   // Row: Blank insert (sheetId argument: existing vs new sheet)
   const blankRowInsertAfterHeader = sheetId => ({
@@ -94,7 +98,7 @@ module.exports = async (snapshot, app, formDataRow, sheetHeaderRow) => {
   if (sheetNameExists) {
     // Insert into spreadsheet a blank row and the new data row
     await googleSheets.spreadsheets.batchUpdate(blankRowInsertAfterHeader(sheetId));
-    await googleSheets.spreadsheets.values.update(addRow(rangeData)(formDataRow));
+    await googleSheets.spreadsheets.values.update(addRow(spreadsheetId, rangeData, formDataRow));
 
   } else {
     // Create new sheet, insert heder and new row data
@@ -145,9 +149,9 @@ module.exports = async (snapshot, app, formDataRow, sheetHeaderRow) => {
 
     // New Sheet Actions: add row header then row data
     await googleSheets.spreadsheets.values.update(
-      addRow(rangeHeader)(sheetHeaderRow)
+      addRow(spreadsheetId, rangeHeader, sheetHeaderRow)
     );
-    await googleSheets.spreadsheets.values.update(addRow(rangeData)(formDataRow));
+    await googleSheets.spreadsheets.values.update(addRow(spreadsheetId, rangeData, formDataRow));
 
   } // end 'else' add new sheet
 
