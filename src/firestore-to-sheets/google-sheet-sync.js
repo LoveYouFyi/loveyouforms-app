@@ -20,7 +20,7 @@ const googleSheets = google.sheets('v4'); // Google Sheets
 /*------------------------------------------------------------------------------
   Add Row to Google Sheet
 ------------------------------------------------------------------------------*/
-const addRow = (spreadsheetId, range, values) => ({
+const addRowValues = (spreadsheetId, range, values) => ({
   auth: googleAuth,
   spreadsheetId: spreadsheetId,
   ...range && { range }, // e.g. "contactDefault!A2"
@@ -85,6 +85,9 @@ const addSheet = (spreadsheetId, templateName) => ({
   }
 });
 
+/*------------------------------------------------------------------------------
+  Check if Sheet Name Exists
+------------------------------------------------------------------------------*/
 const checkIfSheetNameExists = async (spreadsheetId, templateName) => {
   // Sheet object to check
   const sheetObjectRequest = {
@@ -103,17 +106,24 @@ const checkIfSheetNameExists = async (spreadsheetId, templateName) => {
 }
 
 /*------------------------------------------------------------------------------
+  Sheet Id
+------------------------------------------------------------------------------*/
+const getSheetId = sheet => {
+  const sheetDetails = {};
+  // sheet.data.replies contains the new sheet props
+  sheet.data.replies.map(reply => sheetDetails.addSheet = reply.addSheet);
+  // Sheet id
+  return sheetDetails.addSheet.properties.sheetId;
+};
+
+/*------------------------------------------------------------------------------
   Google Sheet Sync
-  Process sync with application corresponding google sheet
+  Process sync with google sheet corresponding to application
 ------------------------------------------------------------------------------*/
 module.exports = async (snapshot, app, formDataRow, sheetHeaderRow) => {
 
   // Form Results
   const { appKey, template: { name: templateName  } } = snapshot.data();
-
-  //////////////////////////////////////////////////////////////////////////////
-  // Prepare to insert data-row into app spreadsheet
-  //////////////////////////////////////////////////////////////////////////////
 
   // Get app spreadsheetId and sheetId(s)
   const spreadsheetId = app.service.googleSheets.spreadsheetId; // one spreadsheet per app
@@ -128,40 +138,35 @@ module.exports = async (snapshot, app, formDataRow, sheetHeaderRow) => {
 
   //////////////////////////////////////////////////////////////////////////////
   // Insert data-row into sheet that matches template name
+  // If sheet name exists, insert data...
+  // ...else, create new sheet + insert header + insert data
   //////////////////////////////////////////////////////////////////////////////
   const sheetNameExists = await checkIfSheetNameExists(spreadsheetId,
     templateName);
-  // If sheet name exists, insert data
-  // Else, create new sheet + insert header + insert data
+
   if (sheetNameExists) {
-    // Insert into spreadsheet a blank row and the new data row
+    // Insert into spreadsheet a blank row
     await googleSheets.spreadsheets.batchUpdate(addBlankRowAfterHeader(spreadsheetId, sheetId));
-    await googleSheets.spreadsheets.values.update(addRow(spreadsheetId, rangeData, formDataRow));
+    // Overwrite blank row with the data
+    await googleSheets.spreadsheets.values.update(addRowValues(spreadsheetId, rangeData, formDataRow));
 
   } else {
     // Create new sheet, insert heder and new row data
 
-    // Add new sheet:
+    // Add new sheet
     const newSheet = await googleSheets.spreadsheets.batchUpdate(addSheet(spreadsheetId, templateName));
-    // Map 'replies' array to get sheetId
-    const newSheetId = sheet => {
-      const newSheet = {};
-      sheet.data.replies.map(reply => newSheet.addSheet = reply.addSheet);
-      return newSheet.addSheet.properties.sheetId;
-    };
-
-    // Add new sheetId to app spreadsheet info (or update existing of same name)
+    // Add new sheetId to database app spreadsheet info (or update existing of same name)
     queryDocUpdate(
       'app',
       appKey,
-      {['service.googleSheets.sheetId.' + templateName]: newSheetId(newSheet)}
+      {['service.googleSheets.sheetId.' + templateName]: getSheetId(newSheet)}
     )
 
     // New Sheet Actions: add row header then row data
     await googleSheets.spreadsheets.values.update(
-      addRow(spreadsheetId, rangeHeader, sheetHeaderRow)
+      addRowValues(spreadsheetId, rangeHeader, sheetHeaderRow)
     );
-    await googleSheets.spreadsheets.values.update(addRow(spreadsheetId, rangeData, formDataRow));
+    await googleSheets.spreadsheets.values.update(addRowValues(spreadsheetId, rangeData, formDataRow));
 
   } // end 'else' add new sheet
 
