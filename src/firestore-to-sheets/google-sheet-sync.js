@@ -18,7 +18,7 @@ const googleAuth = new google.auth.JWT({ // JWT Authentication (for google sheet
 const googleSheets = google.sheets('v4'); // Google Sheets
 
 /*------------------------------------------------------------------------------
-  Add Row to Google Sheet
+  Add Row Values to Google Sheet
 ------------------------------------------------------------------------------*/
 const addRowValues = (spreadsheetId, range, values) => ({
   auth: googleAuth,
@@ -31,8 +31,8 @@ const addRowValues = (spreadsheetId, range, values) => ({
 });
 
 /*------------------------------------------------------------------------------
-  Insert Blank Row After Header
-  Row: Blank insert (sheetId argument: existing vs new sheet)
+  Add Blank Row After Header
+  sheetId argument: existing vs new sheet
 ------------------------------------------------------------------------------*/
 const addBlankRowAfterHeader = (spreadsheetId, sheetId) => ({
   auth: googleAuth,
@@ -125,25 +125,26 @@ module.exports = async (snapshot, app, formDataRow, sheetHeaderRow) => {
   // Form Results
   const { appKey, template: { name: templateName  } } = snapshot.data();
 
-  // Get app spreadsheetId and sheetId(s)
+  // Application spreadsheetId and sheetId of the form template
   const spreadsheetId = app.service.googleSheets.spreadsheetId; // one spreadsheet per app
   const sheetId = app.service.googleSheets.sheetId[templateName]; // multiple possible sheets
 
-  // Authorize with google sheets
+  //////////////////////////////////////////////////////////////////////////////
+  // Insert data-row into sheet that matches template name, if the sheet does
+  // not exist then create it
+  //////////////////////////////////////////////////////////////////////////////
+
+  // Authorize prior to calling functions that access sheets
   await googleAuth.authorize();
 
-  // Row: Add to sheet (header or data)
-  const rangeHeader =  `${templateName}!A1`; // e.g. "contactDefault!A1"
-  const rangeData =  `${templateName}!A2`; // e.g. "contactDefault!A2"
-
-  //////////////////////////////////////////////////////////////////////////////
-  // Insert data-row into sheet that matches template name
-  // If sheet name exists, insert data...
-  // ...else, create new sheet + insert header + insert data
-  //////////////////////////////////////////////////////////////////////////////
   const sheetNameExists = await checkIfSheetNameExists(spreadsheetId,
     templateName);
 
+  // Sheet ranges for adding header or data-row
+  const rangeHeader =  `${templateName}!A1`; // e.g. "contactDefault!A1"
+  const rangeData =  `${templateName}!A2`; // e.g. "contactDefault!A2"
+
+  // if sheet name exists, insert data-row
   if (sheetNameExists) {
     // Insert into spreadsheet a blank row
     await googleSheets.spreadsheets.batchUpdate(addBlankRowAfterHeader(spreadsheetId, sheetId));
@@ -151,11 +152,11 @@ module.exports = async (snapshot, app, formDataRow, sheetHeaderRow) => {
     await googleSheets.spreadsheets.values.update(addRowValues(spreadsheetId, rangeData, formDataRow));
 
   } else {
-    // Create new sheet, insert heder and new row data
+    // Create new sheet + insert header + insert data
 
     // Add new sheet
     const newSheet = await googleSheets.spreadsheets.batchUpdate(addSheet(spreadsheetId, templateName));
-    // Add new sheetId to database app spreadsheet info (or update existing of same name)
+    // Add new sheetId to database app spreadsheet info (or overwrite existing if name is same)
     queryDocUpdate(
       'app',
       appKey,
@@ -168,6 +169,6 @@ module.exports = async (snapshot, app, formDataRow, sheetHeaderRow) => {
     );
     await googleSheets.spreadsheets.values.update(addRowValues(spreadsheetId, rangeData, formDataRow));
 
-  } // end 'else' add new sheet
+  } // end 'else'
 
 }
