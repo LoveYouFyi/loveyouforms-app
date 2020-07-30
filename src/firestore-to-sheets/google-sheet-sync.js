@@ -30,6 +30,50 @@ const addRow = (spreadsheetId, range, values) => ({
   }
 });
 
+// Row: Blank insert (sheetId argument: existing vs new sheet)
+const blankRowInsertAfterHeader = (spreadsheetId, sheetId) => ({
+  auth: googleAuth,
+  spreadsheetId: spreadsheetId,
+  resource: {
+    requests: [
+      {
+        "insertDimension": {
+          "range": {
+            "sheetId": sheetId,
+            "dimension": "ROWS",
+            "startIndex": 1,
+            "endIndex": 2
+          },
+          "inheritFromBefore": false
+        }
+      }
+    ]
+  }
+});
+
+// Request object for adding sheet to existing spreadsheet
+const addSheet = (spreadsheetId, templateName) => ({
+  auth: googleAuth,
+  spreadsheetId: spreadsheetId,
+  resource: {
+    requests: [
+      {
+        "addSheet": {
+          "properties": {
+            "title": templateName,
+            "index": 0,
+            "gridProperties": {
+              "rowCount": 1000,
+              "columnCount": 26
+            },
+          }
+        }
+      }
+    ]
+  }
+});
+
+
 /*------------------------------------------------------------------------------
   Google Sheet Sync
   Process sync with app's google sheet
@@ -54,29 +98,6 @@ module.exports = async (snapshot, app, formDataRow, sheetHeaderRow) => {
   const rangeHeader =  `${templateName}!A1`; // e.g. "contactDefault!A1"
   const rangeData =  `${templateName}!A2`; // e.g. "contactDefault!A2"
 
-
-  // Row: Blank insert (sheetId argument: existing vs new sheet)
-  const blankRowInsertAfterHeader = sheetId => ({
-    auth: googleAuth,
-    spreadsheetId: spreadsheetId,
-    resource: {
-      requests: [
-        {
-          "insertDimension": {
-            "range": {
-              "sheetId": sheetId,
-              "dimension": "ROWS",
-              "startIndex": 1,
-              "endIndex": 2
-            },
-            "inheritFromBefore": false
-          }
-        }
-      ]
-    }
-  });
-
-
   ////////////////////////////////////////////////////////////////////////////
   // Insert row data into sheet that matches template name
   ////////////////////////////////////////////////////////////////////////////
@@ -97,33 +118,11 @@ module.exports = async (snapshot, app, formDataRow, sheetHeaderRow) => {
   // Else, create new sheet + insert header + insert data
   if (sheetNameExists) {
     // Insert into spreadsheet a blank row and the new data row
-    await googleSheets.spreadsheets.batchUpdate(blankRowInsertAfterHeader(sheetId));
+    await googleSheets.spreadsheets.batchUpdate(blankRowInsertAfterHeader(spreadsheetId, sheetId));
     await googleSheets.spreadsheets.values.update(addRow(spreadsheetId, rangeData, formDataRow));
 
   } else {
     // Create new sheet, insert heder and new row data
-
-    // Request object for adding sheet to existing spreadsheet
-    const addSheet = () => ({
-      auth: googleAuth,
-      spreadsheetId: spreadsheetId,
-      resource: {
-        requests: [
-          {
-            "addSheet": {
-              "properties": {
-                "title": templateName,
-                "index": 0,
-                "gridProperties": {
-                  "rowCount": 1000,
-                  "columnCount": 26
-                },
-              }
-            }
-          }
-        ]
-      }
-    });
 
     // Add new sheet:
     // 'addSheet' request object returns new sheet properties
@@ -132,7 +131,7 @@ module.exports = async (snapshot, app, formDataRow, sheetHeaderRow) => {
     //   prop: spreadsheetId
     //   prop: replies[0].addSheet.properties (
     //     sheetId, title, index, sheetType, gridProperties { rowCount, columnCount } )
-    const newSheet = await googleSheets.spreadsheets.batchUpdate(addSheet());
+    const newSheet = await googleSheets.spreadsheets.batchUpdate(addSheet(spreadsheetId, templateName));
     // Map 'replies' array to get sheetId
     const newSheetId = sheet => {
       const newSheet = {};
