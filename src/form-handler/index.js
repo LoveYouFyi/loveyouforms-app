@@ -13,19 +13,20 @@ const getFormResults = require('./form-results');
   Export Form Handler Function
 ------------------------------------------------------------------------------*/
 module.exports = (env) => async (req, res) => {
-  // Stop processing if content-type is 'undefined' or not 'text/plain'
-  if (typeof req.headers['content-type'] === 'undefined'
-    || req.headers['content-type'].toLowerCase() !== 'text/plain') {
-    console.warn(`Request header 'content-type' must be 'text/plain'`);
-    res.end();
-  }
-
-  // Form submission string as object, req.body should be json formatted string
-  const formSubmission = JSON.parse(req.body);
 
   const messages = {}; // declared here so catch has access to config messages
 
   try {
+    // Stop processing if content-type is 'undefined' or not 'text/plain'
+    if (typeof req.headers['content-type'] === 'undefined'
+      || req.headers['content-type'].toLowerCase() !== 'text/plain') {
+      console.warn(`Request header 'content-type' must be 'text/plain'`);
+      res.end();
+    }
+
+    // Form submission string as object, req.body should be json formatted string
+    const formSubmission = JSON.parse(req.body);
+
     ////////////////////////////////////////////////////////////////////////////
     // App Config: returns {} props
     ////////////////////////////////////////////////////////////////////////////
@@ -63,9 +64,10 @@ module.exports = (env) => async (req, res) => {
     // Submit Form Enabled: if disabled return error message
     ////////////////////////////////////////////////////////////////////////////
     if (!appConfig.submitFormEnabled) {
-      return res.status(500).send({
+      return res.send({
         error: {
-          message: messages.error
+          message: messages.error,
+          statusCode: 403
         }
       });
     }
@@ -83,20 +85,22 @@ module.exports = (env) => async (req, res) => {
     ////////////////////////////////////////////////////////////////////////////
     // Response: return object (even if empty) so client can finish AJAX success
     ////////////////////////////////////////////////////////////////////////////
-    return res.status(200).send({
+    return res.send({
       data: {
         redirect: formResults.urlRedirect,
         message: messages.success
-      }
+      },
+      statusCode: 200
     });
 
   } catch(error) {
 
-    console.error(logErrorInfo(error));
+    logErrorInfo(error);
 
-    return res.status(500).send({
+    return res.send({
       error: {
-        message: messages.error
+        message: messages.error,
+        statusCode: 500
       }
     });
 

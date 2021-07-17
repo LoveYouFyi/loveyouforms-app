@@ -48,42 +48,42 @@ const akismetProps = (formTemplateData, propsData, fieldGroup, accumulator) => {
   Returns one of {spam: 'Check disabled '} {spam: 'true'} {spam: 'false'}
 ------------------------------------------------------------------------------*/
 module.exports = async (req, app, globalApp, formTemplateData, propsData) => {
-
-  // If spam filter akismet disabled then return object with prop
-  if (globalApp.condition.spamFilterAkismet === 0
-      || (globalApp.condition.spamFilterAkismet === 2
-          && !app.condition.spamFilterAkismet)
-  ) {
-    return { spam: 'Check disabled' };
-  }
-
-  // Akismet credentials
-  const key = app.service.spamFilterAkismet.key;
-  const blog = app.appInfo.appUrl;
-  const client = new AkismetClient({ key, blog });
-
-  //////////////////////////////////////////////////////////////////////////////
-  // Data to check for spam
-  //////////////////////////////////////////////////////////////////////////////
-  const dataContentString =
-    akismetProps(formTemplateData, propsData, 'content', '');
-  const dataOtherObject =
-    akismetProps(formTemplateData, propsData, 'other', {});
-
-  const dataToCheck = {
-    // IP Address: Akismet requires req.ip value so if undefined set to null;
-    // ...the conditional is needed because firebase emulator (dev environment)
-    // does not provide req.ip so we prevent unacceptable undefined IP property
-    ip: (typeof req.ip !== 'undefined' ? req.ip : null),
-    // User Agent
-    ...req.headers['user-agent'] && { useragent: req.headers['user-agent'] },
-    // Content: expected as single string
-    ...dataContentString && { content: dataContentString },
-    // Other: expected as separate props
-    ...dataOtherObject
-  }
-
   try {
+
+    // If spam filter akismet disabled then return object with prop
+    if (globalApp.condition.spamFilterAkismet === 0
+        || (globalApp.condition.spamFilterAkismet === 2
+            && !app.condition.spamFilterAkismet)
+    ) {
+      return { spam: 'Check disabled' };
+    }
+
+    // Akismet credentials
+    const key = app.service.spamFilterAkismet.key;
+    const blog = app.appInfo.appUrl;
+    const client = new AkismetClient({ key, blog });
+
+    //////////////////////////////////////////////////////////////////////////////
+    // Data to check for spam
+    //////////////////////////////////////////////////////////////////////////////
+    const dataContentString =
+      akismetProps(formTemplateData, propsData, 'content', '');
+    const dataOtherObject =
+      akismetProps(formTemplateData, propsData, 'other', {});
+
+    const dataToCheck = {
+      // IP Address: Akismet requires req.ip value so if undefined set to null;
+      // ...the conditional is needed because firebase emulator (dev environment)
+      // does not provide req.ip so we prevent unacceptable undefined IP property
+      ip: (typeof req.ip !== 'undefined' ? req.ip : null),
+      // User Agent
+      ...req.headers['user-agent'] && { useragent: req.headers['user-agent'] },
+      // Content: expected as single string
+      ...dataContentString && { content: dataContentString },
+      // Other: expected as separate props
+      ...dataOtherObject
+    }
+
     // Test if data is spam: a successful test returns boolean
     const isSpam = await client.checkSpam(dataToCheck);
     // return object since form-results props.set() expects {} entries

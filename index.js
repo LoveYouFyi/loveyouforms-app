@@ -6,7 +6,7 @@
 // Firebase Functions SDK: to create Cloud Functions and setup triggers
 const functions = require('firebase-functions');
 // Environment Keys: to set variables based on environments dev vs prod
-const env = require('./../../env/keys.public.js');
+const env = require('../../config/public.js');
 
 
 /*-- Form-Handler HTTP Cloud Function ----------------------------------------*/
