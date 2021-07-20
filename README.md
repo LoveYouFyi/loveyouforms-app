@@ -8,4 +8,4 @@
 * Spam Filter with Akismet
 * Deployed to cloud Firebase, makes use of Firestore database
 
-### Find the app-wrapper repo at ❤️ **<a href="https://github.com/LoveYouFyi/loveyouforms">loveyouforms</a>** ❤️ 
+### This repo is the primary codebase, find the app-wrapper at ❤️ **<a href="https://github.com/LoveYouFyi/loveyouforms">loveyouforms</a>** ❤️ 
