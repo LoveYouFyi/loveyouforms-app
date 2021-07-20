@@ -4,4 +4,4 @@
 
 ## Google Sheets Sync, Email Notifications, Spam Filter with Akismet
 
-## The bulk of the app code is in this repo, find the app-wrapper code at >>>>>>>>>> **<a href="https://github.com/LoveYouFyi/loveyouforms">loveyouforms</a>** <<<<<<<<<<
+## This repo contains the bulk of the app code, find the app-wrapper code at >>>>>>>>>> **<a href="https://github.com/LoveYouFyi/loveyouforms">loveyouforms</a>** <<<<<<<<<<
