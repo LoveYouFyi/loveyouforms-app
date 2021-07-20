@@ -1,6 +1,6 @@
 # LoveYouForms - Node.js Package
 
-## This repo contains the primary codebase / node package for the RESTful LoveYouForms JavaScript cloud app that handles form submissions for one website or 1,000 using Firebase.
+## Primary codebase for the RESTful LoveYouForms JavaScript cloud app that handles form submissions for one website or 1,000 using Firebase.
 
 ### Features
 * Google Sheets Sync
